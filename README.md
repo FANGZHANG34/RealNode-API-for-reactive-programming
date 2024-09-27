@@ -7,6 +7,8 @@
 
 - 特殊类`RealGroup`不继承`RealNode`，但可以作为多个`RealNode`的映射群，起到路由的作用。
 
-在代码的末尾有使用演示，但在演示完后会破坏事件循环以结束该程序的进程，即使用了`RealNode.eventLoop.destroy()`方法。
+在代码的末尾有使用演示，但在演示完后会破坏事件循环以结束该程序的进程，即运行`RealNode.eventLoop.destroy()`方法。
+
+如需重启事件循环，则请运行`RealNode.eventLoop = new RealNode.eventLoop.constructor;`代码。
 
 敬请期待后续更新。
