@@ -1,5 +1,5 @@
 'use strict';
-var HTMLElement = HTMLElement ?? (()=>{});
+var HTMLElement = HTMLElement ?? (()=>{}),setInterval = setInterval ?? (()=>{});
 // function interval(fn,timeout){fn();setTimeout(fn,timeout);}
 // var setInterval = setInterval ?? ((handler,timeout = 4,...argArray)=>setTimeout(()=>interval(handler),timeout,...argArray));
 // var clearInterval = clearInterval ?? (()=>{throw 0;});
@@ -19,10 +19,11 @@ class RealNode{
          * @returns {Promise<target,Error>}
          */
         then(fn,thisArg,...argArray){return new Promise(r=>this.fnArray.unshift(()=>r(fn.apply(thisArg,argArray))));}
-        constructor(timeSep = 10){
+        constructor(timeSep = 10,...fnArray){
+            RealNode.eventLoop?.destroy?.();
             /**@type {(()=>target)[]} */
-            this.fnArray = [];
-            this.intervalId = setInterval(this.intervalFn = ()=>{
+            this.fnArray = fnArray;
+            this.intervalId = setInterval(()=>{
                 const fn = this.fnArray.pop();
                 try{fn?.();}catch(e){console.error(e,fn);}
             },timeSep);
@@ -81,7 +82,7 @@ class RealNode{
         Promise.resolve(promise instanceof Function ? promise() : promise).
         then(temp,temp).then(value=>({value,time: Date.now() - longAge}))
     ))(e=>e);
-    [Symbol.toPrimitive](hint){return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']( '+this.id.description+' )';}
+    [Symbol.toPrimitive](hint){return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';}
     /**
      * 
      * @this {RealNode}
@@ -98,7 +99,34 @@ class RealNode{
             }
         }
         return react && this.react(noSelf),notify && this.notify(noSelf),true;
-    }catch(e){if(this instanceof RealNode) throw e;else this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);}}
+    }catch(e){
+        if(this instanceof RealNode) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
+    /**
+     * 
+     * @param {()=>*} get 
+     * @param {{id,info,react()=>void}} param1 
+     */
+    static protoCreate(get,{id,info,react},...params){
+        const temp = new RealNode({id,info,get,react});
+        temp.proto.value = params;
+        return temp;
+    }
+    /**@type {(param0: {id,info,react()=>void},...params)=>RealNode)} */
+    static createString = this.protoCreate.bind(null,function(){
+        if(Array.isArray(this.proto.value)){
+            const temp = this.proto.value.concat();
+            for(var i = temp.length;i --> 0;) if(temp[i] instanceof RealNode) temp[i] = temp[i].value;
+            return temp.join('');
+        }else return String(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
+    });
+    /**@type {(param0: {id,info,react()=>void},...params)=>RealNode)} */
+    static createNumber = this.protoCreate.bind(null,function(temp = 0){
+        if(!Array.isArray(this.proto.value)) return +(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
+        else for(const i of this.proto.value) temp +=+(i instanceof RealNode ? i.value : i);
+        return temp;
+    });
     protoGet(){return this.proto.value;}
     disappear(){return RealNode.sys.delete(this.id);}
     log(...message){console.log(this+' :',...message);}
@@ -152,8 +180,8 @@ class RealNode{
      * @returns {String[][]}
      */
     getPositionsOfChildRN(realNode){
-        const temp = [],childRNs = this.proto.childRNs;
-        for(var i  = childRNs.length;i --> 0;) realNode === childRNs[i].info[0] && temp.push(...childRNs[i].info.slice(1));
+        const childRNs = this.proto.childRNs,temp = [];
+        for(var i = childRNs.length,iter;i --> 0;) iter = childRNs[i].info.values(),realNode === iter.next().value && temp.push(...iter);
         return temp;
     }
     /**
@@ -168,7 +196,8 @@ class RealNode{
             for(var id of this.relativeRNs){
                 !(noSelf && id === this.id) && (id = RealNode.search(id)) && (id.react?.(),id.notify(noSelf,thisArg,count));
             }
-        r();}));
+            r();
+        }));
     }
     /**
      * 
@@ -219,12 +248,12 @@ class RealNode{
      */
     dealWithPositionsOfRNs(realNodeMap,expression){
         const temp = this.clearChildRNs().proto.childRNs,list = [];
-        var value,i,length;
+        var value,i,end;
         while(realNodeMap.length){
             /**@type {[RealNode, ...string[]]} */
             const [realNode,...dir] = realNodeMap.pop();
             if(!dir.length) expression = realNode.value;else{
-                for(value = expression,i = 0,length = dir.length - 1;i < length;i++) value = value[key];
+                for(value = expression,i = 0,end = dir.length - 1;i < end;i++) value = value[key];
                 value[dir[i]] = realNode.value;
             }
             i = list.indexOf(realNode);
@@ -315,6 +344,26 @@ class RealElement extends RealNode{
         this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
         this.idSet.add(id)
     );}
+    /**
+     * 
+     * @this {RealElement}
+     * @param {RealNode} realNode 
+     */
+    static react(realNode,react = true,notify = true,noSelf = true){var value;try{
+        const temp = this.getPositionsOfChildRN(realNode);
+        while(temp.length){
+            const position = temp.pop().reverse();
+            if(!position.length) return this.realSet(realNode.value,react,notify,noSelf);else{
+                value = this.proto.value;
+                while(position.length > 1) value = value[position.pop()];
+                realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
+            }
+        }
+        return this.fix(),react && this.react(noSelf),notify && this.notify(noSelf),true;
+    }catch(e){
+        if(this instanceof RealElement) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
     /**@typedef {(ruleObjObj: {[selector: String]: {[styleName: String]: String}},prefix?: String)=>addCSSRules} addCSSRules */
     /**@type {addCSSRules} */
     static addCSSRules = (()=>{if('document' in globalThis){
@@ -412,6 +461,28 @@ class RealDivList extends RealElement{
     }
     /**
      * 
+     * @this {RealDivList}
+     * @param {RealNode} realNode 
+     */
+    static react(realNode,react = true,notify = true,noSelf = true){var value;try{
+        const temp = this.getPositionsOfChildRN(realNode);
+        while(temp.length){
+            const position = temp.pop().reverse(),tempValue = realNode.value;
+            if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
+                value = this.proto.value;
+                while(position.length > 1) value = value[position.pop()];
+                tempValue === value[position[0]] || (value[position[0]] = tempValue);
+                value === this.proto.value && ((position[1] = this.proto.list[position[0]]).innerHTML = '');
+                tempValue instanceof HTMLElement ? position[1].appendChild(tempValue) : position[1].innerHTML = tempValue;
+            }
+        }
+        return react && this.react(noSelf),notify && this.notify(noSelf),true;
+    }catch(e){
+        if(this instanceof RealDivList) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
+    /**
+     * 
      * @returns {HTMLElement[]}
      */
     protoGet(){return this.proto.list;}
@@ -478,7 +549,7 @@ class RealDivList extends RealElement{
 class RealImgList extends RealDivList{
     /**
      * 
-     * @this {RealDivList}
+     * @this {RealImgList}
      * @param {(HTMLElement | String)[]} value 
      */
     static protoSet(value){
@@ -497,6 +568,27 @@ class RealImgList extends RealDivList{
             return false;
         }
     }
+    /**
+     * 
+     * @this {RealImgList}
+     * @param {RealNode} realNode 
+     */
+    static react(realNode,react = true,notify = true,noSelf = true){var value;try{
+        const temp = this.getPositionsOfChildRN(realNode);
+        while(temp.length){
+            const position = temp.pop().reverse(),tempValue = realNode.value;
+            if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
+                value = this.proto.value;
+                while(position.length > 1) value = value[position.pop()];
+                tempValue === value[position[0]] || (value[position[0]] = tempValue);
+                if(value === this.proto.value) this.proto.childrenList[position[0]][0].src = tempValue?.src ?? tempValue;
+            }
+        }
+        return react && this.react(noSelf),notify && this.notify(noSelf),true;
+    }catch(e){
+        if(this instanceof RealImgList) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
     /**
      * 
      * @param {Array} value 
@@ -531,7 +623,38 @@ class RealImgList extends RealDivList{
     constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
 }
 class RealSelect extends RealElement{
-    static proto = RealDivList.proto;
+    /**@typedef {AntiHTMLNode & {list: HTMLOptionElement[]}} AntiSelect */
+    static proto = class AntiSelect extends RealElement.proto{
+        /**@type {HTMLOptionElement[]} */
+        list = [];
+    };
+    /**
+     * 
+     * @this {RealSelect}
+     * @param {RealNode} realNode 
+     */
+    static react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
+        const temp = this.getPositionsOfChildRN(realNode);
+        while(temp.length){
+            const position = temp.pop().reverse(),tempValue = realNode.value;
+            if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
+                value = this.proto.value;
+                while(position.length > 1) value = value[position.pop()];
+                tempValue === value[position[0]] || (value[position[0]] = tempValue);
+                if(value === this.proto.value){
+                    i = 0;
+                    fix:for(const key of Object.keys(value)) if(key !== position[0]) i++;else{
+                        this.proto.list[i].value = String(tempValue);
+                        break fix;
+                    }
+                }
+            }
+        }
+        return react && this.react(noSelf),notify && this.notify(noSelf),true;
+    }catch(e){
+        if(this instanceof RealSelect) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
     /**
      * 
      * @returns {String[]}
@@ -589,7 +712,6 @@ class RealSelect extends RealElement{
         this.fix();
     }
 }
-class RealExpression extends RealNode{}
 class RealGroup{
     error(message,...proof){console.log(...proof);throw new Error('RealGroup """\n'+String(message)+'\n"""');}
     /**
@@ -677,12 +799,29 @@ class RealGroup{
 // console.log(Date.now() - t0,'ms');
 1 === 10
 ? RealNode.eventLoop.destroy() : RealNode.timeRecord(new Promise(r=>{
-    const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
-        Math.random() > Math.random() * 5 ? this.info[0]++ : this.info[1]++;
-    },set(value){return (value = ~~value) < 1e3 ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
-    // console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
-    // console.log((Math.sqrt(5) - 1) / 2);
-    realNode.value = realNode;
+    {
+        // console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
+        // console.log((Math.sqrt(5) - 1) / 2);
+        // realNode.proto.tryRealNode = false;
+        // realNode.value = realNode.dealWithPositionsOfRNs([[realNode]]);
+    }
+    {
+        // const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
+        //     Math.random() > Math.random() ? this.info[0]++ : this.info[1]++;
+        // },set(value){return (value = ~~value) < 1e6 ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
+        // realNode.value = realNode;
+    }
+    {
+        const f = new RealNode({id: 'Marry',value: 0}),m = new RealNode({id: 'Mike',value: 0});
+        m.relate(f.relate(new RealNode({id: 'Mr. White',react(){
+            m < 1e6 && f < 1e6 ? Math.random() * 4 > Math.random() ? f.value++ : m.value++ : r((m > f ? m : f)+': +'+Math.abs(f-m));
+        }}))).react();
+    }
     // const tempFn = ()=>(RealNode.afterNow(tempFn,true),console.log(realNode.value));
     // RealNode.afterNow(tempFn,true);
 })).then(({value,time})=>(console.log(value,'in',time,'ms'),RealNode.eventLoop.destroy()));
+// (()=>{
+//     var t0 = Date.now(),i = 1e8,temp = [0,0];
+//     while(i --> 0) Math.random() > Math.random() ? temp[0]++ : temp[1]++;
+//     console.log(temp,Date.now() - t0);
+// })()
