@@ -1,8 +1,5 @@
 'use strict';
 var HTMLElement = HTMLElement ?? (()=>{}),setInterval = setInterval ?? (()=>{});
-// function interval(fn,timeout){fn();setTimeout(fn,timeout);}
-// var setInterval = setInterval ?? ((handler,timeout = 4,...argArray)=>setTimeout(()=>interval(handler),timeout,...argArray));
-// var clearInterval = clearInterval ?? (()=>{throw 0;});
 // var t0 = Date.now();
 class RealNode{
     /**@throws */
@@ -52,7 +49,6 @@ class RealNode{
         react;
         /**@type {Symbol} */
         id;
-        info;
         value;
     };
     /**
@@ -66,6 +62,11 @@ class RealNode{
      * @returns {Promise<target>}
      */
     static justNow(fn,thisArg,...argArray){return RealNode.now.then(fn.bind(thisArg,...argArray));}
+    /**
+     * 
+     * @param {RealNode} realNode 
+     */
+    static check(realNode){for(const temp of this.sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
     /**
      * 
      * @param {()=>target} fn 
@@ -106,14 +107,13 @@ class RealNode{
     /**
      * 
      * @param {()=>*} get 
-     * @param {{id,info,react()=>void}} param1 
      */
-    static protoCreate(get,{id,info,react},...params){
-        const temp = new RealNode({id,info,get,react});
-        temp.proto.value = params;
+    static protoCreate(get,...argArray){
+        const temp = new RealNode({get});
+        temp.proto.value = argArray;
         return temp;
     }
-    /**@type {(param0: {id,info,react()=>void},...params)=>RealNode)} */
+    /**@type {((...args)=>RealNode)} */
     static createString = this.protoCreate.bind(null,function(){
         if(Array.isArray(this.proto.value)){
             const temp = this.proto.value.concat();
@@ -121,16 +121,14 @@ class RealNode{
             return temp.join('');
         }else return String(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
     });
-    /**@type {(param0: {id,info,react()=>void},...params)=>RealNode)} */
+    /**@type {((...args)=>RealNode)} */
     static createNumber = this.protoCreate.bind(null,function(temp = 0){
         if(!Array.isArray(this.proto.value)) return +(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
         else for(const i of this.proto.value) temp +=+(i instanceof RealNode ? i.value : i);
         return temp;
     });
     protoGet(){return this.proto.value;}
-    disappear(){return RealNode.sys.delete(this.id);}
     log(...message){console.log(this+' :',...message);}
-    appear(){return RealNode.sys.set(this.id,this),this;}
     done(){return RealNode.justNow(this.protoDone,this);}
     // done(keepNow){return RealNode.afterNow(this.protoDone,keepNow,this);}
     /**
@@ -138,7 +136,7 @@ class RealNode{
      * @returns {Boolean}
      */
     protoSet(value){return value !== this.proto.value && (this.proto.value = value,true);}
-    clearChildRNs(){while(this.proto.childRNs.length){this.proto.childRNs.pop().disappear();}return this;}
+    clearChildRNs(){while(this.proto.childRNs.length){this.proto.childRNs.pop().display = false;}return this;}
     error(message){throw new Error("RealNode "+(this.id.description ?? '')+'\n"""\n'+String(message)+'\n"""');}
     /**
      * 
@@ -263,8 +261,9 @@ class RealNode{
         }
         return expression;
     }
-    get tryRealNode(){return this.proto.tryRealNode;}
     get childRNs(){return this.proto.childRNs;}
+    get display(){return RealNode.sys.has(this.id);}
+    get tryRealNode(){return this.proto.tryRealNode;}
     /**@type {Symbol} */
     get id(){return this.proto.id;}
     get set(){return this.realSet;}
@@ -272,6 +271,7 @@ class RealNode{
     /**@type {()=>void} */
     get react(){return this.proto.react;}
     get value(){return this.get();}
+    set display(display){display ? RealNode.sys.set(this.id,this) : RealNode.sys.delete(this.id);}
     set tryRealNode(tryRealNode){
         var i;
         tryRealNode = (this.proto.tryRealNode = Boolean(tryRealNode)) ? 'appear' : 'disappear';
@@ -297,8 +297,8 @@ class RealNode{
         this.proto = new this.constructor.proto;
         this.proto.id = Symbol(String(id ?? info?.id ?? ''));
         Reflect.defineProperty(this,'notifyArray',{enumerable: false});
-        Reflect.defineProperty(this,'proto',{enumerable: false,writable: false})
-        this.appear();
+        Reflect.defineProperty(this,'proto',{enumerable: false,writable: false});
+        this.display = true;
         this.info = info;
         this.get = get;
         this.set = set;
@@ -320,19 +320,18 @@ class RealElement extends RealNode{
         transform;
     };
     static idSet = new Set;
-    static myStyle = new Set;
+    static myStyle = new Map;
     static getDomByString = (template=>innerHTML=>{
         template.innerHTML = innerHTML;
         return template.content.firstElementChild;
     })('document' in globalThis ? document.createElement('template') : {content: {}});
-    protoTransform(value){return value;}
     static findId(id){return this.idSet.has(id);}
     static deleteId(id){return typeof id !== 'string' ? this.error('=> Please use String "id" !') : this.idSet.delete(id);}
     /**
      * 
      * @param {String | HTMLElement} tagName 
-     * @param {{[attr: String]: String}} config 
-     * @param {{[attr: String]: String}} cssConfig 
+     * @param {{[attr: String]: String}} [config] 
+     * @param {{[attr: String]: String}} [cssConfig] 
      * @returns {HTMLElement}
      */
     static makeElement(tagName,config,cssConfig){
@@ -364,27 +363,30 @@ class RealElement extends RealNode{
         if(this instanceof RealElement) throw e;
         this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
     }}
-    /**@typedef {(ruleObjObj: {[selector: String]: {[styleName: String]: String}},prefix?: String)=>addCSSRules} addCSSRules */
+    /**@typedef {(prefix: String,ruleObjObj: {[selector: String]: {[styleName: String]: String}})=>addCSSRules} addCSSRules */
     /**@type {addCSSRules} */
     static addCSSRules = (()=>{if('document' in globalThis){
         document.getElementsByTagName("head")[0].
         appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
         const myCSS = document.styleSheets[document.styleSheets.length - 1];
+        const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
         const getKeys = obj=>obj && typeof obj === 'object' ? Object.keys(obj) : [];
         /**@type {(selector: String,rulesStr: String)=>Number} */
         const tempInsertRule = !myCSS.insertRule ? (selector,rulesStr)=>myCSS.addRule(selector,rulesStr,-1) :
         (selector,rulesStr)=>myCSS.insertRule(selector+"{"+rulesStr+"}",myCSS.cssRules.length);
-        return function addCSSRules(ruleObjObj,prefix = ''){
-            typeof prefix === 'string' ? prefix && RealElement.myStyle.add(prefix) :
-            RealElement.error('"prefix" in addCSSRules must be String !');
+        return function addCSSRules(prefix,ruleObjObj){
+            'string' === typeof prefix || RealElement.error('"prefix" in addCSSRules must be String !');
             for(const selector of getKeys(ruleObjObj)){
                 const ruleObj = ruleObjObj[selector],temp = [];
                 for(const key of getKeys(ruleObj)){temp.push(key,':',String(ruleObj[key]),';');}
                 tempInsertRule(prefix+' '+selector,temp.join(''));
             }
+            const cssName = testReg.exec(prefix)?.[1];
+            cssName && RealElement.myStyle.set(cssName,Object.assign({},RealElement.myStyle.get(cssName),ruleObjObj));
             return addCSSRules;
-        }({'.disappear': {visibility: 'hidden'}});
+        };
     }})();
+    protoTransform(value){return value;}
     fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
     clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
     /**@param {...String} */
@@ -393,6 +395,12 @@ class RealElement extends RealNode{
     toggleClassName(className){return this.proto.isElement && this.self.classList.toggle(className);}
     /**@param {...String} */
     removeClassName(){return this.proto.isElement && (this.self.classList.remove(...arguments),true);}
+    rememberParent(){if(this.self instanceof HTMLElement) this.info = this.self.parentElement;return this;}
+    /**
+     * 
+     * @param {HTMLElement} element 
+     */
+    appendIn(element){return element.appendChild(this.self) && this.rememberParent();}
     /**
      * 
      * @param {Boolean} react 
@@ -406,6 +414,18 @@ class RealElement extends RealNode{
     }
     /**
      * 
+     * @param {String} selfSelector 
+     * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
+     */
+    applyClassName(selfSelector,classNameOrRuleObjObj){
+        'string' === typeof selfSelector || this.error('"selfSelector" must be String');
+        const id = this.self.id;
+        'string' === typeof classNameOrRuleObjObj ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
+        classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
+        return id && classNameOrRuleObjObj ? (RealElement.addCSSRules('#'+id+' '+selfSelector,RealElement.myStyle.get(className)),true) : false;
+    }
+    /**
+     * 
      * @param {Boolean} keepValue 
      * @param {Boolean} fix 
      * @param {Boolean} [deepCopyRelativeRNs] 
@@ -413,14 +433,15 @@ class RealElement extends RealNode{
     clone(keepValue,fix,deepCopyRelativeRNs){
         const self = this.self instanceof HTMLElement ? this.self.cloneNode() :
         Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
-        const param0 = {self,key: this.key,transform: this.transform},param1 = {};
+        const param0 = {self,key: this.key,transform: this.transform};
         if(keepValue) param0.initValue = this.proto.value;
-        param1.get = this.proto._get;
-        param1.set = this.proto._set;
-        param1.react = this.proto.react;
-        param1.id = this.id.description+'-clone';
-        param1.info = this.proto.info;
-        const temp = new RealElement(param0,param1);
+        const temp = new RealElement(param0,{
+            get: this.proto._get,
+            set: this.proto._set,
+            react: this.proto.react,
+            id: this.id.description+'-clone',
+            info: this.info,
+        });
         Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
         if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
         if(fix) temp.fix();
@@ -438,11 +459,11 @@ class RealElement extends RealNode{
     /**
      * 
      * @param {{self: HTMLElement,key,transform?: (value)=>*},initValue} param0 
-     * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} config 
+     * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
      * @param {Boolean} [tryRealNode] 
      * @param  {...RealNode} relativeRNs 
      */
-    constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
+    constructor({self,key,transform,initValue},config = {},tryRealNode,...relativeRNs){
         super(config,tryRealNode,...relativeRNs);
         /**@type {AntiHTMLNode} */this.proto;
         this.proto.value = initValue;
@@ -461,6 +482,18 @@ class RealDivList extends RealElement{
     }
     /**
      * 
+     * @param {Number} length 
+     * @param {String} tagName 
+     * @param {String} [id] 
+     * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+     */
+    static createList(length = 0,tagName,id,selfAssign){
+        const temp = [];
+        while(length --> 0) temp.push(document.createElement(tagName));
+        return new RealDivList(id,true,temp,true,selfAssign);
+    }
+    /**
+     * 
      * @this {RealDivList}
      * @param {RealNode} realNode 
      */
@@ -473,7 +506,8 @@ class RealDivList extends RealElement{
                 while(position.length > 1) value = value[position.pop()];
                 tempValue === value[position[0]] || (value[position[0]] = tempValue);
                 value === this.proto.value && ((position[1] = this.proto.list[position[0]]).innerHTML = '');
-                tempValue instanceof HTMLElement ? position[1].appendChild(tempValue) : position[1].innerHTML = tempValue;
+                tempValue instanceof HTMLElement ? position[1].appendChild(tempValue) :
+                position[1][this.tryHTML ? 'innerHTML' : 'textContent'] = tempValue;
             }
         }
         return react && this.react(noSelf),notify && this.notify(noSelf),true;
@@ -497,22 +531,39 @@ class RealDivList extends RealElement{
      */
     protoTransform(value){
         var list = [],temp;
-        const mode = this.tryHTML ? 'innerHTML' : 'textContent';
         if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
             const iter = value[Symbol.iterator]();
             while(!(temp = iter.next()).done){
                 list.push(temp.done = document.createElement('div'));
-                temp.value instanceof HTMLElement ? temp.done.appendChild(temp.value) : temp.done[mode] = String(temp.value);
+                temp.value instanceof HTMLElement ? temp.done.appendChild(temp.value) :
+                temp.done[this.tryHTML ? 'innerHTML' : 'textContent'] = String(temp.value);
             }
             return list;
         }
     }
-    getIdDict(){
+    /**
+     * 
+     * @param {Boolean} [toRealElement] 
+     * @param {String} [key] 
+     */
+    getIdDict(toRealElement,key){
+        /**@type {{[id: String]: HTMLElement} | {[id: String]: RealElement}} */
         const list = Object.create(null);
-        for(var i = this.proto.list.length,temp;i --> 0;){
-            (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id || (list[temp[0].id] = this.proto.list[i]);
-        }
+        var i = this.proto.list.length,temp;
+        if(toRealElement) while(i --> 0) (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id ||
+        (list[temp[0].id] = this.proto.list[i]);
+        else while(i --> 0) (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id ||
+        (list[temp[0].id] = new RealElement({self: this.proto.list[i],key}));
         return list;
+    }
+    /**
+     * 
+     * @returns {RealElement[]}
+     */
+    getRealEmentList(){
+        const temp = this.proto.list.concat();
+        for(var i = temp.length;i --> 0;) temp[i] = new RealElement({self: temp[i]});
+        return temp;
     }
     fix(){
         var i = 0;
@@ -532,10 +583,11 @@ class RealDivList extends RealElement{
      * @param {Boolean} tryHTML 
      * @param {(HTMLElement | String)[]} optionList 
      * @param {Boolean} [tryRealNode] 
-     * @param {{[attr: String]: (event: Event)=>void}} selfAssign 
+     * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
      */
     constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
         const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
+        console.log(id,self?.parentElement);
         RealElement.addId(id,!self);
         super({
             self: self || RealElement.makeElement('div',{id}),
@@ -543,7 +595,7 @@ class RealDivList extends RealElement{
         },{id},tryRealNode);
         /**@type {AntiList} */this.proto;
         this.tryHTML = tryHTML;
-        Object.assign(this.fix().self,selfAssign);
+        Object.assign(this.fix().rememberParent().self,selfAssign);
     }
 }
 class RealImgList extends RealDivList{
@@ -558,7 +610,7 @@ class RealImgList extends RealDivList{
             const iter0 = this.proto.value[Symbol.iterator]();
             const iter1 = value[Symbol.iterator]();
             /**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-            const temp = new Array(2);
+            const temp = Array(2);
             while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
                 if(temp[0].done) break;
                 if((temp[0].value?.src ?? String(temp[0].value)) !== (temp[0].value?.src ?? String(temp[0].value))){
@@ -581,7 +633,7 @@ class RealImgList extends RealDivList{
                 value = this.proto.value;
                 while(position.length > 1) value = value[position.pop()];
                 tempValue === value[position[0]] || (value[position[0]] = tempValue);
-                if(value === this.proto.value) this.proto.childrenList[position[0]][0].src = tempValue?.src ?? tempValue;
+                if(value === this.proto.value) this.proto.childrenList[position[0]][0].src = String(tempValue?.src ?? tempValue);
             }
         }
         return react && this.react(noSelf),notify && this.notify(noSelf),true;
@@ -589,6 +641,15 @@ class RealImgList extends RealDivList{
         if(this instanceof RealImgList) throw e;
         this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
     }}
+    /**
+     * 
+     * @returns {HTMLImageElement[]}
+     */
+    cloneImgList(){
+        const temp = this.childrenList.concat();
+        for(var i = temp.length;i --> 0;) temp[i] = temp[i][0].cloneNode();
+        return temp;
+    }
     /**
      * 
      * @param {Array} value 
@@ -606,19 +667,10 @@ class RealImgList extends RealDivList{
     }
     /**
      * 
-     * @returns {HTMLImageElement[]}
-     */
-    cloneImgList(){
-        const temp = this.childrenList.concat();
-        for(var i = temp.length;i --> 0;) temp[i] = temp[i][0].cloneNode();
-        return temp;
-    }
-    /**
-     * 
      * @param {String} id 
      * @param {(HTMLElement | String)[]} srcList 
      * @param {Boolean} [tryRealNode] 
-     * @param {{[attr: String]: (event: Event)=>void}} selfAssign 
+     * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
      */
     constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
 }
@@ -657,6 +709,15 @@ class RealSelect extends RealElement{
     }}
     /**
      * 
+     * @param {{[text: String]: String}} value 
+     */
+    protoSet(value){return this.proto.value = Object.assign({},value),true;}
+    fix(){
+        this.self[this.key] = this.proto.value;
+        this.proto.list = Array.from(this.self.children);
+    }
+    /**
+     * 
      * @returns {String[]}
      */
     protoGet(){
@@ -664,11 +725,6 @@ class RealSelect extends RealElement{
         for(var i = 0;i < end;i++){list[i].selected && valueArray.push(list[i].value);}
         return valueArray;
     }
-    /**
-     * 
-     * @param {{[text: String]: String}} value 
-     */
-    protoSet(value){return this.proto.value = Object.assign({},value),true;}
     /**
      * 
      * @param {Array} value 
@@ -680,10 +736,6 @@ class RealSelect extends RealElement{
         while(!(now = iterator.next()).done)
             innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === '_' ? 'selected' : ''}>${now.value[0]}</option>`);
         return innerHTML.join('');
-    }
-    fix(){
-        this.self[this.key] = this.proto.value;
-        this.proto.list = Array.from(this.self.children);
     }
     /**@returns {HTMLElement[]} */
     get list(){return this.proto.list;}
@@ -698,6 +750,7 @@ class RealSelect extends RealElement{
      */
     constructor(id,multiple,transform,onchange,optionConfig,tryRealNode){
         const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
+        console.log(id,self?.parentElement);
         self && (
             self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
             RealNode.error('=> "id" exists but not within an HTMLSelectElement !')
@@ -709,7 +762,7 @@ class RealSelect extends RealElement{
             transform,
             initValue: Object.assign({},optionConfig)
         },{id},tryRealNode);
-        this.fix();
+        this.fix().rememberParent();
     }
 }
 class RealGroup{
@@ -799,23 +852,23 @@ class RealGroup{
 // console.log(Date.now() - t0,'ms');
 1 === 10
 ? RealNode.eventLoop.destroy() : RealNode.timeRecord(new Promise(r=>{
-    {
+    test1:{
         // console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
         // console.log((Math.sqrt(5) - 1) / 2);
         // realNode.proto.tryRealNode = false;
         // realNode.value = realNode.dealWithPositionsOfRNs([[realNode]]);
     }
-    {
-        // const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
-        //     Math.random() > Math.random() ? this.info[0]++ : this.info[1]++;
-        // },set(value){return (value = ~~value) < 1e6 ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
-        // realNode.value = realNode;
+    test2:{
+        const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
+            Math.random() > Math.random() ? this.info[0]++ : this.info[1]++;
+        },set(value){return 1e6 > value ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
+        realNode.value = realNode;
     }
-    {
-        const f = new RealNode({id: 'Marry',value: 0}),m = new RealNode({id: 'Mike',value: 0});
-        m.relate(f.relate(new RealNode({id: 'Mr. White',react(){
-            m < 1e6 && f < 1e6 ? Math.random() * 4 > Math.random() ? f.value++ : m.value++ : r((m > f ? m : f)+': +'+Math.abs(f-m));
-        }}))).react();
+    test3:{
+        // const f = new RealNode({id: 'Marry',value: 0}),m = new RealNode({id: 'Mike',value: 0});
+        // m.relate(f.relate(new RealNode({id: 'Mr. White',react(){
+        //     m < 1e6 && f < 1e6 ? Math.random() * 4 > Math.random() ? f.value++ : m.value++ : r((m > f ? m : f)+': +'+Math.abs(f-m));
+        // }}))).react();
     }
     // const tempFn = ()=>(RealNode.afterNow(tempFn,true),console.log(realNode.value));
     // RealNode.afterNow(tempFn,true);
