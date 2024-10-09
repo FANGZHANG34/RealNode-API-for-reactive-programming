@@ -496,6 +496,52 @@ class RealElement extends RealNode{
         this.transform = transform;
     }
 }
+class RealCanvas extends RealElement{
+    /**@typedef {AntiHTMLNode & {self: HTMLCanvasElement,ctx: CanvasRenderingContext2D,img: HTMLImageElement}} AntiCanvas */
+    static proto = class AntiCanvas extends RealElement.proto{
+        img = new Image;
+        isElement = true;
+        /**@type {CanvasRenderingContext2D} */
+        ctx = this.self.getContext('2d');
+    }
+    fix(){this.clear().drawImage(this.proto.img,0,0);}
+    clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
+    protoSet(src){
+        return loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src))
+        .then(()=>(this.proto.value = src,true),e=>(console.error(e ? e : this+': Fail to load by src !'),false));
+    }
+    realSet(value,react,notify,noSelf){
+        var temp;
+        return Promise.resolve(this.proto._set.call(
+            this,
+            this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
+            this.dealWithPositionsOfRNs(temp,value) : value
+        )).then(value=>value && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true));
+    }
+    get ctx(){return this.proto.ctx;}
+    get img(){return this.proto.img;}
+    get self(){return this.proto.self;}
+    get width(){return this.proto.self.width;}
+    get height(){return this.proto.self.height;}
+    get imgW(){return this.proto.img.naturalWidth;}
+    get imgH(){return this.proto.img.naturalHeight;}
+    get opacity(){return this.proto.ctx.globalAlpha;}
+    set width(width){this.proto.self.width = width ?? 640;}
+    set opacity(opacity){this.proto.ctx.globalAlpha = opacity;}
+    set height(height){this.proto.self.height = height ?? 360;}
+    loaded = RealNode.now;
+    onceMode = true;
+    constructor(id,width,height,...relativeRNs){
+        id = String(id);
+        const self = document.getElementById(id);
+        if(self && !(self instanceof HTMLCanvasElement)) throw new Error('=> RealCanvas with id "'+id+'" is not HTMLCanvasElement !');
+        super({self: self ?? RealElement.makeElement('canvas',{id})},{id},true,...relativeRNs);
+        /**@type {AntiCanvas} */
+        this.proto;
+        this.width = width;
+        this.height = height;
+    }
+}
 class RealDivList extends RealElement{
     /**@typedef {AntiHTMLNode & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
     static proto = class AntiList extends RealElement.proto{
@@ -788,54 +834,6 @@ class RealSelect extends RealElement{
             initValue: Object.assign({},optionConfig)
         },{id},tryRealNode);
         this.fix().rememberParent();
-    }
-}
-class RealCanvas extends RealElement{
-    /**@typedef {AntiHTMLNode & {self: HTMLCanvasElement,ctx: CanvasRenderingContext2D,img: HTMLImageElement}} AntiCanvas */
-    static proto = class AntiCanvas extends RealElement.proto{
-        img = new Image;
-        isElement = true;
-        /**@type {CanvasRenderingContext2D} */
-        ctx = this.self.getContext('2d');
-    }
-    fix(){this.clear().drawImage(this.proto.img,0,0);}
-    clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
-    protoSet(src){
-        return loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src).then(
-            ()=>(this.proto.value = src,true),
-            e=>(console.error(e ? e : this+': Fail to load by src !'),false)
-        ));
-    }
-    realSet(value,react,notify,noSelf){
-        var temp;
-        return this.proto._set.call(
-            this,
-            this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
-            this.dealWithPositionsOfRNs(temp,value) : value
-        ).then(value=>value && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true));
-    }
-    get ctx(){return this.proto.ctx;}
-    get img(){return this.proto.img;}
-    get self(){return this.proto.self;}
-    get width(){return this.proto.self.width;}
-    get height(){return this.proto.self.height;}
-    get imgW(){return this.proto.img.naturalWidth;}
-    get imgH(){return this.proto.img.naturalHeight;}
-    get opacity(){return this.proto.ctx.globalAlpha;}
-    set width(width){this.proto.self.width = width ?? 640;}
-    set opacity(opacity){this.proto.ctx.globalAlpha = opacity;}
-    set height(height){this.proto.self.height = height ?? 360;}
-    loaded = RealNode.now;
-    onceMode = true;
-    constructor(id,width,height,...relativeRNs){
-        id = String(id);
-        const self = document.getElementById(id);
-        if(self && !(self instanceof HTMLCanvasElement)) throw new Error('=> RealCanvas with id "'+id+'" is not HTMLCanvasElement !');
-        super({self: self ?? RealElement.makeElement('canvas',{id})},{id},true,...relativeRNs);
-        /**@type {AntiCanvas} */
-        this.proto;
-        this.width = width;
-        this.height = height;
     }
 }
 class RealGroup{
