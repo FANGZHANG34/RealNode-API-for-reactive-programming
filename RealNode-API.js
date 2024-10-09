@@ -504,7 +504,7 @@ class RealCanvas extends RealElement{
         /**@type {CanvasRenderingContext2D} */
         ctx = this.self.getContext('2d');
     }
-    fix(){this.clear().drawImage(this.proto.img,0,0);}
+    fix(){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(this.proto.img,0,0);}
     clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
     protoSet(src){
         return loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src))
@@ -530,7 +530,7 @@ class RealCanvas extends RealElement{
     set opacity(opacity){this.proto.ctx.globalAlpha = opacity;}
     set height(height){this.proto.self.height = height ?? 360;}
     loaded = RealNode.now;
-    onceMode = true;
+    clearBeforeDraw = true;
     constructor(id,width,height,...relativeRNs){
         id = String(id);
         const self = document.getElementById(id);
