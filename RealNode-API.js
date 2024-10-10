@@ -1,6 +1,7 @@
 'use strict';
-var HTMLElement = HTMLElement ?? function(){},setInterval = setInterval ?? function(){};
-// var t0 = Date.now();
+var HTMLElement = HTMLElement ?? function(){},setInterval = setInterval ?? function(){},performance = performance ?? Date;
+var t0 = (performance.now(),0);
+/**@typedef {RealNode.eventLoop} EventLoop*/
 class RealNode{
     /**@throws {Error} */
     static error(message){throw new Error(this.name+' : '+message);}
@@ -297,7 +298,7 @@ class RealNode{
     /**
      * 
      * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} config 
-     * @param  {...(Symbol | RealNode)} relativeRNs 
+     * @param  {...(Symbol | RealNode)} [relativeRNs] 
      */
     constructor(config,tryRealNode = true,...relativeRNs){
         const {get,set,react,id,info} = Object(config);
@@ -314,7 +315,6 @@ class RealNode{
         this.relate(...relativeRNs);
         this.tryRealNode = tryRealNode;
         if('value' in config) this.value = config.value;
-        // for(var keys = Reflect.ownKeys(this.proto),i = keys.length;i --> 0;) Reflect.defineProperty(this.proto,keys[i],{enumerable: false});
     }
 }
 class RealElement extends RealNode{
@@ -347,11 +347,11 @@ class RealElement extends RealNode{
         tagName instanceof HTMLElement || (tagName = document.createElement(tagName));
         return Object.assign(Object.assign(tagName,config).style,cssConfig),tagName;
     }
-    static addId(id,strict = true){id && (
-        typeof id !== 'string' ? this.error('=> Please use String "id" !') :
+    static addId(id,strict = true){
+        if(id) typeof id !== 'string' ? this.error('=> Please use String "id" !') :
         this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
-        this.idSet.add(id)
-    );}
+        this.idSet.add(id);
+    }
     static getRandomId(){
         for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
         return temp;
@@ -371,7 +371,7 @@ class RealElement extends RealNode{
                 realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
             }
         }
-        return this.fix(),react && this.react(noSelf),notify && this.notify(noSelf),true;
+        return this.draw(),react && this.react(noSelf),notify && this.notify(noSelf),true;
     }catch(e){
         if(this instanceof RealElement) throw e;
         this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -405,7 +405,7 @@ class RealElement extends RealNode{
         return i;
     }
     protoTransform(value){return value;}
-    fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
+    draw(){return this.self[this.key] = this.transform(this.proto.value),this;}
     clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
     /**@param {...String} */
     addClassName(){return this.proto.isElement && (this.self.classList.add(...arguments),true);}
@@ -429,7 +429,7 @@ class RealElement extends RealNode{
     realSet(value,react,notify,noSelf){
         var temp;
         return this.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ? this.dealWithPositionsOfRNs(temp,value) :
-        this.proto._set.call(this,value) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
+        this.proto._set.call(this,value) && (this.draw(),react && this.react,notify && this.notify(noSelf),true);
     }
     /**
      * 
@@ -442,7 +442,7 @@ class RealElement extends RealNode{
             'string' === typeof selfSelector || this.error('"selfSelector" must be String');
             const id = '' === this.self.id ? this.self.id = RealElement.getRandomId() : this.self.id;
             'string' === typeof classNameOrRuleObjObj ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
-            classNameOrRuleObjObj = Object(classNameOrRuleObjObj);this.log(RealElement.myStyle)
+            classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
             return !classNameOrRuleObjObj ? false : (RealElement.addCSSRules(
                 '#'+id+(strReg.test(selfSelector) ? ' ' : '')+selfSelector,classNameOrRuleObjObj
             ),RealElement.addId(id,false),true);
@@ -468,7 +468,7 @@ class RealElement extends RealNode{
         });
         Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
         if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
-        if(fix) temp.fix();
+        if(fix) temp.draw();
         return temp;
     }
     get self(){return this.proto.self;}
@@ -485,7 +485,7 @@ class RealElement extends RealNode{
      * @param {{self: HTMLElement,key,transform?: (value)=>*},initValue} param0 
      * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
      * @param {Boolean} [tryRealNode] 
-     * @param  {...RealNode} relativeRNs 
+     * @param  {...RealNode} [relativeRNs] 
      */
     constructor({self,key,transform,initValue},config = {},tryRealNode,...relativeRNs){
         super(config,tryRealNode,...relativeRNs);
@@ -497,49 +497,168 @@ class RealElement extends RealNode{
     }
 }
 class RealCanvas extends RealElement{
-    /**@typedef {AntiHTMLNode & {self: HTMLCanvasElement,ctx: CanvasRenderingContext2D,img: HTMLImageElement}} AntiCanvas */
+    /**@typedef {AntiHTMLNode & {
+     * self: HTMLCanvasElement;
+     * temp: CanvasRenderingContext2D;
+     * img: HTMLImageElement;
+     * clearBeforeDraw: Boolean;
+     * ctx: CanvasRenderingContext2D;
+     * }} AntiCanvas */
     static proto = class AntiCanvas extends RealElement.proto{
+        temp = document.createElement('canvas').getContext('2d');
         img = new Image;
         isElement = true;
+        clearBeforeDraw = true;
         /**@type {CanvasRenderingContext2D} */
-        ctx = this.self.getContext('2d');
+        ctx;
     }
-    fix(){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(this.proto.img,0,0);}
+    /**
+     * 
+     * @param {Number | String} N 
+     * @param {Number} longN 
+     * @returns {String}
+     */
+    static strN(N,longN){const i = String(N).length; while(longN --> i) N = '0'+N; return N};
+    protoGet(){return this.loaded.then(()=>this.proto.value);}
+    draw(imgOrCanvas){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
     clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
+    clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
+    /**
+     * 
+     * @param {String} src 
+     */
     protoSet(src){
-        return loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src))
-        .then(()=>(this.proto.value = src,true),e=>(console.error(e ? e : this+': Fail to load by src !'),false));
+        return this.loaded = this.loaded.then(
+            ()=>new Promise((r,e)=>src && 'string' === typeof src ? Object.assign(this.proto.img,{onload: r,onerror: e}).src = src : e())
+        ).then(()=>(this.proto.value = src,true),e=>(console.error(e instanceof Error ? e : this+': Fail to load by src "'+src+'" !'),false));
     }
+    /**
+     * 
+     * @param {Boolean} react 
+     * @param {Boolean} notify 
+     * @param {Boolean} noSelf 
+     * @returns {Promise<Boolean>}
+     */
     realSet(value,react,notify,noSelf){
         var temp;
-        return Promise.resolve(this.proto._set.call(
+        return this.loaded = Array.isArray(value) ? this.multiDrawSrcArray({},...value).then(()=>{this.proto.value = value;}) :
+        Promise.resolve(this.proto._set.call(
             this,
             this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
             this.dealWithPositionsOfRNs(temp,value) : value
-        )).then(value=>value && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true));
+        )).then(value=>value && (this.draw(this.proto.img),react && this.react?.(),notify && this.notify(noSelf),true));
+    }
+    multiDrawSrcArray({bgSrc,autoOpacity},...srcArray){
+        var i,temp;
+        this.clearTemp();
+        if(Array.isArray(bgSrc)){for(i = -1,temp = bgSrc.length;temp >++ i;) this.temp = bgSrc[i];}
+        else bgSrc && 'string' === typeof bgSrc && (this.temp = bgSrc);
+        if(srcArray.length > 1 && autoOpacity){for(i = srcArray.length,temp = 0;i --> 0;){
+            this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
+        }}else{for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];}
+        return this.loaded = this.loaded.then(()=>{this.draw(this.proto.temp.canvas);});
+    }
+    animate({
+        prefix = './img/w99_',suffix = '.png',startN = 1,length = 79,midLength = 2,
+        bgSrc = './img/w99_00.png',playMode = 0,timeSep = 100,sizeMode = 'std'
+    } = {}){
+        timeSep /= [1,2,3,4][playMode] ?? 1;
+        /**@type {EventLoop} */
+        const temp = new RealNode.eventLoop.constructor(timeSep),size = {width: this.width,height: this.height};
+        var i;
+        switch(sizeMode){
+            case 'auto':this.proto._set.call(this,bgSrc || prefix+RealCanvas.strN(startN,midLength)+suffix).
+            then(value=>{value && (this.width = this.imgW,this.height = this.imgH);});break;
+        }
+        switch(playMode){
+            default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc},prefix+RealCanvas.strN(startN++,midLength)+suffix);
+            case 1:{
+                length *= 2,i = true;
+                while(length --> 0) temp.then(
+                    this.multiDrawSrcArray,
+                    this,
+                    {bgSrc,autoOpacity: true},
+                    (i = !i) && prefix+RealCanvas.strN(startN++,midLength)+suffix,
+                    prefix+RealCanvas.strN(startN,midLength)+suffix
+                );
+                break;
+            }
+            case 2:{
+                length *= 3,i = 0;
+                while(length --> 0) temp.then(
+                    this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                    2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
+                    2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
+                ),3 ===++ i && (startN++,i %= 3);
+                break;
+            }
+            case 3:{
+                length *= 4,i = 0;
+                while(length --> 0) temp.then(
+                    this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                    3 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 0 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
+                    2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
+                    2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
+                ),4 ===++ i && (startN++,i %= 4);
+                break;
+            }
+        }
+        return temp.then(()=>(Object.assign(this,size),temp.destroy()));
     }
     get ctx(){return this.proto.ctx;}
     get img(){return this.proto.img;}
     get self(){return this.proto.self;}
+    get temp(){return this.proto.temp.canvas;}
     get width(){return this.proto.self.width;}
     get height(){return this.proto.self.height;}
     get imgW(){return this.proto.img.naturalWidth;}
     get imgH(){return this.proto.img.naturalHeight;}
-    get opacity(){return this.proto.ctx.globalAlpha;}
-    set width(width){this.proto.self.width = width ?? 640;}
-    set opacity(opacity){this.proto.ctx.globalAlpha = opacity;}
-    set height(height){this.proto.self.height = height ?? 360;}
+    get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
+    get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
+    set self(self){this.proto.self ??= self;}
+    set width(width){this.proto.self.width = this.proto.temp.canvas.width = width ?? 640;}
+    set height(height){this.proto.self.height = this.proto.temp.canvas.height = height ?? 360;}
+    /**@param {[(Promise<Number>|Number),Number]} opacityConfig  */
+    set opacity(opacityConfig){
+        Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
+        this.loaded = this.loaded.then(()=>opacityConfig[0]).
+        then(value=>{this.proto.ctx.globalAlpha = value * (opacityConfig[1] ?? 1);});
+    }
+    set clearBeforeDraw(clearBeforeDraw){
+        const loaded = this.loaded;
+        this.loaded = Promise.resolve(clearBeforeDraw).then(value=>loaded.then(()=>{this.proto.clearBeforeDraw = value;}));
+    }
+    set temp(src){
+        return this.loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src)).then(
+            ()=>(this.proto.temp.drawImage(this.proto.img,0,0),true),
+            e=>(console.error(e instanceof Error ? e : this+': Fail to load by src "'+src+'" !'),false)
+        );
+    }
+    /**@param {[(Promise<Number>|Number),Number]} opacityConfig  */
+    set tempOpacity(opacityConfig){
+        Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
+        this.loaded = this.loaded.then(()=>opacityConfig[0]).
+        then(value=>{this.proto.temp.globalAlpha = value * (opacityConfig[1] ?? 1);});
+    }
     loaded = RealNode.now;
-    clearBeforeDraw = true;
-    constructor(id,width,height,...relativeRNs){
-        id = String(id);
-        const self = document.getElementById(id);
-        if(self && !(self instanceof HTMLCanvasElement)) throw new Error('=> RealCanvas with id "'+id+'" is not HTMLCanvasElement !');
-        super({self: self ?? RealElement.makeElement('canvas',{id})},{id},true,...relativeRNs);
+    /**
+     * 
+     * @param {Number} [width] 
+     * @param {Number} [height] 
+     * @param {Boolean} [tryRealNode] 
+     * @param  {...RealNode} [relativeRNs] 
+     */
+    constructor(id,width,height,tryRealNode,...relativeRNs){
+        const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
+        self && self.tagName.toLocaleLowerCase() !== 'canvas' &&
+        RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
+        RealElement.addId(id,!self);
+        super({self: self || RealElement.makeElement('canvas',{id})},{id},tryRealNode,...relativeRNs);
         /**@type {AntiCanvas} */
         this.proto;
         this.width = width;
         this.height = height;
+        this.rememberParent().proto.ctx = this.proto.self.getContext('2d');
     }
 }
 class RealDivList extends RealElement{
@@ -575,7 +694,7 @@ class RealDivList extends RealElement{
                 value = this.proto.value;
                 while(position.length > 1) value = value[position.pop()];
                 tempValue === value[position[0]] || (value[position[0]] = tempValue);
-                value === this.proto.value && ((position[1] = this.proto.list[position[0]]).innerHTML = '');
+                if(value === this.proto.value) (position[1] = this.proto.list[position[0]]).innerHTML = '';
                 tempValue instanceof HTMLElement ? position[1].appendChild(tempValue) :
                 position[1][this.tryHTML ? 'innerHTML' : 'textContent'] = tempValue;
             }
@@ -636,7 +755,7 @@ class RealDivList extends RealElement{
         for(var i = temp.length;i --> 0;) temp[i] = new RealElement({self: temp[i]});
         return temp;
     }
-    fix(){
+    draw(){
         var i = 0;
         this.self.classList.add('disappear');
         this.self.innerHTML = '';
@@ -658,7 +777,6 @@ class RealDivList extends RealElement{
      */
     constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
         const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
-        console.log(id,self?.parentElement);
         RealElement.addId(id,!self);
         super({
             self: self || RealElement.makeElement('div',{id}),
@@ -666,7 +784,7 @@ class RealDivList extends RealElement{
         },{id},tryRealNode);
         /**@type {AntiList} */this.proto;
         this.tryHTML = tryHTML;
-        Object.assign(this.fix().rememberParent().self,selfAssign);
+        Object.assign(this.draw().rememberParent().self,selfAssign);
     }
 }
 class RealImgList extends RealDivList{
@@ -783,7 +901,7 @@ class RealSelect extends RealElement{
      * @param {{[text: String]: String}} value 
      */
     protoSet(value){return this.proto.value = Object.assign({},value),true;}
-    fix(){
+    draw(){
         this.self[this.key] = this.proto.value;
         this.proto.list = Array.from(this.self.children);
     }
@@ -802,7 +920,7 @@ class RealSelect extends RealElement{
      */
     protoTransform(value){
         var now;
-        this instanceof RealSelect && !this.self.multiple && (value = Object.assign({_: ''},value));
+        if(this instanceof RealSelect && !this.self.multiple) value = Object.assign({_: ''},value);
         const innerHTML = [],iterator = Object.entries(value).values();
         while(!(now = iterator.next()).done)
             innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === '_' ? 'selected' : ''}>${now.value[0]}</option>`);
@@ -821,11 +939,8 @@ class RealSelect extends RealElement{
      */
     constructor(id,multiple,transform,onchange,optionConfig,tryRealNode){
         const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
-        console.log(id,self?.parentElement);
-        self && (
-            self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
-            RealNode.error('=> "id" exists but not within an HTMLSelectElement !')
-        );
+        if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
+        RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
         RealElement.addId(id,!self);
         super({
             self: self || RealElement.makeElement('select',{id,multiple,onchange}),
@@ -833,7 +948,7 @@ class RealSelect extends RealElement{
             transform,
             initValue: Object.assign({},optionConfig)
         },{id},tryRealNode);
-        this.fix().rememberParent();
+        this.draw().rememberParent();
     }
 }
 class RealGroup{
@@ -892,7 +1007,7 @@ class RealGroup{
         if(value && 'object' === typeof value){
             const temp = [];
             for(const [,realNode] of this[Symbol.iterator](null,Reflect.ownKeys(value),true)) realNode.realSet(value[key],react) && temp.push(realNode);
-            temp.length && (react && this.react(keys1),notify && this.notify());
+            if(temp.length) react && this.react(keys1),notify && this.notify();
             return temp;
         }else this.error('=> "value" must be Object !');
     }
@@ -920,7 +1035,7 @@ class RealGroup{
         Reflect.defineProperty(this,'keys',{value: Object.freeze(Object.keys(this.dict)),writable: false,configurable: false});
     }else this.error('=> "realNodeDict" must be Object !');}
 }
-// console.log(Date.now() - t0,'ms');
+console.log(performance.now() - t0,'ms');
 'document' in globalThis || (1 === 10
 ? RealNode.eventLoop.destroy() : RealNode.time(new Promise(r=>{
     test1:{
