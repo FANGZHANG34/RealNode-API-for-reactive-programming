@@ -1,6 +1,6 @@
 'use strict';
 var HTMLElement = HTMLElement ?? function(){},setInterval = setInterval ?? function(){},performance = performance ?? Date;
-var t0 = (performance.now(),0);
+var t0 = performance === Date ? performance.now() : 0;
 /**@typedef {RealNode.eventLoop} EventLoop*/
 class RealNode{
     /**@throws {Error} */
@@ -371,7 +371,7 @@ class RealElement extends RealNode{
                 realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
             }
         }
-        return this.draw(),react && this.react(noSelf),notify && this.notify(noSelf),true;
+        return this.fix(),react && this.react(noSelf),notify && this.notify(noSelf),true;
     }catch(e){
         if(this instanceof RealElement) throw e;
         this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -405,7 +405,7 @@ class RealElement extends RealNode{
         return i;
     }
     protoTransform(value){return value;}
-    draw(){return this.self[this.key] = this.transform(this.proto.value),this;}
+    fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
     clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
     /**@param {...String} */
     addClassName(){return this.proto.isElement && (this.self.classList.add(...arguments),true);}
@@ -429,7 +429,7 @@ class RealElement extends RealNode{
     realSet(value,react,notify,noSelf){
         var temp;
         return this.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ? this.dealWithPositionsOfRNs(temp,value) :
-        this.proto._set.call(this,value) && (this.draw(),react && this.react,notify && this.notify(noSelf),true);
+        this.proto._set.call(this,value) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
     }
     /**
      * 
@@ -468,7 +468,7 @@ class RealElement extends RealNode{
         });
         Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
         if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
-        if(fix) temp.draw();
+        if(fix) temp.fix();
         return temp;
     }
     get self(){return this.proto.self;}
@@ -512,6 +512,9 @@ class RealCanvas extends RealElement{
         /**@type {CanvasRenderingContext2D} */
         ctx;
     }
+    static noCache = true;
+    /**@type {Map<String,HTMLImageElement>} */
+    static srcImageMap = new Map;
     /**
      * 
      * @param {Number | String} N 
@@ -519,18 +522,35 @@ class RealCanvas extends RealElement{
      * @returns {String}
      */
     static strN(N,longN){const i = String(N).length; while(longN --> i) N = '0'+N; return N};
+    /**@method @type {(src)=>Promise<HTMLImageElement>} */
+    static getImageBySrc = (()=>{
+        /**
+         * 
+         * @param {String} src 
+         * @param {(value)=>void} resolve 
+         * @param {(reason?)=>void} reject 
+         */
+        function dealWithSrc(src,resolve,reject){
+            const temp = RealCanvas.srcImageMap.get(src) ?? new Image;
+            temp.src ? resolve(temp) : src && 'string' === typeof src && !(RealCanvas.noCache && RealCanvas.srcImageMap.has(src)) ?
+            Object.assign(temp,{onload: ()=>(
+                RealCanvas.srcImageMap.set(src,temp),temp.onload = temp.onerror = resolve(temp)
+            ),onerror: reject,src}) : reject();
+        }
+        return src=>new Promise(dealWithSrc.bind(null,src));
+    })();
+    protoTransform(){}
     protoGet(){return this.loaded.then(()=>this.proto.value);}
-    draw(imgOrCanvas){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
+    fix(imgOrCanvas = this.proto.temp.canvas){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
+    testSrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
     clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
     clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
-    /**
-     * 
-     * @param {String} src 
-     */
+    rejectSrc(src,error){return src && console.error(
+        error instanceof Error ? error : (RealCanvas.noCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !')
+    ),false;}
     protoSet(src){
-        return this.loaded = this.loaded.then(
-            ()=>new Promise((r,e)=>src && 'string' === typeof src ? Object.assign(this.proto.img,{onload: r,onerror: e}).src = src : e())
-        ).then(()=>(this.proto.value = src,true),e=>(console.error(e instanceof Error ? e : this+': Fail to load by src "'+src+'" !'),false));
+        return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).
+        then(img=>(this.proto.img = img,this.proto.value = src,true),this.rejectSrc.bind(this,src));
     }
     /**
      * 
@@ -546,7 +566,7 @@ class RealCanvas extends RealElement{
             this,
             this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
             this.dealWithPositionsOfRNs(temp,value) : value
-        )).then(value=>value && (this.draw(this.proto.img),react && this.react?.(),notify && this.notify(noSelf),true));
+        )).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true));
     }
     multiDrawSrcArray({bgSrc,autoOpacity},...srcArray){
         var i,temp;
@@ -556,54 +576,63 @@ class RealCanvas extends RealElement{
         if(srcArray.length > 1 && autoOpacity){for(i = srcArray.length,temp = 0;i --> 0;){
             this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
         }}else{for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];}
-        return this.loaded = this.loaded.then(()=>{this.draw(this.proto.temp.canvas);});
+        return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);});
     }
     animate({
         prefix = './img/w99_',suffix = '.png',startN = 1,length = 79,midLength = 2,
         bgSrc = './img/w99_00.png',playMode = 0,timeSep = 100,sizeMode = 'std'
     } = {}){
-        timeSep /= [1,2,3,4][playMode] ?? 1;
-        /**@type {EventLoop} */
-        const temp = new RealNode.eventLoop.constructor(timeSep),size = {width: this.width,height: this.height};
-        var i;
-        switch(sizeMode){
-            case 'auto':this.proto._set.call(this,bgSrc || prefix+RealCanvas.strN(startN,midLength)+suffix).
-            then(value=>{value && (this.width = this.imgW,this.height = this.imgH);});break;
-        }
-        switch(playMode){
-            default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc},prefix+RealCanvas.strN(startN++,midLength)+suffix);
-            case 1:{
-                length *= 2,i = true;
-                while(length --> 0) temp.then(
-                    this.multiDrawSrcArray,
-                    this,
-                    {bgSrc,autoOpacity: true},
-                    (i = !i) && prefix+RealCanvas.strN(startN++,midLength)+suffix,
-                    prefix+RealCanvas.strN(startN,midLength)+suffix
-                );
-                break;
+        const size = {width: this.width,height: this.height},config = [1,2,3,5];
+        var i = startN + length + playMode;
+        length *= config[playMode] ?? 1;
+        timeSep /= config[playMode] ?? 1;
+        while(i --> 0) this.testSrc(prefix+RealCanvas.strN(i,midLength)+suffix);
+        i = 0;
+        return this.loaded.then(()=>{
+            /**@type {EventLoop} */
+            const temp = new RealNode.eventLoop.constructor(timeSep);
+            switch(sizeMode){
+                case 'auto':this.proto._set.call(this,bgSrc || prefix+RealCanvas.strN(startN,midLength)+suffix).
+                then(value=>{value && (this.width = this.imgW,this.height = this.imgH);});break;
             }
-            case 2:{
-                length *= 3,i = 0;
-                while(length --> 0) temp.then(
-                    this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
-                    2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
-                    2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
-                ),3 ===++ i && (startN++,i %= 3);
-                break;
+            switch(playMode){
+                default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc},prefix+RealCanvas.strN(startN++,midLength)+suffix);
+                case 1:{
+                    while(length --> 0) temp.then(
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        (i = !i) || prefix+RealCanvas.strN(startN++,midLength)+suffix,
+                        false,
+                        prefix+RealCanvas.strN(startN,midLength)+suffix
+                    );
+                    break;
+                }
+                case 2:{
+                    while(length --> 0) temp.then(
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        1 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 2 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
+                        false,
+                        2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
+                    ),3 ===++ i && (startN++,i %= 3);
+                    break;
+                }
+                case 3:{
+                    while(length --> 0) temp.then(
+                        // this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        // 3 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 0 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
+                        // 2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
+                        // 2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        1 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 4 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
+                        false,
+                        2 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 3 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
+                        false,
+                        3 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 2 < i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix
+                    ),5 ===++ i && (startN++,i %= 5);
+                    break;
+                }
             }
-            case 3:{
-                length *= 4,i = 0;
-                while(length --> 0) temp.then(
-                    this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
-                    3 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 0 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
-                    2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
-                    2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
-                ),4 ===++ i && (startN++,i %= 4);
-                break;
-            }
-        }
-        return temp.then(()=>(Object.assign(this,size),temp.destroy()));
+            return temp.then(()=>(this.clearTemp(),Object.assign(this,size),temp.destroy()));
+        });
     }
     get ctx(){return this.proto.ctx;}
     get img(){return this.proto.img;}
@@ -628,12 +657,7 @@ class RealCanvas extends RealElement{
         const loaded = this.loaded;
         this.loaded = Promise.resolve(clearBeforeDraw).then(value=>loaded.then(()=>{this.proto.clearBeforeDraw = value;}));
     }
-    set temp(src){
-        return this.loaded = this.loaded.then(()=>new Promise((r,e)=>Object.assign(this.proto.img,{onload: r,onerror: e}).src = src)).then(
-            ()=>(this.proto.temp.drawImage(this.proto.img,0,0),true),
-            e=>(console.error(e instanceof Error ? e : this+': Fail to load by src "'+src+'" !'),false)
-        );
-    }
+    set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
     /**@param {[(Promise<Number>|Number),Number]} opacityConfig  */
     set tempOpacity(opacityConfig){
         Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
@@ -755,7 +779,7 @@ class RealDivList extends RealElement{
         for(var i = temp.length;i --> 0;) temp[i] = new RealElement({self: temp[i]});
         return temp;
     }
-    draw(){
+    fix(){
         var i = 0;
         this.self.classList.add('disappear');
         this.self.innerHTML = '';
@@ -784,7 +808,7 @@ class RealDivList extends RealElement{
         },{id},tryRealNode);
         /**@type {AntiList} */this.proto;
         this.tryHTML = tryHTML;
-        Object.assign(this.draw().rememberParent().self,selfAssign);
+        Object.assign(this.fix().rememberParent().self,selfAssign);
     }
 }
 class RealImgList extends RealDivList{
@@ -901,7 +925,7 @@ class RealSelect extends RealElement{
      * @param {{[text: String]: String}} value 
      */
     protoSet(value){return this.proto.value = Object.assign({},value),true;}
-    draw(){
+    fix(){
         this.self[this.key] = this.proto.value;
         this.proto.list = Array.from(this.self.children);
     }
@@ -948,7 +972,7 @@ class RealSelect extends RealElement{
             transform,
             initValue: Object.assign({},optionConfig)
         },{id},tryRealNode);
-        this.draw().rememberParent();
+        this.fix().rememberParent();
     }
 }
 class RealGroup{
