@@ -1,5 +1,7 @@
 'use strict';
-var HTMLElement = HTMLElement ?? function(){},setInterval = setInterval ?? function(){},performance = performance ?? Date;
+// import('os').then(os=>console.log(os));
+var setInterval = setInterval ?? function(){},HTMLElement = HTMLElement ?? setInterval,performance = performance ?? Date;
+var exports = exports ?? {};
 var t0 = performance === Date ? performance.now() : 0;
 /**@typedef {RealNode.eventLoop} EventLoop*/
 class RealNode{
@@ -11,6 +13,7 @@ class RealNode{
     static now = Promise.resolve();
     static eventLoop = new class EventLoop{
         destroy(){clearInterval(this.intervalId);}
+        setup(){this.destroy();this.intervalId = setInterval(()=>{const fn = this.fnArray.pop();try{fn?.();}catch(e){console.error(e,fn);}},this.timeSep);}
         /**
          * 
          * @param {()=>*} fn 
@@ -18,6 +21,7 @@ class RealNode{
          */
         then(fn,thisArg,...argArray){return new Promise(r=>this.fnArray.unshift(()=>r(fn.apply(thisArg,argArray))));}
         constructor(timeSep = 10,...fnArray){
+            this.timeSep = timeSep;
             RealNode.eventLoop?.destroy?.();
             /**@type {(()=>*)[]} */
             this.fnArray = fnArray;
@@ -63,6 +67,8 @@ class RealNode{
      * @returns {Promise}
      */
     static justNow(fn,thisArg,...argArray){return RealNode.now.then(fn.bind(thisArg,...argArray));}
+    /**@method */
+    static createExpression = (set=>/**@param {()=>any} get */get=>new RealNode({get,set}))(()=>false);
     /**
      * 
      * @param {RealNode} realNode 
@@ -175,11 +181,12 @@ class RealNode{
      */
     realSet(value,react,notify,noSelf){
         var temp;
-        return this.proto._set.call(
+        const oldValue = this.proto.value;
+        return (this.proto._set.call(
             this,
             this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
             this.dealWithPositionsOfRNs(temp,value) : value
-        ) && (react && this.react?.(),notify && this.notify(noSelf),true);
+        ) ?? oldValue !== this.proto.value) && (react && this.react?.(),notify && this.notify(noSelf),true);
     }
     /**
      * 
@@ -297,11 +304,11 @@ class RealNode{
     notifyArray = [];
     /**
      * 
-     * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} config 
+     * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
      * @param  {...(Symbol | RealNode)} [relativeRNs] 
      */
     constructor(config,tryRealNode = true,...relativeRNs){
-        const {get,set,react,id,info} = Object(config);
+        const {get,set,react,id,info} = config = Object(config);
         /**@type {AntiNode} */
         this.proto = new this.constructor.proto;
         this.proto.id = Symbol(String(id ?? info?.id ?? ''));
@@ -487,7 +494,7 @@ class RealElement extends RealNode{
      * @param {Boolean} [tryRealNode] 
      * @param  {...RealNode} [relativeRNs] 
      */
-    constructor({self,key,transform,initValue},config = {},tryRealNode,...relativeRNs){
+    constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
         super(config,tryRealNode,...relativeRNs);
         /**@type {AntiHTMLNode} */this.proto;
         this.proto.value = initValue;
@@ -815,27 +822,6 @@ class RealImgList extends RealDivList{
     /**
      * 
      * @this {RealImgList}
-     * @param {(HTMLElement | String)[]} value 
-     */
-    static protoSet(value){
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
-            /**@type {IterableIterator<HTMLImageElement | String>} */
-            const iter0 = this.proto.value[Symbol.iterator]();
-            const iter1 = value[Symbol.iterator]();
-            /**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-            const temp = Array(2);
-            while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
-                if(temp[0].done) break;
-                if((temp[0].value?.src ?? String(temp[0].value)) !== (temp[0].value?.src ?? String(temp[0].value))){
-                    return this.proto.value = Array.from(value),true;
-                }
-            }
-            return false;
-        }
-    }
-    /**
-     * 
-     * @this {RealImgList}
      * @param {RealNode} realNode 
      */
     static react(realNode,react = true,notify = true,noSelf = true){var value;try{
@@ -876,6 +862,26 @@ class RealImgList extends RealDivList{
                 temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
             }
             return list;
+        }
+    }
+    /**
+     * 
+     * @param {(HTMLElement | String)[]} value 
+     */
+    protoSet(value){
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
+            /**@type {IterableIterator<HTMLImageElement | String>} */
+            const iter0 = this.proto.value[Symbol.iterator]();
+            const iter1 = value[Symbol.iterator]();
+            /**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
+            const temp = Array(2);
+            while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
+                if(temp[0].done) break;
+                if((temp[0].value?.src ?? String(temp[0].value)) !== (temp[0].value?.src ?? String(temp[0].value))){
+                    return this.proto.value = Array.from(value),true;
+                }
+            }
+            return false;
         }
     }
     /**
@@ -1063,18 +1069,22 @@ console.log(performance.now() - t0,'ms');
 'document' in globalThis || (1 === 10
 ? RealNode.eventLoop.destroy() : RealNode.time(new Promise(r=>{
     test1:{
-        // console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
-        // console.log((Math.sqrt(5) - 1) / 2);
-        // realNode.proto.tryRealNode = false;
-        // realNode.value = realNode.dealWithPositionsOfRNs([[realNode]]);
+        // break test1;
+        const realNode = new RealNode;
+        console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
+        console.log(((Math.sqrt(5) - 1) / 2).toFixed(64));
+        realNode.proto.tryRealNode = false;
+        realNode.value = realNode.dealWithPositionsOfRNs([[realNode]]);
     }
     test2:{
-        // const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
-        //     Math.random() > Math.random() ? this.info[0]++ : this.info[1]++;
-        // },set(value){return 1e6 > value ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
-        // realNode.value = realNode;
+        break test2;
+        const realNode = new RealNode({id: 213,info: [0,0],value: 0,react(){
+            Math.random() > Math.random() ? this.info[0]++ : this.info[1]++;
+        },set(value){return 1e6 > value ? ((this.proto.value = value + 1),true) : r(realNode.info);}});
+        realNode.value = realNode;
     }
     test3:{
+        // break test3;
         const f = new RealNode({id: 'Marry',value: 0}),m = new RealNode({id: 'Mike',value: 0});
         m.relate(f.relate(new RealNode({id: 'Mr. White',react(){
             m < 1e6 && f < 1e6 ? Math.random() * 1 > Math.random() ? f.value++ : m.value++ : r((m > f ? m : f)+': +'+Math.abs(f-m));
@@ -1088,3 +1098,4 @@ console.log(performance.now() - t0,'ms');
 //     while(i --> 0) Math.random() > Math.random() ? temp[0]++ : temp[1]++;
 //     console.log(temp,performance.now() - t0);
 // })()
+Object.assign(exports,{RealNode,RealElement,RealCanvas,RealDivList,RealImgList,RealSelect,RealGroup});
