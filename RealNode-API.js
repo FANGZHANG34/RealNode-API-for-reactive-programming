@@ -787,7 +787,7 @@ class RealLoader extends RealElement{
     get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
     constructor(isDownload){
         isDownload = Boolean(isDownload);
-        super({self: document.createElement('div'),key: innerHTML});
+        super({self: document.createElement('div'),key: 'innerHTML'});
         this.type = isDownload ? 'download' : 'upload';
         this.temp = document.createElement(isDownload ? 'a' : 'input');
         this.temp[isDownload ? 'download' : 'type'] = 'file';
