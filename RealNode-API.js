@@ -7,6 +7,7 @@ var t0 = performance === Date ? performance.now() : 0;
 class RealWorld{
     /**@type {RealWorld & RealWorld[]} */
     static app;
+    static onload = new Promise(r=>'window' in globalThis ? window.onload = r : r());
     static get onlyWorld(){return !Array.isArray(this.app);}
     /**@this {RealWorld} */
     static onEvent(){if(this.fnArray.length){const fn = this.fnArray.pop();try{fn?.();}catch(e){console.error(e,fn);}}};
@@ -25,8 +26,8 @@ class RealWorld{
      */
     setup(id2set){return document.body.innerHTML = '',arguments.length && (document.body.appendChild(this.body).id = id2set),this.body;}
     body = globalThis.document?.createElement?.('div');
-    constructor(timeSep = 10,...fnArray){
-        RealWorld.onlyWorld ? (RealWorld.app?.destroy?.(),RealWorld.app = this) : RealWorld.app.push(this);
+    constructor(timeSep = 10,onlyProcess,...fnArray){
+        if(!onlyProcess) RealWorld.onlyWorld ? (RealWorld.app?.destroy?.(),RealWorld.app = this) : RealWorld.app.push(this);
         /**@type {(()=>*)[]} */
         this.fnArray = fnArray;
         this.intervalId = setInterval(RealWorld.onEvent.bind(this),this.timeSep = timeSep);
@@ -428,8 +429,8 @@ class RealElement extends RealNode{
                     RealElement.selectorEventListeners[type] = new Map,
                     document.body.addEventListener(type,listenerEvent)
                 ),
-                RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].set(selectors,[listener]) :
-                RealElement.selectorEventListeners[type].get(selectors).push(listener)
+                RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
+                RealElement.selectorEventListeners[type].set(selectors,[listener])
             );
         }
     })();
@@ -619,7 +620,7 @@ class RealCanvas extends RealElement{
     })();
     protoTransform(){}
     protoGet(){return this.loaded.then(()=>this.proto.value);}
-    fix(imgOrCanvas = this.proto.temp.canvas){(this.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
+    fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
     testSrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
     clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
     clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
@@ -676,7 +677,7 @@ class RealCanvas extends RealElement{
         i = 0;
         return {loaded: this.loaded,finished: this.loaded.then(()=>{
             /**@type {RealWorld} */
-            const temp = new RealNode.eventLoop.constructor(timeSep);
+            const temp = new RealWorld(timeSep,true);
             switch(sizeMode){
                 case 'auto':this.proto._set.call(this,bgSrc || prefix+RealCanvas.strN(startN,midLength)+suffix).
                 then(value=>{value && (this.width = this.imgW,this.height = this.imgH);});break;
@@ -740,8 +741,9 @@ class RealCanvas extends RealElement{
         then(value=>{this.proto.ctx.globalAlpha = value * (opacityConfig[1] ?? 1);});
     }
     set clearBeforeDraw(clearBeforeDraw){
-        const loaded = this.loaded;
-        this.loaded = Promise.resolve(clearBeforeDraw).then(value=>loaded.then(()=>{this.proto.clearBeforeDraw = value;}));
+        this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);
+        // const loaded = this.loaded;
+        // this.loaded = Promise.resolve(clearBeforeDraw).then(value=>loaded.then(()=>{this.proto.clearBeforeDraw = value;}));
     }
     set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
     /**@param {[(Promise<Number>|Number),Number]} opacityConfig  */
@@ -772,9 +774,9 @@ class RealCanvas extends RealElement{
     }
 }
 class RealLoader extends RealElement{
-    static configDescriptor = (browserMode && RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
+    static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
         for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){temp.temp.click();temp.react?.();temp.notify(true);break;}
-    }),{writable: false,enumerable: false,configurable: false});
+    }),{writable: false,enumerable: false,configurable: false}));
     makeDownloadUrl(urlOrBlob,revoke = true){
         if('string' === typeof urlOrBlob) urlOrBlob = URL.createObjectURL(urlOrBlob instanceof Blob ? urlOrBlob : new Blob(String(urlOrBlob)));
         'upload' === this.type ? this.error('I\'m an uploader without downloadUrl !') :
@@ -988,7 +990,7 @@ class RealDivList extends RealElement{
      * @param {(this: RealDivList)=>void} [callback] 
      */
     static defineDivListClass(className,tryHTML,optionList,tryRealNode,cssRuleObjObj,callback){
-        /^\.([A-Za-z][A-Z0-9a-z]{0,})$/.test(className) || this.error('Illegal "className" !');
+        /^([A-Za-z]\w*)$/.test(className) || this.error('Illegal "className" !');
         this.divListClassMap.has(className) && this.error('"className" repeated !');
         optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
         this.addCSSRules('.'+className,cssRuleObjObj);
@@ -1281,7 +1283,7 @@ browserMode || (1 === 10
 //     console.log(temp,performance.now() - t0);
 // })()
 Object.assign(exports,{RealWorld,RealNode,RealElement,RealCanvas,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup});
-browserMode && RealDivList.defineDivListClass('realDivSelect',false,null,true,{
+browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
     '': {'background':'linear-gradient(135deg,#fff,#000)'},
     '>div': {'background-color':'#aaa'},
     '>.selected': {'transform':'scale(0.8)'},
@@ -1322,7 +1324,7 @@ browserMode && RealDivList.defineDivListClass('realDivSelect',false,null,true,{
         if('function' === typeof onchange) this.self.onchange = onchange;
         this.value = optionConfig;
     };
-})());
+})()));
 /**
  * 
  * @param {{[key: String]: *}} [optionConfig] 
@@ -1330,7 +1332,7 @@ browserMode && RealDivList.defineDivListClass('realDivSelect',false,null,true,{
  * @param {(e: Event)=>void} [onchange] 
  */
 function createRealDivSelect(optionConfig,multiple,onchange){return RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);}
-browserMode && RealDivList.defineDivListClass('realDivSearch',true,null,true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(1.2)'}},(()=>{
+browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(1.2)'}},(()=>{
     /**@type {RealDivList} */
     var tempRealDivList;
     const changeConfig = {bubbles: true};
@@ -1378,7 +1380,7 @@ browserMode && RealDivList.defineDivListClass('realDivSearch',true,null,true,{'>
         this.get = tempGet;
         this.set = tempSet;
     };
-})());
+})()));
 /**
  * 
  * @param {String} [placeholder] 
