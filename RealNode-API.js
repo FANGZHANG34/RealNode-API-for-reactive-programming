@@ -1,5 +1,6 @@
 'use strict';
 // import('os').then(os=>console.log(os));
+const browserMode = 'document' in globalThis;
 var setInterval = setInterval ?? function(){},HTMLElement = HTMLElement ?? setInterval,performance = performance ?? Date;
 var exports = exports ?? {};
 var t0 = performance === Date ? performance.now() : 0;
@@ -75,6 +76,11 @@ class RealNode{
      * @returns {Promise}
      */
     static justNow(fn,thisArg,...argArray){return RealNode.now.then(fn.bind(thisArg,...argArray));}
+    static arrayToObject(){
+        const temp = {},array = Array.from(arguments).flat(),length = array.length;
+        for(var i = 0;i < length;i++) temp[String(array[i])] = array[i];
+        return temp;
+    }
     /**@method */
     static createExpression = (set=>
         /**
@@ -357,12 +363,20 @@ class RealElement extends RealNode{
     static getDomByString = (template=>innerHTML=>{
         template.innerHTML = innerHTML;
         return template.content.firstElementChild;
-    })('document' in globalThis ? document.createElement('template') : {content: {}});
+    })(browserMode ? document.createElement('template') : {content: {}});
     static findId(id){return this.idSet.has(id);}
-    static deleteId(id){return typeof id !== 'string' ? this.error('=> Please use String "id" !') : this.idSet.delete(id);}
+    static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
+    static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
+    static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
+    static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
+    static deleteId(id){typeof id !== 'string' && this.error('=> Please use String "id" !');return this.idSet.delete(id);}
+    static getRandomId(){
+        for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
+        return temp;
+    }
     /**
      * 
-     * @param {String | HTMLElement} tagName 
+     * @param {keyof HTMLElementTagNameMap | HTMLElement} tagName 
      * @param {{[attr: String]: String}} [config] 
      * @param {{[attr: String]: String}} [cssConfig] 
      * @returns {HTMLElement}
@@ -376,8 +390,14 @@ class RealElement extends RealNode{
         this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
         this.idSet.add(id);
     }
-    static getRandomId(){
-        for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
+    /**
+     * 
+     * @param {{}} element 
+     */
+    static searchByElement(element){
+        /**@type {RealElement[]} */const temp = [];
+        if('object' !== typeof element || !element) return temp;
+        for(const realElement of this.sys.values()) if(element === realElement.self) temp.push(realElement);
         return temp;
     }
     /**@method */
@@ -403,12 +423,14 @@ class RealElement extends RealNode{
          * @param {(event: Event)=>void} listener 
          */
         return(selectors,type,listener)=>{
-            Reflect.ownKeys(RealElement.selectorEventListeners).includes(type) || (
-                RealElement.selectorEventListeners[type] = new Map,
-                document.body.addEventListener(type,listenerEvent)
+            !selectors || '*' === selectors ? document.addEventListener(type,listener) : (
+                Reflect.ownKeys(RealElement.selectorEventListeners).includes(type) || (
+                    RealElement.selectorEventListeners[type] = new Map,
+                    document.body.addEventListener(type,listenerEvent)
+                ),
+                RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].set(selectors,[listener]) :
+                RealElement.selectorEventListeners[type].get(selectors).push(listener)
             );
-            RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].set(selectors,[listener]) :
-            RealElement.selectorEventListeners[type].get(selectors).push(listener);
         }
     })();
     /**
@@ -431,9 +453,9 @@ class RealElement extends RealNode{
         if(this instanceof RealElement) throw e;
         this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
     }}
-    /**@typedef {(prefix: String,ruleObjObj: {[selector: keyof HTMLElementTagNameMap]: {[styleName: String]: String}})=>addCSSRules} addCSSRules */
+    /**@typedef {(prefix: String,ruleObjObj: {[selector: String]: {[styleName: String]: String}})=>addCSSRules} addCSSRules */
     /**@method @type {addCSSRules} */
-    static addCSSRules = (()=>{if('document' in globalThis){
+    static addCSSRules = (()=>{if(browserMode){
         document.getElementsByTagName("head")[0].
         appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
         const myCSS = document.styleSheets[document.styleSheets.length - 1];
@@ -489,7 +511,7 @@ class RealElement extends RealNode{
     /**
      * 
      * @param {keyof HTMLElementTagNameMap} selfSelector 
-     * @param {String | {[selector: keyof HTMLElementTagNameMap]: {[styleName: keyof HTMLElementTagNameMap]: String}}} classNameOrRuleObjObj 
+     * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
      */
     applyCSS(selfSelector,classNameOrRuleObjObj){
         const strReg = /^[A-Za-z]/;
@@ -549,6 +571,7 @@ class RealElement extends RealNode{
         this.self = self;
         this.key = key;
         this.transform = transform;
+        this.addClassName(this.constructor.name);
     }
 }
 class RealCanvas extends RealElement{
@@ -748,6 +771,168 @@ class RealCanvas extends RealElement{
         this.rememberParent().proto.ctx = this.proto.self.getContext('2d');
     }
 }
+class RealLoader extends RealElement{
+    static configDescriptor = (browserMode && RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
+        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){temp.temp.click();temp.react?.();temp.notify(true);break;}
+    }),{writable: false,enumerable: false,configurable: false});
+    makeDownloadUrl(urlOrBlob,revoke = true){
+        if('string' === typeof urlOrBlob) urlOrBlob = URL.createObjectURL(urlOrBlob instanceof Blob ? urlOrBlob : new Blob(String(urlOrBlob)));
+        'upload' === this.type ? this.error('I\'m an uploader without downloadUrl !') :
+        urlOrBlob === this.temp.href || (revoke && URL.revokeObjectURL(this.temp.href),this.temp.href = urlOrBlob);
+    }
+    protoSet(value){this.self[this.key] = value;}
+    /**@returns {FileList} */
+    get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
+    constructor(isDownload){
+        isDownload = Boolean(isDownload);
+        super({self: document.createElement('div'),key: innerHTML});
+        this.type = isDownload ? 'download' : 'upload';
+        this.temp = document.createElement(isDownload ? 'a' : 'input');
+        this.temp[isDownload ? 'download' : 'type'] = 'file';
+        Reflect.defineProperty(this,'type',RealLoader.configDescriptor);
+    }
+}
+class RealSelect extends RealElement{
+    /**@typedef {AntiHTMLNode & {list: HTMLOptionElement[]}} AntiSelect */
+    static proto = class AntiSelect extends RealElement.proto{
+        /**@type {HTMLOptionElement[]} */
+        list = [];
+    };
+    /**
+     * 
+     * @this {RealSelect}
+     * @param {RealNode} realNode 
+     */
+    static react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
+        const temp = this.getPositionsOfChildRN(realNode);
+        while(temp.length){
+            const position = temp.pop().reverse(),tempValue = realNode.value;
+            if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
+                value = this.proto.value;
+                while(position.length > 1) value = value[position.pop()];
+                tempValue === value[position[0]] || (value[position[0]] = tempValue);
+                if(value === this.proto.value){
+                    i = 0;
+                    fix:for(const key of Object.keys(value)) if(key !== position[0]) i++;else{
+                        this.proto.list[i].value = String(tempValue);
+                        break fix;
+                    }
+                }
+            }
+        }
+        return react && this.react(noSelf),notify && this.notify(noSelf),true;
+    }catch(e){
+        if(this instanceof RealSelect) throw e;
+        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+    }}
+    /**
+     * 
+     * @param {{[text: String]: String}} value 
+     */
+    protoSet(value){return this.proto.value = Object.assign({},value),true;}
+    fix(){
+        this.self[this.key] = this.proto.value;
+        this.proto.list = Array.from(this.self.children);
+    }
+    /**
+     * 
+     * @returns {String[]}
+     */
+    protoGet(){
+        const valueArray = [],list = this.proto.list,end = list.length;
+        for(var i = 0;i < end;i++){list[i].selected && valueArray.push(list[i].value);}
+        return valueArray;
+    }
+    /**
+     * 
+     * @param {Array} value 
+     */
+    protoTransform(value){
+        var now;
+        if(this instanceof RealSelect && !this.self.multiple) value = Object.assign({_: ''},value);
+        const innerHTML = [],iterator = Object.entries(value).values();
+        while(!(now = iterator.next()).done)
+            innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === '_' ? 'selected' : ''}>${now.value[0]}</option>`);
+        return innerHTML.join('');
+    }
+    /**@returns {HTMLElement[]} */
+    get list(){return this.proto.list;}
+    /**
+     * 
+     * @param {String | null} id 
+     * @param {(value: {[text: String]: String})=>String} transform 
+     * @param {Boolean} multiple 
+     * @param {(e: Event)=>void} onchange 
+     * @param {{[text: String]: String}} optionConfig 
+     * @param {Boolean} [tryRealNode] 
+     */
+    constructor(id,multiple,transform,onchange,optionConfig,tryRealNode){
+        const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
+        if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
+        RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
+        RealElement.addId(id,!self);
+        super({
+            self: self || RealElement.makeElement('select',{id,multiple,onchange}),
+            key: 'innerHTML',
+            transform,
+            initValue: Object.assign({},optionConfig)
+        },{id},tryRealNode);
+        this.fix().rememberParent();
+    }
+}
+class RealComtag extends RealElement{
+    fix(){
+        this.self.classList.add('disappear');
+        this.self.innerHTML = '';
+        for(const temp of this.transform(this.proto.value)) this.self.appendChild(temp);
+        this.self.classList.remove('disappear');
+        return this;
+    }
+    protoTransform(value){
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
+            const list = [];
+            for(const temp of value) list.push(temp instanceof HTMLElement ? temp : document.createElement(String(temp)));
+            return list;
+        }
+    }
+    /**
+     * 
+     * @param {(HTMLElement | String)[]} value 
+     */
+    protoSet(value){
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
+            /**@type {IterableIterator<HTMLImageElement | String>} */
+            const iter0 = this.proto.value[Symbol.iterator]();
+            const iter1 = value[Symbol.iterator]();
+            /**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
+            const temp = Array(2);
+            while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
+                if(temp[0].done) break;
+                if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
+            }
+            return false;
+        }
+    }
+    /**
+     * 
+     * @param {String} id 
+     * @param {Boolean} tryHTML 
+     * @param {(String | HTMLElement)[]} optionList 
+     * @param {Boolean} [tryRealNode] 
+     * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+     */
+    constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
+        const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
+        RealElement.addId(id,!self);
+        super({
+            self: self || RealElement.makeElement('div',{id}),
+            initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
+        },{id},tryRealNode);
+        /**@type {AntiList} */this.proto;
+        this.tryHTML = tryHTML;
+        Object.assign(this.fix().rememberParent().self,selfAssign);
+    }
+}
 class RealDivList extends RealElement{
     /**@typedef {AntiHTMLNode & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
     static proto = class AntiList extends RealElement.proto{
@@ -756,6 +941,8 @@ class RealDivList extends RealElement{
         /**@type {HTMLElement[][]} */
         childrenList = [];
     }
+    /**@type {Map<String,[Boolean,*[],Boolean,((this: RealDivList)=>void) | null]>} */
+    static divListClassMap = new Map;
     /**
      * 
      * @param {Number} length 
@@ -793,6 +980,28 @@ class RealDivList extends RealElement{
     }}
     /**
      * 
+     * @param {*} className 
+     * @param {*} tryHTML 
+     * @param {*} optionList 
+     * @param {*} [tryRealNode] 
+     * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
+     * @param {(this: RealDivList)=>void} [callback] 
+     */
+    static defineDivListClass(className,tryHTML,optionList,tryRealNode,cssRuleObjObj,callback){
+        /^\.([A-Za-z][A-Z0-9a-z]{0,})$/.test(className) || this.error('Illegal "className" !');
+        this.divListClassMap.has(className) && this.error('"className" repeated !');
+        optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
+        this.addCSSRules('.'+className,cssRuleObjObj);
+        this.divListClassMap.set(className,[tryHTML,optionList,tryRealNode,'function' === typeof callback ? callback : null]);
+    }
+    static createByClassName(className,...argArray){
+        const config = this.divListClassMap.get(className);
+        config || this.error('"className" not found !');
+        const temp = new RealDivList('',config[0],config[1],config[2]);
+        return config[3].apply(temp,argArray),temp.addClassName(className),temp;
+    }
+    /**
+     * 
      * @returns {HTMLElement[]}
      */
     protoGet(){return this.proto.list;}
@@ -807,7 +1016,7 @@ class RealDivList extends RealElement{
      */
     protoTransform(value){
         var list = [],temp;
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
             const iter = value[Symbol.iterator]();
             while(!(temp = iter.next()).done){
                 list.push(temp.done = document.createElement('div'));
@@ -911,7 +1120,7 @@ class RealImgList extends RealDivList{
      */
     protoTransform(value){
         var list = [],temp;
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
             const iter = value[Symbol.iterator]();
             while(!(temp = iter.next()).done){
                 list.push(temp.done = document.createElement('div'));
@@ -925,7 +1134,7 @@ class RealImgList extends RealDivList{
      * @param {(HTMLElement | String)[]} value 
      */
     protoSet(value){
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
+        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
             /**@type {IterableIterator<HTMLImageElement | String>} */
             const iter0 = this.proto.value[Symbol.iterator]();
             const iter1 = value[Symbol.iterator]();
@@ -948,147 +1157,6 @@ class RealImgList extends RealDivList{
      * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
      */
     constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
-}
-class RealSelect extends RealElement{
-    /**@typedef {AntiHTMLNode & {list: HTMLOptionElement[]}} AntiSelect */
-    static proto = class AntiSelect extends RealElement.proto{
-        /**@type {HTMLOptionElement[]} */
-        list = [];
-    };
-    /**
-     * 
-     * @this {RealSelect}
-     * @param {RealNode} realNode 
-     */
-    static react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
-        const temp = this.getPositionsOfChildRN(realNode);
-        while(temp.length){
-            const position = temp.pop().reverse(),tempValue = realNode.value;
-            if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
-                value = this.proto.value;
-                while(position.length > 1) value = value[position.pop()];
-                tempValue === value[position[0]] || (value[position[0]] = tempValue);
-                if(value === this.proto.value){
-                    i = 0;
-                    fix:for(const key of Object.keys(value)) if(key !== position[0]) i++;else{
-                        this.proto.list[i].value = String(tempValue);
-                        break fix;
-                    }
-                }
-            }
-        }
-        return react && this.react(noSelf),notify && this.notify(noSelf),true;
-    }catch(e){
-        if(this instanceof RealSelect) throw e;
-        this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
-    }}
-    /**
-     * 
-     * @param {{[text: String]: String}} value 
-     */
-    protoSet(value){return this.proto.value = Object.assign({},value),true;}
-    fix(){
-        this.self[this.key] = this.proto.value;
-        this.proto.list = Array.from(this.self.children);
-    }
-    /**
-     * 
-     * @returns {String[]}
-     */
-    protoGet(){
-        const valueArray = [],list = this.proto.list,end = list.length;
-        for(var i = 0;i < end;i++){list[i].selected && valueArray.push(list[i].value);}
-        return valueArray;
-    }
-    /**
-     * 
-     * @param {Array} value 
-     */
-    protoTransform(value){
-        var now;
-        if(this instanceof RealSelect && !this.self.multiple) value = Object.assign({_: ''},value);
-        const innerHTML = [],iterator = Object.entries(value).values();
-        while(!(now = iterator.next()).done)
-            innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === '_' ? 'selected' : ''}>${now.value[0]}</option>`);
-        return innerHTML.join('');
-    }
-    /**@returns {HTMLElement[]} */
-    get list(){return this.proto.list;}
-    /**
-     * 
-     * @param {String | null} id 
-     * @param {(value: {[text: String]: String})=>String} transform 
-     * @param {Boolean} multiple 
-     * @param {(e: Event)=>void} onchange 
-     * @param {{[text: String]: String}} optionConfig 
-     * @param {Boolean} [tryRealNode] 
-     */
-    constructor(id,multiple,transform,onchange,optionConfig,tryRealNode){
-        const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
-        if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
-        RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
-        RealElement.addId(id,!self);
-        super({
-            self: self || RealElement.makeElement('select',{id,multiple,onchange}),
-            key: 'innerHTML',
-            transform,
-            initValue: Object.assign({},optionConfig)
-        },{id},tryRealNode);
-        this.fix().rememberParent();
-    }
-}
-class RealComtag extends RealElement{
-    fix(){
-        this.self.classList.add('disappear');
-        this.self.innerHTML = '';
-        for(const temp of this.transform(this.proto.value)) this.self.appendChild(temp);
-        this.self.classList.remove('disappear');
-        return this;
-    }
-    protoTransform(value){
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
-            const list = [];
-            for(const temp of value) list.push(temp instanceof HTMLElement ? temp : document.createElement(String(temp)));
-            return list;
-        }
-    }
-    /**
-     * 
-     * @param {(HTMLElement | String)[]} value 
-     */
-    protoSet(value){
-        if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !'); else{
-            /**@type {IterableIterator<HTMLImageElement | String>} */
-            const iter0 = this.proto.value[Symbol.iterator]();
-            const iter1 = value[Symbol.iterator]();
-            /**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-            const temp = Array(2);
-            while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
-                if(temp[0].done) break;
-                if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
-            }
-            return false;
-        }
-    }
-    /**
-     * 
-     * @param {String} id 
-     * @param {Boolean} tryHTML 
-     * @param {(String | HTMLElement)[]} optionList 
-     * @param {Boolean} [tryRealNode] 
-     * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
-     */
-    constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
-        const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
-        RealElement.addId(id,!self);
-        super({
-            self: self || RealElement.makeElement('div',{id}),
-            initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
-        },{id},tryRealNode);
-        /**@type {AntiList} */this.proto;
-        this.tryHTML = tryHTML;
-        Object.assign(this.fix().rememberParent().self,selfAssign);
-    }
 }
 class RealGroup{
     error(message,...proof){console.log(...proof);throw new Error('RealGroup """\n'+String(message)+'\n"""');}
@@ -1175,10 +1243,10 @@ class RealGroup{
     }else this.error('=> "realNodeDict" must be Object !');}
 }
 console.log(performance.now() - t0,'ms');
-'document' in globalThis || (1 === 10
+browserMode || (1 === 10
 ? RealNode.eventLoop.destroy() : RealNode.time(new Promise(r=>{
     test1:{
-        // break test1;
+        break test1;
         const realNode = new RealNode;
         console.log(realNode - 1,realNode+'',!realNode,realNode+realNode);
         console.log(((Math.sqrt(5) - 1) / 2).toFixed(64));
@@ -1199,6 +1267,11 @@ console.log(performance.now() - t0,'ms');
             m < 1e6 && f < 1e6 ? Math.random() * 1 > Math.random() ? f.value++ : m.value++ : r((m > f ? m : f)+': +'+Math.abs(f-m));
         }}))).react();
     }
+    test4:{
+        break test4;
+        // const tempfn = n=>n>1 ? Promise.all([RealNode.justNow(tempfn,null,n - 1),RealNode.justNow(tempfn,null,n - 2)]).then(v=>v[0] + v[1]) : 1;
+        RealNode.justNow(function tempFn(n){return n>1 ? tempFn(n - 1) + tempFn(n - 2) : 1;},null,50).then(v=>r(v));
+    }
     // const tempFn = ()=>(RealNode.afterNow(tempFn,true),console.log(realNode.value));
     // RealNode.afterNow(tempFn,true);
 })).then(({value,time})=>(console.log(value,'in',time,'ms'),RealNode.eventLoop.destroy())));
@@ -1208,3 +1281,106 @@ console.log(performance.now() - t0,'ms');
 //     console.log(temp,performance.now() - t0);
 // })()
 Object.assign(exports,{RealWorld,RealNode,RealElement,RealCanvas,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup});
+browserMode && RealDivList.defineDivListClass('realDivSelect',false,null,true,{
+    '': {'background':'linear-gradient(135deg,#fff,#000)'},
+    '>div': {'background-color':'#aaa'},
+    '>.selected': {'transform':'scale(0.8)'},
+},(()=>{
+    /**@type {(this: RealDivList)=>*[]} */
+    function tempGet(){
+        const temp = [],list = this.proto.list;
+        var i = 0; while(list[i]) list[i].classList.contains('selected') && temp.push(this.info.optionList[i++]);
+        this.info.multiple || !i || (list[0].classList.add('selected'),temp.push(this.info.optionList[0]));
+        return temp;
+    }
+    /**@type {(this: RealDivList,value: {})=>false} */
+    function tempSet(value){
+        for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)))) this.info.optionList.push(value[key]);
+        return this.fix().value,false;
+    }
+    /**@type {(RS: RealDivList)=>Boolean} */
+    function tempReact(RS){return RS.react?.(),RS.notify(),RS.self.dispatchEvent(new Event('change'));}
+    RealElement.addEventListenerBySelectors('.realDivSelect>div','click',({target})=>{
+        var REList = RealElement.searchByElement(target.parentElement),i = 0,temp;
+        while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
+        if(!temp) return;
+        /**@type  {RealDivList} */
+        const RS = temp,previousValue = RS.value[0];
+        /**@type {HTMLDivElement[]} */
+        REList = temp.proto.list;
+        if(RS.info.multiple) target.classList.toggle('selected'),tempReact(RS);else{
+            while(temp = REList[i++]) temp.classList[target === temp ? 'add' : 'remove']('selected');
+            previousValue === RS.value[0] || tempReact(RS);
+        }
+    });
+    /**@type {(this: RealDivList,optionConfig?: {[key: String]: *},multiple?: Boolean,onchange?: (e: Event)=>void)=>void} */
+    return function(optionConfig,multiple,onchange){
+        this.get = tempGet;
+        this.set = tempSet;
+        this.info = Object(this.info);
+        this.info.multiple = Boolean(multiple);
+        if('function' === typeof onchange) this.self.onchange = onchange;
+        this.value = optionConfig;
+    };
+})());
+/**
+ * 
+ * @param {{[key: String]: *}} [optionConfig] 
+ * @param {Boolean} [multiple] 
+ * @param {(e: Event)=>void} [onchange] 
+ */
+function createRealDivSelect(optionConfig,multiple,onchange){return RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);}
+browserMode && RealDivList.defineDivListClass('realDivSearch',true,null,true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(1.2)'}},(()=>{
+    /**@type {RealDivList} */
+    var tempRealDivList;
+    const changeConfig = {bubbles: true};
+    /**@type {(this: RealDivList)=>String} */
+    function tempGet(){return this.info.inputer.value;}
+    /**@type {(this: RealDivList,value: *[])=>false} */
+    function tempSet(value){
+        Array.isArray(value) ? this.info.wordList = value : this.error('"value must be Array !');
+        return this.info.inputer.dispatchEvent(new Event('change',changeConfig)),false;
+    }
+    /**@type {(target: HTMLElement)=>void} */
+    function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
+        tempRealDivList.info.matcher.value = [],tempRealDivList.react?.(),tempRealDivList.notify(true)
+    );}
+    document.addEventListener('click',e=>tempReact(e.target));
+    document.addEventListener('keydown',()=>{
+        var REList = RealElement.searchByElement(document.activeElement?.parentElement?.parentElement),temp;
+        while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
+        if(!temp) return;
+        temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
+    });
+    RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
+        var REList = RealElement.searchByElement(e.target.parentElement.parentElement.parentElement),temp;
+        while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
+        if(!temp) return;
+        tempReact(temp.info.inputer);
+        temp.info.inputer.value = temp.info.matcher.value;
+        (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
+    });
+    RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
+        var REList = RealElement.searchByElement(e.target.parentElement.parentElement),temp;
+        while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
+        if(!temp) return;
+        const testReg = new RegExp(temp.info.inputer.value,'i');
+        temp.info.matcher.value = RealNode.arrayToObject(this.info.wordList.filter(str=>testReg.test(String(str))));
+    });
+    /**@type {(this: RealDivList)=>void} */
+    return function(placeholder){
+        const matcher = RealDivList.createByClassName('realDivSelect');
+        this.proto.value = ['<textarea placeholder="'+String(placeholder)+'"></textarea>',matcher.self];
+        this.fix().info = Object(this.info);
+        this.info.inputer = this.proto.childrenList[0][0];
+        this.info.matcher = matcher;
+        this.info.wordList = [];
+        this.get = tempGet;
+        this.set = tempSet;
+    };
+})());
+/**
+ * 
+ * @param {String} [placeholder] 
+ */
+function createRealDivSearch(placeholder){return RealDivList.createByClassName('realDivSearch',placeholder);}
