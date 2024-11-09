@@ -898,23 +898,37 @@ class RealCanvas extends RealElement{
     }
 }
 class RealLoader extends RealElement{
+    /**@type {(realLoader: RealLoader)=>Promise<void>} @method */
+    static download =
+    // globalThis.require ? (async function download(realLoader){
+    //     const fs = require('fs');
+    //     if(!fs.existsSync('./'+realLoader.temp.download)) return fs.writeFileSync('./'+realLoader.temp.download,await realLoader.data);
+    //     const pathInfo = /(.+)(\.[^\.]+)$/.exec(realLoader.temp.download).slice(1,3);
+    //     for(var i = 1,temp;;i++) if(!fs.existsSync(temp = './'+pathInfo[0]+' '+i+pathInfo[1])) return fs.writeFileSync(temp,await realLoader.data);
+    // }) :
+    async function download(realLoader){realLoader.temp.click()};
     static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
-        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){temp.temp.click();temp.react?.();temp.notify(true);break;}
+        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){RealLoader.download(temp);temp.react?.();temp.notify(true);break;}
     }),{writable: false,enumerable: false,configurable: false}));
     makeDownloadUrl(urlOrBlob,revoke = true){
-        if('string' === typeof urlOrBlob) urlOrBlob = URL.createObjectURL(urlOrBlob instanceof Blob ? urlOrBlob : new Blob(String(urlOrBlob)));
+        if('string' === typeof urlOrBlob) urlOrBlob = URL.createObjectURL(
+            urlOrBlob instanceof Blob ? (this.data = urlOrBlob.arrayBuffer().then(ab=>Buffer.from(ab))) : new Blob(this.data = String(urlOrBlob))
+        );
+        this.data = Promise.resolve(this.data);
         'upload' === this.type ? this.error('I\'m an uploader without downloadUrl !') :
         urlOrBlob === this.temp.href || (revoke && URL.revokeObjectURL(this.temp.href),this.temp.href = urlOrBlob);
     }
     protoSet(value){this.self[this.key] = value;}
     /**@returns {FileList} */
     get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
-    constructor(isDownload){
+    /**@type {Promise<Buffer | String>} */
+    data;
+    constructor(isDownload,fileName){
         isDownload = Boolean(isDownload);
         super({self: document.createElement('div'),key: 'innerHTML'});
         this.type = isDownload ? 'download' : 'upload';
         this.temp = document.createElement(isDownload ? 'a' : 'input');
-        this.temp[isDownload ? 'download' : 'type'] = 'file';
+        isDownload ? this.temp.download = String(fileName) || 'file' : this.temp.type = 'file';
         Reflect.defineProperty(this,'type',RealLoader.configDescriptor);
     }
 }
@@ -1406,7 +1420,6 @@ browserMode || (1 === 10
 //     while(i --> 0) Math.random() > Math.random() ? temp[0]++ : temp[1]++;
 //     console.log(temp,performance.now() - t0);
 // })()
-Object.assign(exports,{RealWorld,RealNode,RealElement,RealCanvas,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup});
 browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
     '': {'background':'linear-gradient(135deg,#fff,#000)'},
     '>div': {'background-color':'#333','transform':'scale(0.8,1)'},
@@ -1515,3 +1528,4 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
  * @param {String} [placeholder] 
  */
 function createRealDivSearch(placeholder){return RealDivList.createByClassName('realDivSearch',placeholder);}
+Object.assign(exports,{RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,createRealDivSelect,createRealDivSearch});
