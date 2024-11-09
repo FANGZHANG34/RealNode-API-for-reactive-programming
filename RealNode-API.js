@@ -410,13 +410,8 @@ class RealElement extends RealNode{
          * @param {keyof HTMLElementTagNameMap} selectors 
          */
         function temp(e,listenerArray,selectors){if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
-            for(i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error(e);}
+            for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e.stack);}
         }}
-        /**
-         * 
-         * @param {Event} e 
-         */
-        const listenerEvent = e=>RealElement.selectorEventListeners[type].forEach(temp.bind(null,e));
         /**
          * 
          * @param {keyof HTMLElementTagNameMap} selectors 
@@ -425,9 +420,9 @@ class RealElement extends RealNode{
          */
         return(selectors,type,listener)=>{
             !selectors || '*' === selectors ? document.addEventListener(type,listener) : (
-                Reflect.ownKeys(RealElement.selectorEventListeners).includes(type) || (
+                !RealElement.selectorEventListeners[type] && (
                     RealElement.selectorEventListeners[type] = new Map,
-                    document.body.addEventListener(type,listenerEvent)
+                    document.addEventListener(type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors)))
                 ),
                 RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
                 RealElement.selectorEventListeners[type].set(selectors,[listener])
@@ -478,6 +473,122 @@ class RealElement extends RealNode{
             return addCSSRules;
         };
     }})();
+    static defaultInit = (()=>{
+        var temp = true;
+        return function(){if(temp) temp = false,RealElement.addCSSRules('',{
+            '*':{
+                'margin':'0',
+                'padding':'0',
+                'border':'0',
+                '-webkit-user-select':'none',
+                '-moz-user-select':'none',
+                '-ms-user-select':'none',
+                'user-select':'none',
+            },
+            ':root':{
+                '--mapWidth':'1920px',
+                '--halfBlack':'rgba(0, 0, 0, 0.5)',
+                '--halfWhite':'rgba(225, 225, 225, 0.5)',
+                '--noColor':'rgba(0, 0, 0, 0)',
+            },
+            'html':{
+                'cursor':'default',
+                'background-color':'black',
+                'color':'white',
+            },
+            'body':{
+                'transform':'rotate(0)',
+                'transform-origin':'50vmin 50vmin',
+                // 'width':'100vmax',
+                // 'height':'calc((var(--mapWidth) - 100vmax) * 9 / 16 + 100vmin)',
+                'overflow':'hidden scroll',
+            },
+            'body>*':{'position':'absolute',},
+            'hr':{'border':'1px solid white,'},
+            '::-webkit-scrollbar':{'display':'none',},
+        })('.coverBody',{
+            '':{'width': '100vmax','height':'56.25vmax'},
+        })('.noDisplay',{
+            '':{'display':'none'},
+        })('.disappear',{
+            '':{'visibility':'hidden'},
+        })('.listDown',{
+            '':{'writing-mode':'horizontal-tb'},
+            '>*':{'position':'relative','display':'block'},
+        })('.listRight',{
+            '':{'writing-mode':'vertical-lr'},
+            '>*':{'position':'relative','display':'block'},
+        })('.listDownListRight',{
+            '':{'writing-mode':'horizontal-tb'},
+            '>*':{'position':'relative','display':'block','writing-mode':'vertical-lr'},
+            '>*>*':{'position':'relative','display':'block'},
+        })('.listRightListDown',{
+            '':{'writing-mode':'vertical-lr'},
+            '>*':{'position':'relative','display':'block','writing-mode':'horizontal-tb'},
+            '>*>*':{'position':'relative','display':'block'},
+        })('div.listClose',{
+            '':{'writing-mode':'horizontal-tb'},
+            '>*':{'position':'absolute'},
+            '>:nth-child(1)':{'z-index':'1'},
+            '>:nth-child(2)':{'z-index':'2'},
+            '>:nth-child(3)':{'z-index':'3'},
+            '>:nth-child(4)':{'z-index':'4'},
+            '>:nth-child(5)':{'z-index':'5'},
+            '>:nth-child(6)':{'z-index':'6'},
+            '>:nth-child(7)':{'z-index':'7'},
+            '>:nth-child(8)':{'z-index':'8'},
+            '>:nth-child(9)':{'z-index':'9'},
+            '>:nth-child(10)':{'z-index':'10'},
+            '>:nth-child(11)':{'z-index':'11'},
+            '>:nth-child(12)':{'z-index':'12'},
+            '>:nth-child(13)':{'z-index':'13'},
+            '>:nth-child(14)':{'z-index':'14'},
+            '>:nth-child(15)':{'z-index':'15'},
+        })('div.listFar',{
+            '':{'writing-mode':'horizontal-tb'},
+            '>*':{'position':'absolute'},
+            '>:nth-last-child(1)':{'z-index':'1'},
+            '>:nth-last-child(2)':{'z-index':'2'},
+            '>:nth-last-child(3)':{'z-index':'3'},
+            '>:nth-last-child(4)':{'z-index':'4'},
+            '>:nth-last-child(5)':{'z-index':'5'},
+            '>:nth-last-child(6)':{'z-index':'6'},
+            '>:nth-last-child(7)':{'z-index':'7'},
+            '>:nth-last-child(8)':{'z-index':'8'},
+            '>:nth-last-child(9)':{'z-index':'9'},
+            '>:nth-last-child(10)':{'z-index':'10'},
+            '>:nth-last-child(11)':{'z-index':'11'},
+            '>:nth-last-child(12)':{'z-index':'12'},
+            '>:nth-last-child(13)':{'z-index':'13'},
+            '>:nth-last-child(14)':{'z-index':'14'},
+            '>:nth-last-child(15)':{'z-index':'15'},
+        })('.onhover',{
+            ':hover':{'background':'linear-gradient(#fff,#000,#000,#fff)'}
+        })('.relativeSquare',{
+            '':{'width':'20vmin','height':'20vmin'},
+        })('.fontTitle',{
+            '':{'font-size':'20vmin'},
+        })('.fontHead',{
+            '':{'font-size':'10vmin'},
+        })('.fontNormal',{
+            '':{'font-size':'3vmin'},
+        })('.scrollY',{
+            '':{'overflow':'hidden scroll'}
+        })('.scrollX',{
+            '':{'overflow':'scroll hidden'}
+        })('.scrollXY',{
+            '':{'overflow':'scroll'}
+        })('.scrollNone',{
+            '':{'overflow':'hidden'}
+        })('.centerCenter',{
+            '':{
+                'text-align':'center',
+                'align-content':'center',
+            }
+        })('.autoFull',{
+            '':{'width':'100vmax','height':'100vmin'}
+        })('.selfTextCenter',{'': {'left':'50%','transform':'translateX(-50%)'}});};
+    })();
     getIndexWithin(){
         for(var i = 0,temp;temp = this.self.previousElementSibling;i++);
         return i;
@@ -620,6 +731,7 @@ class RealCanvas extends RealElement{
     })();
     protoTransform(){}
     protoGet(){return this.loaded.then(()=>this.proto.value);}
+    clearAsync(){return this.loaded = this.loaded.then(()=>{this.clear();});}
     fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
     testSrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
     clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
@@ -631,6 +743,10 @@ class RealCanvas extends RealElement{
         return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).
         then(img=>(this.proto.img = img,this.proto.value = src,true),this.rejectSrc.bind(this,src));
     }
+    resizeBySrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
+        if(this.self.width !== img.naturalWidth) this.width = img.naturalWidth;
+        if(this.self.height !== img.naturalHeight) this.height = img.naturalHeight;
+    });}
     /**
      * 
      * @param {Boolean} react 
@@ -647,15 +763,23 @@ class RealCanvas extends RealElement{
             this.dealWithPositionsOfRNs(temp,value) : value
         )).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true));
     }
-    multiDrawSrcArray({bgSrc,autoOpacity},...srcArray){
-        var i,temp;
-        this.clearTemp();
-        if(Array.isArray(bgSrc)){for(i = -1,temp = bgSrc.length;temp >++ i;) this.temp = bgSrc[i];}
+    multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
+        var i = -1,temp = bgSrc ?? srcArray[0] ?? false;
+        resize && temp && this.resizeBySrc(temp);
+        this.loaded = this.loaded.then(()=>this.clearTemp());
+        if(Array.isArray(bgSrc)){for(temp = bgSrc.length;temp >++ i;) this.temp = bgSrc[i];}
         else bgSrc && 'string' === typeof bgSrc && (this.temp = bgSrc);
-        if(srcArray.length > 1 && autoOpacity){for(i = srcArray.length,temp = 0;i --> 0;){
-            this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
-        }}else{for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];}
-        return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);});
+        if(srcArray.length > 1 && autoOpacity){
+            for(i = srcArray.length,temp = 0;i --> 0;) this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
+        }else for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];
+        return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
+        // CGM.constructor.mainCanvas.temp.toBlob(
+        //     async blob=>{
+        //         var i = 0;
+        //         while(true) if(fs.existsSync('./save/'+i+'.png')) i++; else break;
+        //         try{fs.writeFile('./save/'+i+'.png',Buffer.from(await blob.arrayBuffer()),()=>alert('Achieved "./save/'+i+'.png" !'))}catch(e){alert(e.stack)}
+        //     } // {protoCGM.downloader.makeDownloadUrl(blob),protoCGM.downloader.temp.click();}
+        // )
     }
     /**
      * 
@@ -1285,23 +1409,24 @@ browserMode || (1 === 10
 Object.assign(exports,{RealWorld,RealNode,RealElement,RealCanvas,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup});
 browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
     '': {'background':'linear-gradient(135deg,#fff,#000)'},
-    '>div': {'background-color':'#aaa'},
-    '>.selected': {'transform':'scale(0.8)'},
+    '>div': {'background-color':'#333','transform':'scale(0.8,1)'},
+    '>.selected': {'background-color':'#555','transform':'scale(1)','font-weight':'bolder'},
 },(()=>{
+    const changeConfig = {bubbles: true,cancelable: false};
     /**@type {(this: RealDivList)=>*[]} */
     function tempGet(){
         const temp = [],list = this.proto.list;
-        var i = 0; while(list[i]) list[i].classList.contains('selected') && temp.push(this.info.optionList[i++]);
-        this.info.multiple || !i || (list[0].classList.add('selected'),temp.push(this.info.optionList[0]));
+        for(var i = 0;list[i];i++) list[i].classList.contains('selected') && temp.push(this.info.optionList[i]);
+        this.info.multiple || temp.length || !i || (list[0].classList.add('selected'),temp.push(this.info.optionList[0]));
         return temp;
     }
     /**@type {(this: RealDivList,value: {})=>false} */
     function tempSet(value){
-        for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)))) this.info.optionList.push(value[key]);
+        for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)).sort())) this.info.optionList.push(value[key]);
         return this.fix().value,false;
     }
     /**@type {(RS: RealDivList)=>Boolean} */
-    function tempReact(RS){return RS.react?.(),RS.notify(),RS.self.dispatchEvent(new Event('change'));}
+    function tempReact(RS){return RS.react?.(),RS.self.dispatchEvent(new Event('change',changeConfig)),RS.notify();}
     RealElement.addEventListenerBySelectors('.realDivSelect>div','click',({target})=>{
         var REList = RealElement.searchByElement(target.parentElement),i = 0,temp;
         while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
@@ -1309,7 +1434,7 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
         /**@type  {RealDivList} */
         const RS = temp,previousValue = RS.value[0];
         /**@type {HTMLDivElement[]} */
-        REList = temp.proto.list;
+        REList = RS.proto.list;
         if(RS.info.multiple) target.classList.toggle('selected'),tempReact(RS);else{
             while(temp = REList[i++]) temp.classList[target === temp ? 'add' : 'remove']('selected');
             previousValue === RS.value[0] || tempReact(RS);
@@ -1332,10 +1457,10 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
  * @param {(e: Event)=>void} [onchange] 
  */
 function createRealDivSelect(optionConfig,multiple,onchange){return RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);}
-browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(1.2)'}},(()=>{
+browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
     /**@type {RealDivList} */
     var tempRealDivList;
-    const changeConfig = {bubbles: true};
+    const changeConfig = {bubbles: true,cancelable: false};
     /**@type {(this: RealDivList)=>String} */
     function tempGet(){return this.info.inputer.value;}
     /**@type {(this: RealDivList,value: *[])=>false} */
@@ -1345,29 +1470,33 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
     }
     /**@type {(target: HTMLElement)=>void} */
     function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
-        tempRealDivList.info.matcher.value = [],tempRealDivList.react?.(),tempRealDivList.notify(true)
+        tempRealDivList.info.matcher.value = {},tempRealDivList.react?.(),tempRealDivList.notify(true)
     );}
-    document.addEventListener('click',e=>tempReact(e.target));
-    document.addEventListener('keydown',()=>{
+    document.addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
+    document.addEventListener('keyup',e=>{
         var REList = RealElement.searchByElement(document.activeElement?.parentElement?.parentElement),temp;
         while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
         if(!temp) return;
-        temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
+        (1 === e.key.length || 'Backspace' === e.key || 'Delete' === e.key) && temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
     });
     RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
         var REList = RealElement.searchByElement(e.target.parentElement.parentElement.parentElement),temp;
         while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
         if(!temp) return;
-        tempReact(temp.info.inputer);
-        temp.info.inputer.value = temp.info.matcher.value;
-        (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
+        temp.info.inputer.value = temp.info.matcher.value[0];
+        tempRealDivList = temp;
+        tempRealDivList.react?.(),tempRealDivList.notify(true);
+        // (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
     });
     RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
         var REList = RealElement.searchByElement(e.target.parentElement.parentElement),temp;
         while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
         if(!temp) return;
         const testReg = new RegExp(temp.info.inputer.value,'i');
-        temp.info.matcher.value = RealNode.arrayToObject(this.info.wordList.filter(str=>testReg.test(String(str))));
+        temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
+    });
+    RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',e=>{
+        e.target.dispatchEvent(new Event('change',changeConfig));
     });
     /**@type {(this: RealDivList)=>void} */
     return function(placeholder){
