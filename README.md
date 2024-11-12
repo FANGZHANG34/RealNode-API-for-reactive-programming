@@ -9,7 +9,9 @@
 
 - 特殊类`RealWorld`不继承`RealNode`，是事件循环类。
 
-- 函数`createRealDivSelect`、`createRealDivSearch`分别用于创建选择块列表、检索列表。
+- 函数`createRealDivSelect`、`createRealDivSearch`、`RealPromise`分别用于创建选择块列表、检索列表、唯一公共承诺。
+
+- 对象`RealStory`用于预设模拟栈行为脚本。
 
 在代码的末尾有使用演示，但在演示完后会破坏事件循环以结束该程序的进程，即运行`RealNode.eventLoop.destroy()`方法。
 
