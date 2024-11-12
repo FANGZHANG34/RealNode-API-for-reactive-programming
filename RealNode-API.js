@@ -15,6 +15,23 @@ class RealWorld{
         if(onlyWorld){while(this.app.length) this.app.pop().destroy();this.app = null;}
         else this.app ? [this.app] : [];
     }}
+    /**
+     * cb2promise 回调转异步类
+     * @param {{thisArg: {},methodName: String,callback?: (...value: *[])=>"this.resolve(value)"}} param0 
+     * @param  {...*} [parameters] 
+     * @returns {Promise<[Error | null,*] | undefined>}
+     */
+    static cb2promise({thisArg,methodName,callback = function(...value){this.resolve(value);}} = {},...parameters){
+        if(thisArg && 'object' === typeof thisArg && methodName in thisArg) return new Promise(resolve=>{
+            const temp = {callback,resolve};
+            try{thisArg[methodName](...parameters,(...value)=>temp.callback(...value));}catch({message: message0}){
+                try{thisArg[methodName]((...value)=>temp.callback(...value),...parameters);}catch({message: message1}){
+                    throw new Error('=> Neither head or tail of parameters is Callback !\n'+message0+'\n'+message1);
+                }
+            }
+        }).catch(e=>console.error(e.stack));
+        else throw new Error('=> Wrong:\n    "thisArg" is not Object\n  or\n    "methodName" not in "thisArg" !');
+    }
     stop(){clearInterval(this.intervalId);}
     destroy(){return this.then(()=>clearInterval(this.intervalId));}
     /**@type {<T extends never>(fn:()=>T,thisArg,...argArray)=>Promise<T,Error>} */
@@ -749,6 +766,11 @@ class RealCanvas extends RealElement{
     });}
     /**
      * 
+     * @returns {Promise<Blob>}
+     */
+    toBlob(){try{return RealWorld.cb2promise({thisArg: this.self,methodName: 'toBlob'}).then(result=>result[0]);}catch(e){this.error('Canvas has been dirty !')}}
+    /**
+     * 
      * @param {Boolean} react 
      * @param {Boolean} notify 
      * @param {Boolean} noSelf 
@@ -898,38 +920,97 @@ class RealCanvas extends RealElement{
     }
 }
 class RealLoader extends RealElement{
-    /**@type {(realLoader: RealLoader)=>Promise<void>} @method */
-    static download =
-    // globalThis.require ? (async function download(realLoader){
-    //     const fs = require('fs');
-    //     if(!fs.existsSync('./'+realLoader.temp.download)) return fs.writeFileSync('./'+realLoader.temp.download,await realLoader.data);
-    //     const pathInfo = /(.+)(\.[^\.]+)$/.exec(realLoader.temp.download).slice(1,3);
-    //     for(var i = 1,temp;;i++) if(!fs.existsSync(temp = './'+pathInfo[0]+' '+i+pathInfo[1])) return fs.writeFileSync(temp,await realLoader.data);
-    // }) :
-    async function download(realLoader){realLoader.temp.click()};
+    /**@typedef {AntiHTMLNode & {onerror: null | ()=>void,onloadend: null | ()=>void}} AntiLoader */
+    static proto = class AntiLoader extends RealElement.proto{
+        /**@type {null | ()=>void} */
+        onerror;
+        /**@type {null | ()=>void} */
+        onloadend;
+    };
     static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
-        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){RealLoader.download(temp);temp.react?.();temp.notify(true);break;}
+        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
+            RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.());
+            temp.react?.();
+            temp.notify(true);
+            break;
+        }
     }),{writable: false,enumerable: false,configurable: false}));
-    makeDownloadUrl(urlOrBlob,revoke = true){
-        if('string' === typeof urlOrBlob) urlOrBlob = URL.createObjectURL(
-            urlOrBlob instanceof Blob ? (this.data = urlOrBlob.arrayBuffer().then(ab=>Buffer.from(ab))) : new Blob(this.data = String(urlOrBlob))
-        );
-        this.data = Promise.resolve(this.data);
-        'upload' === this.type ? this.error('I\'m an uploader without downloadUrl !') :
-        urlOrBlob === this.temp.href || (revoke && URL.revokeObjectURL(this.temp.href),this.temp.href = urlOrBlob);
-    }
+    static getArrayBufferFrom(data){return Promise.resolve(
+        data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
+        data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
+    );}
+    /**@type {(realLoader: RealLoader)=>Promise<[Error | null,*]>} @method */
+    static load = (
+        globalThis.require ? (async (realLoader)=>{try{
+            if('upload' === realLoader.type) return realLoader.temp.click(),[];
+            const fs = require('fs');
+            const data = await realLoader.dataGetter();
+            const [,prefix,suffix] = /(.+)(\..+)/.exec(realLoader.temp.download) || [,'file',''];
+            return RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},'./'+realLoader.temp.download).
+            then(async (value)=>{
+                if(!value) this.error('Unknown Error !');
+                if(value[0]) return RealLoader.getArrayBufferFrom(data).
+                then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
+                for(var i = 1;;i++){
+                    const path = './'+prefix+' - '+i+suffix;
+                    if((await RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
+                    then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},path,Buffer.from(ab)));
+                }
+            });
+        }catch(e){return [e];}}) :
+        (()=>{
+            const toBlob = data=>new Blob(data);
+            /**
+             * 
+             * @param {RealLoader} realLoader 
+             * @param {Blob} blob 
+             */
+            const temp = (realLoader,blob)=>{
+                const href = URL.createObjectURL(blob);
+                realLoader.temp.href = href;
+                realLoader.temp.click();
+                URL.revokeObjectURL(href);
+                return [];
+            };
+            return async (realLoader)=>{try{
+                if('upload' === realLoader.type) return realLoader.temp.click(),[];
+                const data = await realLoader.dataGetter();
+                return Promise.resolve('string' === typeof data ? new Blob(data) : data instanceof Blob ? data : RealLoader.getArrayBufferFrom(data).
+                then(toBlob)).then(temp).catch(e=>[e]);
+            }catch(e){this.error(e);}}
+        })()
+    );
     protoSet(value){this.self[this.key] = value;}
+    get onerror(){return this.proto.onerror;}
+    get onloadend(){return this.proto.onloadend;}
+    get fileName(){return 'upload' === this.type ? this.error('Uploader bans "fileName" !') : this.temp.download;}
     /**@returns {FileList} */
     get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
+    set onerror(onerror){this.proto.onerror = 'function' === typeof onerror ? onerror : null;}
+    set onloadend(onloadend){this.proto.onloadend = 'function' === typeof onloadend ? onloadend : null;}
+    set fileName(fileName){
+        'upload' === this.type && this.error('Uploader bans "fileName" !');
+        'symbol' === typeof fileName && this.error('"fileName" must be String but not Symbol !');
+        if(globalThis.require && !/^\.\//.test(fileName)) fileName = './'+fileName;
+        this.temp.download = fileName;
+    }
+    /**@type {()=>*} */
+    dataGetter;
     /**@type {Promise<Buffer | String>} */
     data;
-    constructor(isDownload,fileName){
-        isDownload = Boolean(isDownload);
+    constructor(isDownload,fileName,dataGetter,{innerHTML,onerror,onloadend} = {}){
         super({self: document.createElement('div'),key: 'innerHTML'});
+        /**@type {AntiLoader} */
+        this.proto;
+        this.onerror = onerror;
+        this.onloadend = onloadend;
+        this.dataGetter = dataGetter;
+        this.value = String(innerHTML);
+        isDownload = Boolean(isDownload);
         this.type = isDownload ? 'download' : 'upload';
         this.temp = document.createElement(isDownload ? 'a' : 'input');
-        isDownload ? this.temp.download = String(fileName) || 'file' : this.temp.type = 'file';
         Reflect.defineProperty(this,'type',RealLoader.configDescriptor);
+        isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
     }
 }
 class RealSelect extends RealElement{
@@ -1479,7 +1560,7 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
     /**@type {(this: RealDivList,value: *[])=>false} */
     function tempSet(value){
         Array.isArray(value) ? this.info.wordList = value : this.error('"value must be Array !');
-        return this.info.inputer.dispatchEvent(new Event('change',changeConfig)),false;
+        return this.info.inputer.dispatchEvent(new Event('change',changeConfig)),(tempRealDivList ??= this).info.matcher.value = {},false;
     }
     /**@type {(target: HTMLElement)=>void} */
     function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
