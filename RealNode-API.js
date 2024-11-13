@@ -590,21 +590,23 @@ class RealElement extends RealNode{
         })('.fontNormal',{
             '':{'font-size':'3vmin'},
         })('.scrollY',{
-            '':{'overflow':'hidden scroll'}
+            '':{'overflow':'hidden scroll'},
         })('.scrollX',{
-            '':{'overflow':'scroll hidden'}
+            '':{'overflow':'scroll hidden'},
         })('.scrollXY',{
-            '':{'overflow':'scroll'}
+            '':{'overflow':'scroll'},
         })('.scrollNone',{
-            '':{'overflow':'hidden'}
+            '':{'overflow':'hidden'},
         })('.centerCenter',{
             '':{
                 'text-align':'center',
                 'align-content':'center',
-            }
+            },
         })('.autoFull',{
-            '':{'width':'100vmax','height':'100vmin'}
-        })('.selfTextCenter',{'': {'left':'50%','transform':'translateX(-50%)'}});};
+            '':{'width':'100vmax','height':'100vmin'},
+        })('.selfTextCenter',{
+            '': {'left':'50%','transform':'translateX(-50%)'},
+        });};
     })();
     getIndexWithin(){
         for(var i = 0,temp;temp = this.self.previousElementSibling;i++);
@@ -795,13 +797,6 @@ class RealCanvas extends RealElement{
             for(i = srcArray.length,temp = 0;i --> 0;) this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
         }else for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];
         return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
-        // CGM.constructor.mainCanvas.temp.toBlob(
-        //     async blob=>{
-        //         var i = 0;
-        //         while(true) if(fs.existsSync('./save/'+i+'.png')) i++; else break;
-        //         try{fs.writeFile('./save/'+i+'.png',Buffer.from(await blob.arrayBuffer()),()=>alert('Achieved "./save/'+i+'.png" !'))}catch(e){alert(e.stack)}
-        //     } // {protoCGM.downloader.makeDownloadUrl(blob),protoCGM.downloader.temp.click();}
-        // )
     }
     /**
      * 
@@ -886,11 +881,7 @@ class RealCanvas extends RealElement{
         this.loaded = this.loaded.then(()=>opacityConfig[0]).
         then(value=>{this.proto.ctx.globalAlpha = value * (opacityConfig[1] ?? 1);});
     }
-    set clearBeforeDraw(clearBeforeDraw){
-        this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);
-        // const loaded = this.loaded;
-        // this.loaded = Promise.resolve(clearBeforeDraw).then(value=>loaded.then(()=>{this.proto.clearBeforeDraw = value;}));
-    }
+    set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
     set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
     /**@param {[(Promise<Number>|Number),Number]} opacityConfig  */
     set tempOpacity(opacityConfig){
@@ -927,12 +918,41 @@ class RealLoader extends RealElement{
         /**@type {null | (n: Number)=>void} */
         onloadend;
     };
+    static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
+        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
+            RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
+            temp.react?.();
+            temp.notify(true);
+            break;
+        }
+    }),{writable: false,enumerable: false,configurable: false}));
+    static getArrayBufferFrom(data){return Promise.resolve(
+        data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
+        data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
+    );}
+    /**@type {(path: String)=>Promise<[Error | null,Stats | null]>} */
+    static stat = (
+        globalThis.require ?
+        path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'stat'},path) :
+        (()=>{
+            var temp = Promise.resolve();
+            return (path=>{
+                return temp.then(()=>temp = temp.then(()=>new Promise(resolve=>(
+                    RealLoader.stat.resolve = resolve,
+                    document.body.appendChild(RealElement.getDomByString(
+                        '<object width="0" height="0" data="'+path+
+                        '" onload="RealLoader.stat.resolve(this)" onerror="RealLoader.stat.resolve(false)"></object>'
+                    ))
+                )).then(ele=>ele ? (ele.remove(),[]) : [404]),e=>[e]));
+            });
+        })()
+    );
     static readdir = (
         globalThis.require ?
-        /**@type {(path: String)=>Promise<String[]>}  */
-        (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path).then(result=>result[1])) :
-        /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<String[]>}  */
-        (async (path,...strArgs)=>{
+        /**@type {(path: String)=>Promise<[Error | null,String[]]>}  */
+        (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path)) :
+        /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>}  */
+        (async (path,...strArgs)=>{try{
             const length = strArgs.length,fileNameList = [];
             var i = length,j;
             /\/$/.test(path) || (path += '/');
@@ -948,29 +968,17 @@ class RealLoader extends RealElement{
                 }
                 else strArgs[i] = [str];
             }
+            console.log(111);
             for(const temp = Array(length).fill(0);!('-1' in temp);){
                 j = '';
                 for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
-                (await new Promise(resolve=>{RealLoader.readdir.resolve = resolve;RealElement.getDomByString(
-                    '<object data="'+path+j+'" onload="RealLoader.readdir.resolve(true)" onerror="RealLoader.readdir.resolve(false)"></object>'
-                );})) && fileNameList.push(j);
+                console.log(path+j);
+                (await RealLoader.stat(path+j))[0] || console.log(fileNameList.push(j),j);
                 for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
             }
-            return fileNameList;
-        })
+            return [null,fileNameList];
+        }catch(e){return [e,[]];}})
     );
-    static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
-        for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
-            RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
-            temp.react?.();
-            temp.notify(true);
-            break;
-        }
-    }),{writable: false,enumerable: false,configurable: false}));
-    static getArrayBufferFrom(data){return Promise.resolve(
-        data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
-        data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
-    );}
     /**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
     static load = (
         globalThis.require ? (async (realLoader)=>{try{
@@ -1011,7 +1019,7 @@ class RealLoader extends RealElement{
                     'string' === typeof data ? new Blob(data) : data instanceof Blob ? data :
                     RealLoader.getArrayBufferFrom(data).then(toBlob)
                 ).then(temp.bind(realLoader)).catch(e=>[e]);
-            }catch(e){this.error(e);}}
+            }catch(e){this.error(e.stack ?? e);}}
         })()
     );
     protoSet(value){this.self[this.key] = value;}
