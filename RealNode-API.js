@@ -927,6 +927,38 @@ class RealLoader extends RealElement{
         /**@type {null | (n: Number)=>void} */
         onloadend;
     };
+    static readdir = (
+        globalThis.require ?
+        /**@type {(path: String)=>Promise<String[]>}  */
+        (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path).then(result=>result[1])) :
+        /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<String[]>}  */
+        (async (path,...strArgs)=>{
+            const length = strArgs.length,fileNameList = [];
+            var i = length,j;
+            /\/$/.test(path) || (path += '/');
+            iLoop: while(i --> 0){
+                if(Array.isArray(strArgs[i])){
+                    for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
+                    continue iLoop;
+                }
+                const str = String(strArgs[i]);
+                if('\\' === str[0]) switch(str[1]){
+                    case 'w': strArgs[i] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';break;
+                    case 'd': strArgs[i] = '0123456789';break;
+                }
+                else strArgs[i] = [str];
+            }
+            for(const temp = Array(length).fill(0);!('-1' in temp);){
+                j = '';
+                for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
+                (await new Promise(resolve=>{RealLoader.readdir.resolve = resolve;RealElement.getDomByString(
+                    '<object data="'+path+j+'" onload="RealLoader.readdir.resolve(true)" onerror="RealLoader.readdir.resolve(false)"></object>'
+                );})) && fileNameList.push(j);
+                for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
+            }
+            return fileNameList;
+        })
+    );
     static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
         for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
             RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
@@ -951,7 +983,7 @@ class RealLoader extends RealElement{
                 if(!value) this.error('Unknown Error !');
                 if(value[0]) return RealLoader.getArrayBufferFrom(data).
                 then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
-                for(var i = 1;;i++){
+                for(var i = 1;true;i++){
                     const path = './'+prefix+' - '+i+suffix;
                     if((await RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
                     then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},path,Buffer.from(ab))).then(result=>[result[0],i]);
