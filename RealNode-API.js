@@ -436,10 +436,10 @@ class RealElement extends RealNode{
          * @param {(event: Event)=>void} listener 
          */
         return(selectors,type,listener)=>{
-            !selectors || '*' === selectors ? document.addEventListener(type,listener) : (
+            !selectors || '*' === selectors ? addEventListener(type,listener) : (
                 !RealElement.selectorEventListeners[type] && (
                     RealElement.selectorEventListeners[type] = new Map,
-                    document.addEventListener(type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors)))
+                    addEventListener(type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors)))
                 ),
                 RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
                 RealElement.selectorEventListeners[type].set(selectors,[listener])
@@ -518,7 +518,7 @@ class RealElement extends RealNode{
                 'transform-origin':'50vmin 50vmin',
                 // 'width':'100vmax',
                 // 'height':'calc((var(--mapWidth) - 100vmax) * 9 / 16 + 100vmin)',
-                'overflow':'hidden scroll',
+                'overflow':'visible scroll',
             },
             'body>*':{'position':'absolute',},
             'hr':{'border':'1px solid white,'},
@@ -934,18 +934,9 @@ class RealLoader extends RealElement{
     static stat = (
         globalThis.require ?
         path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'stat'},path) :
-        (()=>{
-            var temp = Promise.resolve();
-            return (path=>{
-                return temp.then(()=>temp = temp.then(()=>new Promise(resolve=>(
-                    RealLoader.stat.resolve = resolve,
-                    document.body.appendChild(RealElement.getDomByString(
-                        '<object width="0" height="0" data="'+path+
-                        '" onload="RealLoader.stat.resolve(this)" onerror="RealLoader.stat.resolve(false)"></object>'
-                    ))
-                )).then(ele=>ele ? (ele.remove(),[]) : [404]),e=>[e]));
-            });
-        })()
+        (path=>new Promise(r=>{document.body.appendChild(
+            RealElement.makeElement('object',{width: 0,height: 0,onload(){r(this);},onerror: ()=>r(false),data: path})
+        );}).then(ele=>(ele ? (ele.remove(),[]) : [404]),e=>[e]))
     );
     static readdir = (
         globalThis.require ?
@@ -1421,6 +1412,66 @@ class RealImgList extends RealDivList{
      */
     constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
 }
+class RealDivQueue extends RealDivList{
+    /**@typedef {AntiList & {queueArray: Number[]}} AntiQueue */
+    static proto = class AntiQueue extends RealDivList.proto{
+        /**@type {Number[]} */
+        queueArray = [];
+    }
+    /**@type {HTMLElement} */
+    static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
+        '>div': {'transition':'.25s'},
+        '>div:hover': {'transform':'scale(1.1)'},
+        '>div:active': {'transform':'translate3d(5%,0,0) scale(1.1)'},
+    })),addEventListener('mousedown',e=>(RealDivQueue.tempTarget = e.target)),addEventListener('mouseup',e=>{
+        /**@type {RealDivQueue} */
+        var realDivQueue,target;
+        const list0 = [target = RealDivQueue.tempTarget];
+        while(target = target.parentElement) list0.push(target);
+        const list1 = [target = e.target];
+        while(target = target.parentElement) list1.push(target);
+        if(list0.pop() !== list1.pop()) return;
+        target = [];
+        while((target[0] = list0.pop()) === (target[1] = list1.pop())) if(!list0.length) return;
+        /**@type {HTMLElement} */
+        const temp = target[0].parentElement;
+        if(temp.classList.contains('RealDivQueue')){
+            for(realDivQueue of RealElement.searchByElement(temp)) if(realDivQueue instanceof RealDivQueue) break;
+            const queue = realDivQueue.queueArray,divList = realDivQueue.proto.list;
+            target[0] = queue.indexOf(divList.indexOf(target[0])),target[1] = queue.indexOf(divList.indexOf(target[1]));
+            queue[target[0]] += queue[target[1]];
+            queue[target[1]] = queue[target[0]] - queue[target[1]];
+            queue[target[0]] -= queue[target[1]];
+            realDivQueue.applyQueue(queue);
+        }
+    })));
+    getListQueue(){
+        /**@type {HTMLElement[]} */
+        const temp = this.queueArray;
+        for(var i = temp.length;i --> 0;) temp[i] = this.proto.list[temp[i]];
+        return temp;
+    }
+    fix(){
+        var i = 0;
+        /**@type {HTMLDivElement[]} list */
+        const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
+        while(i < list.length) childrenList.push(Array.from(this.self.appendChild(list[i++]).children));
+        return this.applyQueue();
+    }
+    applyQueue(queueArray = this.queueArray){
+        Array.isArray(queueArray) ? queueArray = queueArray.concat() : this.error('"queueArray" must be Array !');
+        const list = this.proto.list.concat(),length = list.length,top = this.self.scrollTop,left = this.self.scrollLeft;
+        var i = length;
+        while(i --> 0) queueArray[i] ??= i,queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
+        this.self.innerHTML = '',this.proto.queueArray = queueArray,i= 0,this.self.classList.add('disappear');
+        while(i < length) this.self.appendChild(list[queueArray[i++]]);
+        this.self.scrollTo({top,left,behavior: 'instant'});
+        this.self.classList.remove('disappear');
+        return this;
+    }
+    /**@type {Number[]} */
+    get queueArray(){return this.proto.queueArray?.concat?.();}
+}
 class RealGroup{
     error(message,...proof){console.log(...proof);throw new Error('RealGroup """\n'+String(message)+'\n"""');}
     /**
@@ -1608,8 +1659,8 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
     function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
         tempRealDivList.info.matcher.value = {},tempRealDivList.react?.(),tempRealDivList.notify(true)
     );}
-    document.addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
-    document.addEventListener('keyup',e=>{
+    addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
+    addEventListener('keyup',e=>{
         var REList = RealElement.searchByElement(document.activeElement?.parentElement?.parentElement),temp;
         while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
         if(!temp) return;
@@ -1678,16 +1729,16 @@ const RealStory = new class RealStory{
 const RealPromise = (()=>{
     /**
      * 
-     * @returns {false | Promise<true>}
+     * @returns {Promise<Boolean>}
      */
-    const RealPromise = ()=>'function' !== typeof RealPromise.resolve &&
-    new Promise(value=>Reflect.defineProperty(RealPromise,'resolve',{value})).
-    then(()=>Reflect.defineProperty(RealPromise,'resolve',{value: undefined}));
-    Reflect.defineProperty(RealPromise,'resolve',{configurable: true,writable: false});
-    return RealPromise;
+    const RealPromise = ()=>Promise.resolve(
+        'function' !== typeof RealPromise.resolve && new Promise(value=>Reflect.defineProperty(RealPromise,'resolve',{value})).
+        then(()=>Reflect.defineProperty(RealPromise,'resolve',{value: undefined}))
+    );
+    return Reflect.defineProperty(RealPromise,'resolve',{configurable: true,writable: false}),RealPromise;
 })();
 Object.assign(exports,{
-    RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,
+    RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
     createRealDivSelect,createRealDivSearch,RealPromise,
     RealStory,
 });
