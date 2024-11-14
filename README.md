@@ -3,7 +3,7 @@
 
 - `RealNode`的子类`RealElement`可用于任何对象以及网页元素，并提供了用于创建样式的静态方法。
 
-- `RealElement`的子类`RealCanvas`、`RealLoader`、`RealDivList`、`RealImgList`、`RealSelect`、`RealComtag`分别可以用于快速创建异步画布元素、上传/下载元素、块列表、图列表、选择项、组合元素。
+- `RealElement`的子类`RealCanvas`、`RealLoader`、`RealDivList`、`RealImgList`、`RealDivQueue`、`RealSelect`、`RealComtag`分别可以用于快速创建异步画布元素、上传/下载元素、块列表、图列表、可变排序列表、选择项、组合元素。
 
 - 特殊类`RealGroup`不继承`RealNode`，但可以作为多个`RealNode`的映射群，起到路由的作用。
 
