@@ -2,7 +2,7 @@
 // import('os').then(os=>console.log(os));
 const browserMode = 'document' in globalThis;
 var setInterval = setInterval ?? function(){},HTMLElement = HTMLElement ?? setInterval,performance = performance ?? Date;
-var exports = exports ?? {};
+var exports = exports ?? {},require = globalThis.require;
 var t0 = performance === Date ? performance.now() : 0;
 class RealWorld{
     /**@type {RealWorld & RealWorld[]} */
@@ -24,9 +24,9 @@ class RealWorld{
     static cb2promise({thisArg,methodName,callback = function(...value){this.resolve(value);}} = {},...parameters){
         if(thisArg && 'object' === typeof thisArg && methodName in thisArg) return new Promise(resolve=>{
             const temp = {callback,resolve};
-            try{thisArg[methodName](...parameters,(...value)=>temp.callback(...value));}catch({message: message0}){
-                try{thisArg[methodName]((...value)=>temp.callback(...value),...parameters);}catch({message: message1}){
-                    throw new Error('=> Neither head or tail of parameters is Callback !\n'+message0+'\n'+message1);
+            try{thisArg[methodName](...parameters,(...value)=>temp.callback(...value));}catch({stack: message0}){
+                try{thisArg[methodName]((...value)=>temp.callback(...value),...parameters);}catch({stack: message1}){
+                    return [new Error('=> Neither head or tail of parameters is Callback !\n'+message0+'\n'+message1)];
                 }
             }
         }).catch(e=>console.error(e.stack));
@@ -770,7 +770,9 @@ class RealCanvas extends RealElement{
      * 
      * @returns {Promise<Blob>}
      */
-    toBlob(){try{return RealWorld.cb2promise({thisArg: this.self,methodName: 'toBlob'}).then(result=>result[0]);}catch(e){this.error('Canvas has been dirty !')}}
+    toBlob(){try{
+        return RealWorld.cb2promise({thisArg: this.self,methodName: 'toBlob'}).then(result=>(result[0] instanceof Error ? new Blob : result[0]));
+    }catch(e){return console.error(e),Promise.resolve(new Blob);}}
     /**
      * 
      * @param {Boolean} react 
@@ -918,6 +920,47 @@ class RealLoader extends RealElement{
         /**@type {null | (n: Number)=>void} */
         onloadend;
     };
+    static fs = (require=>new class DocumentFs{
+        /**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
+        stat = (
+            require
+            ? path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'stat'},path)
+            : (path=>fetch(path,{mode:'no-cors'}).then(response=>[,response],e=>[e]))
+        );
+        readdir = (
+            require
+            /**@type {(path: String)=>Promise<[Error | null,String[]]>}  */
+            ? (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path))
+            /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>}  */
+            : (async function readdir(path,...strArgs){
+                try{
+                    const length = strArgs.length,fileNameList = [];
+                    var i = length,j;
+                    /\/$/.test(path) || (path += '/');
+                    iLoop: while(i --> 0){
+                        if(Array.isArray(strArgs[i])){
+                            for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
+                            continue iLoop;
+                        }
+                        const str = String(strArgs[i]);
+                        if('\\' === str[0]) switch(str[1]){
+                            case 'w': strArgs[i] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';break;
+                            case 'd': strArgs[i] = '0123456789';break;
+                        }
+                        else strArgs[i] = [str];
+                    }
+                    for(const temp = Array(length).fill(0);!('-1' in temp);){
+                        j = '';
+                        for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
+                        console.log(path+j);
+                        (await this.stat(path+j))[0] || console.log(fileNameList.push(j),j);
+                        for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
+                    }
+                    return [null,fileNameList];
+                }catch(e){return [e,[]];}
+            })
+        );
+    })(require);
     static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
         for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
             RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
@@ -930,49 +973,9 @@ class RealLoader extends RealElement{
         data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
         data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
     );}
-    /**@type {(path: String)=>Promise<[Error | null,Stats | null]>} */
-    static stat = (
-        globalThis.require ?
-        path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'stat'},path) :
-        (path=>new Promise(r=>{document.body.appendChild(
-            RealElement.makeElement('object',{width: 0,height: 0,onload(){r(this);},onerror: ()=>r(false),data: path})
-        );}).then(ele=>(ele ? (ele.remove(),[]) : [404]),e=>[e]))
-    );
-    static readdir = (
-        globalThis.require ?
-        /**@type {(path: String)=>Promise<[Error | null,String[]]>}  */
-        (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path)) :
-        /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>}  */
-        (async (path,...strArgs)=>{try{
-            const length = strArgs.length,fileNameList = [];
-            var i = length,j;
-            /\/$/.test(path) || (path += '/');
-            iLoop: while(i --> 0){
-                if(Array.isArray(strArgs[i])){
-                    for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
-                    continue iLoop;
-                }
-                const str = String(strArgs[i]);
-                if('\\' === str[0]) switch(str[1]){
-                    case 'w': strArgs[i] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';break;
-                    case 'd': strArgs[i] = '0123456789';break;
-                }
-                else strArgs[i] = [str];
-            }
-            console.log(111);
-            for(const temp = Array(length).fill(0);!('-1' in temp);){
-                j = '';
-                for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
-                console.log(path+j);
-                (await RealLoader.stat(path+j))[0] || console.log(fileNameList.push(j),j);
-                for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
-            }
-            return [null,fileNameList];
-        }catch(e){return [e,[]];}})
-    );
     /**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
     static load = (
-        globalThis.require ? (async (realLoader)=>{try{
+        require ? (async (realLoader)=>{try{
             if('upload' === realLoader.type) return realLoader.temp.click(),[];
             const fs = require('fs');
             const data = await realLoader.dataGetter();
@@ -1024,7 +1027,7 @@ class RealLoader extends RealElement{
     set fileName(fileName){
         'upload' === this.type && this.error('Uploader bans "fileName" !');
         'symbol' === typeof fileName && this.error('"fileName" must be String but not Symbol !');
-        if(globalThis.require && !/^\.\//.test(fileName)) fileName = './'+fileName;
+        if(require && !/^\.\//.test(fileName)) fileName = './'+fileName;
         this.temp.download = fileName;
     }
     /**@type {()=>*} */
@@ -1420,9 +1423,9 @@ class RealDivQueue extends RealDivList{
     }
     /**@type {HTMLElement} */
     static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
-        '>div': {'transition':'.25s'},
-        '>div:hover': {'transform':'scale(1.1)'},
-        '>div:active': {'transform':'translate3d(5%,0,0) scale(1.1)'},
+        '>div': {'transition':'.1s'},
+        '>div:hover': {'transform':'scale(1.1,1)'},
+        '>div:active': {'transform':'translate3d(5%,0,0) scale(1.1,1)'},
     })),addEventListener('mousedown',e=>(RealDivQueue.tempTarget = e.target)),addEventListener('mouseup',e=>{
         /**@type {RealDivQueue} */
         var realDivQueue,target;
@@ -1609,7 +1612,7 @@ browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDiv
     }
     /**@type {(this: RealDivList,value: {})=>false} */
     function tempSet(value){
-        for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)).sort())) this.info.optionList.push(value[key]);
+        for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)).sort().sort((a,b)=>a - b))) this.info.optionList.push(value[key]);
         return this.fix().value,false;
     }
     /**@type {(RS: RealDivList)=>Boolean} */
@@ -1706,12 +1709,29 @@ const RealStory = new class RealStory{
     /**@type {RealStory[]} */
     static pages = [];
     static isClearing = false;
-    static intervalId = setInterval(
-        ()=>RealStory.isClearing || RealStory.pages[0].
-        clear(RealStory.isClearing = true).then(()=>RealStory.isClearing = false),50
-    );
+    static intervalId = setInterval(()=>(RealStory.isClearing || (
+        RealStory.isClearing = true,RealStory.pages[0].clear().then(()=>RealStory.isClearing = false)
+    )),50);
+    static promise = class StoryPromise{
+        /**
+         * 
+         * @this {StoryPromise}
+         * @param {(value)=>void} resolve 
+         * @param {(reason?)=>void} reject 
+         */
+        static executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
+        /**@type {(value)=>void} */
+        resolve;
+        /**@type {(reason?)=>void} */
+        reject;
+        promise = new Promise(StoryPromise.executor.bind(this));
+    };
     newPage(){return new RealStory(this);}
     then(fn){'function' === typeof fn && this.fnList.push(fn);}
+    promise(){
+        const temp = new RealStory.promise;
+        return this.then(()=>temp.promise),temp;
+    }
     async clear(){
         var i = 0,temp = this;
         while(RealStory !== temp) temp = temp.ofStory,i++;
