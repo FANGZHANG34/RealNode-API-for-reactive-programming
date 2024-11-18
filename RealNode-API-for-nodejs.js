@@ -1,6 +1,5 @@
 'use strict';
 var setInterval = setInterval ?? function(){},HTMLElement = HTMLElement ?? setInterval,performance = performance ?? Date;
-var t0 = performance === Date ? performance.now() : 0;
 class RealWorld{
     /**@type {RealWorld & RealWorld[]} */
     static app;
