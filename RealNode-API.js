@@ -2,18 +2,23 @@
 // import('os').then(os=>console.log(os));
 const browserMode = 'document' in globalThis;
 var setInterval = setInterval ?? function(){},HTMLElement = HTMLElement ?? setInterval,performance = performance ?? Date;
-var exports = exports ?? {},require = globalThis.require;
+var exports = exports ?? {},nodeRequire = globalThis.require;
 var t0 = performance === Date ? performance.now() : 0;
+Array.prototype.iterLog = function*(start,end){
+    if('number' !== typeof start) start = 0;
+    if('number' !== typeof end) end = this.length;
+    while(start < end) yield this[start++];
+}
 class RealWorld{
     /**@type {RealWorld & RealWorld[]} */
     static app;
     static onload = new Promise(r=>'window' in globalThis ? window.onload = r : r());
     static get onlyWorld(){return !Array.isArray(this.app);}
     /**@this {RealWorld} */
-    static onEvent(){if(this.fnArray.length){const fn = this.fnArray.pop();try{fn?.();}catch(e){console.error(e,fn);}}};
+    static onEvent(){if(this.fnArray.length){const fn = this.fnArray.pop();try{fn?.();}catch(e){console.error(e,fn);}}}
     static set onlyWorld(onlyWorld){if(onlyWorld === Array.isArray(this.app)){
         if(onlyWorld){while(this.app.length) this.app.pop().destroy();this.app = null;}
-        else this.app ? [this.app] : [];
+        else this.app = this.app ? [this.app] : [];
     }}
     /**
      * cb2promise 回调转异步类
@@ -609,7 +614,8 @@ class RealElement extends RealNode{
         });};
     })();
     getIndexWithin(){
-        for(var i = 0,temp;temp = this.self.previousElementSibling;i++);
+        var i = 0,temp;
+        while(temp = this.self.previousElementSibling) i++;
         return i;
     }
     protoTransform(value){return value;}
@@ -805,31 +811,32 @@ class RealCanvas extends RealElement{
      * @param {{
      * prefix: String; suffix: String; startN: Number; length: Number; midLength?: Number;
      * bgSrc?: String; playMode?: 0 | 1 | 2 | 3; timeSep?: Number; sizeMode?: 'std' | 'auto';
+     * resizeAfter?: Boolean;
      * }} param0 
      * @returns {{loaded: Promise<void>,finished: Promise<void>}}
      */
     animate({
         prefix = './img/w99_',suffix = '.png',startN = 1,length = 79,midLength = 2,
-        bgSrc = './img/w99_00.png',playMode = 0,timeSep = 100,sizeMode = 'std'
+        bgSrc = './img/w99_00.png',playMode = 0,timeSep = 100,sizeMode = 'std',resizeAfter = true,
     } = {}){
         const size = {width: this.width,height: this.height},config = [1,2,3,5],temp = {};
         var i = startN + length + playMode;
         length *= config[playMode] ?? 1;
         timeSep /= config[playMode] ?? 1;
-        while(i --> 0) this.testSrc(prefix+RealCanvas.strN(i,midLength)+suffix);
+        while(i --> startN) this.testSrc(prefix+RealCanvas.strN(i,midLength)+suffix);
         i = 0;
         return {loaded: this.loaded,finished: this.loaded.then(()=>{
+            var resize;
             /**@type {RealWorld} */
             const temp = new RealWorld(timeSep,true);
             switch(sizeMode){
-                case 'auto':this.proto._set.call(this,bgSrc || prefix+RealCanvas.strN(startN,midLength)+suffix).
-                then(value=>{value && (this.width = this.imgW,this.height = this.imgH);});break;
+                case 'auto': resize = true;break;
             }
             switch(playMode){
-                default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc},prefix+RealCanvas.strN(startN++,midLength)+suffix);
+                default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc,resize},prefix+RealCanvas.strN(startN++,midLength)+suffix);
                 case 1:{
                     while(length --> 0) temp.then(
-                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true,resize},
                         (i = !i) || prefix+RealCanvas.strN(startN++,midLength)+suffix,
                         false,
                         prefix+RealCanvas.strN(startN,midLength)+suffix
@@ -838,7 +845,7 @@ class RealCanvas extends RealElement{
                 }
                 case 2:{
                     while(length --> 0) temp.then(
-                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true,resize},
                         1 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 2 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
                         false,
                         2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
@@ -851,7 +858,7 @@ class RealCanvas extends RealElement{
                         // 3 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 0 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
                         // 2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
                         // 2 > i ? prefix+RealCanvas.strN(startN,midLength)+suffix : prefix+RealCanvas.strN(startN + 1,midLength)+suffix
-                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
+                        this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true,resize},
                         1 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 4 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
                         false,
                         2 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 3 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
@@ -861,7 +868,7 @@ class RealCanvas extends RealElement{
                     break;
                 }
             }
-            return temp.then(()=>(this.clearTemp(),Object.assign(this,size),temp.destroy()));
+            return temp.then(()=>(this.clearTemp(),resizeAfter && Object.assign(this,size),temp.destroy()));
         })};
     }
     get ctx(){return this.proto.ctx;}
@@ -920,17 +927,17 @@ class RealLoader extends RealElement{
         /**@type {null | (n: Number)=>void} */
         onloadend;
     };
-    static fs = (require=>new class DocumentFs{
+    static fs = (nodeRequire=>new class DocumentFs{
         /**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
         stat = (
-            require
-            ? path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'stat'},path)
+            nodeRequire
+            ? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),methodName: 'stat'},path)
             : (path=>fetch(path,{mode:'no-cors'}).then(response=>[,response],e=>[e]))
         );
         readdir = (
-            require
+            nodeRequire
             /**@type {(path: String)=>Promise<[Error | null,String[]]>}  */
-            ? (path=>RealWorld.cb2promise({thisArg: require('fs'),methodName: 'readdir'},path))
+            ? (path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),methodName: 'readdir'},path))
             /**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>}  */
             : (async function readdir(path,...strArgs){
                 try{
@@ -960,7 +967,7 @@ class RealLoader extends RealElement{
                 }catch(e){return [e,[]];}
             })
         );
-    })(require);
+    })(nodeRequire);
     static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
         for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
             RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
@@ -975,9 +982,9 @@ class RealLoader extends RealElement{
     );}
     /**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
     static load = (
-        require ? (async (realLoader)=>{try{
+        nodeRequire ? (async (realLoader)=>{try{
             if('upload' === realLoader.type) return realLoader.temp.click(),[];
-            const fs = require('fs');
+            const fs = nodeRequire('fs');
             const data = await realLoader.dataGetter();
             const [,prefix,suffix] = /(.+)(\..+)/.exec(realLoader.temp.download) || [,'file',''];
             return RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},'./'+realLoader.temp.download).
@@ -1027,7 +1034,7 @@ class RealLoader extends RealElement{
     set fileName(fileName){
         'upload' === this.type && this.error('Uploader bans "fileName" !');
         'symbol' === typeof fileName && this.error('"fileName" must be String but not Symbol !');
-        if(require && !/^\.\//.test(fileName)) fileName = './'+fileName;
+        if(nodeRequire && !/^\.\//.test(fileName)) fileName = './'+fileName;
         this.temp.download = fileName;
     }
     /**@type {()=>*} */
@@ -1088,8 +1095,14 @@ class RealSelect extends RealElement{
      */
     protoSet(value){return this.proto.value = Object.assign({},value),true;}
     fix(){
-        this.self[this.key] = this.proto.value;
+        this.self[this.key] = this.protoTransform(this.proto.value);
         this.proto.list = Array.from(this.self.children);
+        return this;
+    }
+    getValueIndexs(){
+        var i = this.proto.list.length,temp = [];
+        while(i --> 0) this.proto.list[i].selected && temp.push(i);
+        return temp.reverse();
     }
     /**
      * 
@@ -1104,12 +1117,12 @@ class RealSelect extends RealElement{
      * 
      * @param {Array} value 
      */
-    protoTransform(value){
+    protoTransform(value,defaultKey = String(this.defaultKey),defaultValue = String(this.defaultValue)){
         var now;
-        if(this instanceof RealSelect && !this.self.multiple) value = Object.assign({_: ''},value);
-        const innerHTML = [],iterator = Object.entries(value).values();
+        if(this instanceof RealSelect && !this.self.multiple) value = Object.assign({[defaultKey]: defaultValue},value);
+        const innerHTML = [],iterator = Object.entries(value).sort((a,b)=>a[0].localeCompare(b[0])).sort((a,b)=>a[0] - b[0]).values();
         while(!(now = iterator.next()).done)
-            innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === '_' ? 'selected' : ''}>${now.value[0]}</option>`);
+            innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === defaultKey ? 'selected' : ''}>${now.value[0]}</option>`);
         return innerHTML.join('');
     }
     /**@returns {HTMLElement[]} */
@@ -1117,13 +1130,14 @@ class RealSelect extends RealElement{
     /**
      * 
      * @param {String | null} id 
-     * @param {(value: {[text: String]: String})=>String} transform 
      * @param {Boolean} multiple 
-     * @param {(e: Event)=>void} onchange 
      * @param {{[text: String]: String}} optionConfig 
      * @param {Boolean} [tryRealNode] 
+     * @param {String} [defaultKey] 
+     * @param {String} [defaultValue] 
+     * @param {(e: Event)=>void} [onchange] 
      */
-    constructor(id,multiple,transform,onchange,optionConfig,tryRealNode){
+    constructor(id,multiple,optionConfig,tryRealNode,defaultKey,defaultValue,onchange){
         const self = ('string' === typeof id || (id = '',false)) && document.getElementById(id);
         if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
         RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
@@ -1131,9 +1145,11 @@ class RealSelect extends RealElement{
         super({
             self: self || RealElement.makeElement('select',{id,multiple,onchange}),
             key: 'innerHTML',
-            transform,
             initValue: Object.assign({},optionConfig)
         },{id},tryRealNode);
+        /**@type {AntiSelect}  */this.proto;
+        this.defaultKey = defaultKey ?? '_';
+        this.defaultValue = defaultValue ?? '';
         this.fix().rememberParent();
     }
 }
@@ -1419,16 +1435,16 @@ class RealDivQueue extends RealDivList{
     /**@typedef {AntiList & {queueArray: Number[]}} AntiQueue */
     static proto = class AntiQueue extends RealDivList.proto{
         /**@type {Number[]} */
-        queueArray = [];
+        queueArray;
     }
     /**@type {HTMLElement} */
     static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
         '>div': {'transition':'.1s'},
         '>div:hover': {'transform':'scale(1.1,1)'},
-        '>div:active': {'transform':'translate3d(5%,0,0) scale(1.1,1)'},
+        '>div:active': {'transform':'scale(1.2,1)'},
     })),addEventListener('mousedown',e=>(RealDivQueue.tempTarget = e.target)),addEventListener('mouseup',e=>{
         /**@type {RealDivQueue} */
-        var realDivQueue,target;
+        var realDivQueue,target,queue;
         const list0 = [target = RealDivQueue.tempTarget];
         while(target = target.parentElement) list0.push(target);
         const list1 = [target = e.target];
@@ -1437,15 +1453,15 @@ class RealDivQueue extends RealDivList{
         target = [];
         while((target[0] = list0.pop()) === (target[1] = list1.pop())) if(!list0.length) return;
         /**@type {HTMLElement} */
-        const temp = target[0].parentElement;
+        const temp = target[0].parentElement,[target0,target1] = target;
         if(temp.classList.contains('RealDivQueue')){
             for(realDivQueue of RealElement.searchByElement(temp)) if(realDivQueue instanceof RealDivQueue) break;
-            const queue = realDivQueue.queueArray,divList = realDivQueue.proto.list;
-            target[0] = queue.indexOf(divList.indexOf(target[0])),target[1] = queue.indexOf(divList.indexOf(target[1]));
-            queue[target[0]] += queue[target[1]];
-            queue[target[1]] = queue[target[0]] - queue[target[1]];
-            queue[target[0]] -= queue[target[1]];
-            realDivQueue.applyQueue(queue);
+            queue = realDivQueue.queueArray;
+            queue = (target[0] = queue.indexOf(realDivQueue.proto.list.indexOf(target[0]))) >
+            (target[1] = queue.indexOf(realDivQueue.proto.list.indexOf(target[1]))) ?
+            [...queue.iterLog(0,target[1]),queue[target[0]],...queue.iterLog(target[1],target[0]),...queue.iterLog(target[0] + 1)] :
+            [...queue.iterLog(0,target[0]),...queue.iterLog(target[0] + 1,target[1] + 1),queue[target[0]],...queue.iterLog(target[1] + 1)];
+            realDivQueue.applyQueue(queue,target0,target1);
         }
     })));
     getListQueue(){
@@ -1459,17 +1475,32 @@ class RealDivQueue extends RealDivList{
         /**@type {HTMLDivElement[]} list */
         const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
         while(i < list.length) childrenList.push(Array.from(this.self.appendChild(list[i++]).children));
-        return this.applyQueue();
+        return this.applyQueue([]);
     }
-    applyQueue(queueArray = this.queueArray){
-        Array.isArray(queueArray) ? queueArray = queueArray.concat() : this.error('"queueArray" must be Array !');
+    /**
+     * 
+     * @param {Number[]} queueArray 
+     * @param {HTMLElement} [target0] 
+     * @param {HTMLElement} [target1] 
+     * @returns 
+     */
+    applyQueue(queueArray,target0,target1){
+        const previousQueue = this.queueArray ?? [];
+        const temp = Array.isArray(queueArray);queueArray = temp ? queueArray.slice(0,this.proto.list.length) : previousQueue;
         const list = this.proto.list.concat(),length = list.length,top = this.self.scrollTop,left = this.self.scrollLeft;
         var i = length;
         while(i --> 0) queueArray[i] ??= i,queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
-        this.self.innerHTML = '',this.proto.queueArray = queueArray,i= 0,this.self.classList.add('disappear');
-        while(i < length) this.self.appendChild(list[queueArray[i++]]);
-        this.self.scrollTo({top,left,behavior: 'instant'});
-        this.self.classList.remove('disappear');
+        i = [previousQueue.indexOf(this.proto.list.indexOf(target0)),previousQueue.indexOf(this.proto.list.indexOf(target1))];
+        if(~i[0] && ~i[1]) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) : target1.insertAdjacentElement('beforebegin',target0);
+        else{
+            this.self.classList.add('disappear');
+            this.self.innerHTML = '',i = 0;
+            while(i < length) this.self.appendChild(list[queueArray[i++]]);
+            this.self.scrollTo({top,left,behavior: 'instant'});
+            this.self.classList.remove('disappear');
+        }
+        this.proto.queueArray = queueArray;
+        if(temp) this.react?.(),this.notify(true);
         return this;
     }
     /**@type {Number[]} */
@@ -1600,6 +1631,7 @@ browserMode || (1 === 10
 browserMode && RealWorld.onload.then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
     '': {'background':'linear-gradient(135deg,#fff,#000)'},
     '>div': {'background-color':'#333','transform':'scale(0.8,1)'},
+    '>div:hover': {'transform':'scale(0.9,1)'},
     '>.selected': {'background-color':'#555','transform':'scale(1)','font-weight':'bolder'},
 },(()=>{
     const changeConfig = {bubbles: true,cancelable: false};
@@ -1727,7 +1759,11 @@ const RealStory = new class RealStory{
         promise = new Promise(StoryPromise.executor.bind(this));
     };
     newPage(){return new RealStory(this);}
-    then(fn){'function' === typeof fn && this.fnList.push(fn);}
+    /**
+     * 
+     * @param {()=>*} fn 
+     */
+    then(fn){return 'function' === typeof fn && this.fnList.push(fn),this;}
     promise(){
         const temp = new RealStory.promise;
         return this.then(()=>temp.promise),temp;
@@ -1736,7 +1772,7 @@ const RealStory = new class RealStory{
         var i = 0,temp = this;
         while(RealStory !== temp) temp = temp.ofStory,i++;
         while(this.pages.length || this.fnList.length){
-            try{await this.fnList.shift()?.();}catch(e){console.error('Depth of the fn : '+i);console.error(e);}
+            while(this.fnList.length) try{await this.fnList.shift()?.();}catch(e){console.error('Depth of the fn : '+i);console.error(e);}
             try{await this.pages.shift()?.clear?.();}catch(e){console.error('Depth of the page : '+i);console.error(e);}
         }
     }
