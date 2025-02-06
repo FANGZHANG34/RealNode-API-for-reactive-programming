@@ -1,0 +1,22 @@
+{
+    "name": "real-node",
+    "version": "0.0.1",
+    "description": "响应式编程类、函数、对象",
+    "scripts": {
+      "test": "node ./test/tryRealStory.js"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/FANGZHANG34/real-node.git"
+    },
+    "keywords": [
+      "reactive-programming"
+    ],
+    "author": "FANGZHANG34",
+    "email": "1179223897@qq.com",
+    "license": "MIT",
+    "bugs": {
+      "url": "https://github.com/FANGZHANG34/real-node/issues"
+    },
+    "homepage": "https://github.com/FANGZHANG34/real-node#readme"
+  }
