@@ -1,14 +1,14 @@
 'use strict';
-globalThis.setInterval ??= function(){},
-globalThis.clearInterval ??= setInterval,
-globalThis.HTMLElement ??= setInterval,
-globalThis.performance ??= Date,
-globalThis.exports ??= {},
-globalThis.nodeRequire = globalThis.require
+globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ??= function(){},
+globalThis.performance ??= Date
+;
+var exports = exports ?? {};
+var
+t0 = performance.now(),
+nodeRequire = globalThis.require
 ;
 
 const browserMode = 'document' in globalThis;
-var t0 = performance.now();
 Array.prototype.iterLog = function*(start,end){
 	if(start - start !== 0) start = 0;
 	if(end - end !== 0) end = this.length;
