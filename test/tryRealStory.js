@@ -2,5 +2,5 @@
 
 const {RealWorld,RealNode,RealElement,RealGroup,RealStory,RealPromise} = require('../');
 require('./countRows.js');
-RealStory.newPagePromise().then(page=>page[0].then(()=>console.log(new RealElement({self:{}}))));
-RealStory.then(()=>console.log(new RealElement({self:{}})+'')).newPage().then(()=>process.exit(0));
+RealStory.newPagePromise().then(page=>page.thenDo(()=>console.log(new RealElement({self:{}}))));
+RealStory.thenDo(()=>console.log(new RealElement({self:{}})+'')).newPage().thenDo(()=>process.exit(0));
