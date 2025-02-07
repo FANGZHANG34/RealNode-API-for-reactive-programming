@@ -1795,6 +1795,7 @@ const RealStory = new class RealStory{
 			try{await this.pages.shift()?.clear?.();}catch(e){console.error('Depth of the page : '+i);console.error(e);}
 		}
 	}
+	get index(){return this.ofStory.pages.indexOf(this);}
 	/**@type {RealStory} */
 	ofStory;
 	/**@type {RealStory[]} */
