@@ -52,6 +52,11 @@ class RealWorld{
 	destroy(){clearInterval(this.id);}
 	thenDo(fn){return typeof fn === 'function' ? new Promise(r=>this.fnList.unshift(async()=>r(await fn.bind(this)))) : null;}
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
+	onceIf(ifFn){
+		if(typeof ifFn !== 'function') return;
+		const temp = new RealWorld;
+		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
+	}
 	/**@type {Number} */
 	id;
 	self = browserMode ? document.createElement('div') : {};
