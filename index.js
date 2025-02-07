@@ -50,7 +50,7 @@ class RealWorld{
 		};
 	})();
 	destroy(){clearInterval(this.id);}
-	then(fn){return typeof fn === 'function' ? new Promise(r=>this.fnList.unshift(async()=>r(await fn.bind(this)))) : null;}
+	thenDo(fn){return typeof fn === 'function' ? new Promise(r=>this.fnList.unshift(async()=>r(await fn.bind(this)))) : null;}
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
 	/**@type {Number} */
 	id;
@@ -140,7 +140,7 @@ class RealNode{
 	 * @returns {Promise}
 	 */
 	static afterNow(fn,keepNow,thisArg,...argArray){
-		const temp = this.eventLoop.then(fn,thisArg,...argArray);
+		const temp = this.eventLoop.thenDo(fn,thisArg,...argArray);
 		return keepNow || (this.now = temp.finally()),temp;
 	}
 	/**@method @type {(promise: (()=>*) & Promise)=>Promise<{value: * & Error,time: Number}>} */
@@ -956,14 +956,14 @@ RealCanvas = class RealCanvas extends RealElement{
 		return {loaded: this.loaded,finished: this.loaded.then(()=>{
 			var resize;
 			/**@type {RealWorld} */
-			const temp = new RealWorld(timeSep,true);
+			const temp = new RealWorld(timeSep);
 			switch(sizeMode){
 				case 'auto': resize = true;break;
 			}
 			switch(playMode){
-				default: while(length --> 0) temp.then(this.multiDrawSrcArray,this,{bgSrc,resize},prefix+RealCanvas.strN(startN++,midLength)+suffix);
+				default: while(length --> 0) temp.thenDo(this.multiDrawSrcArray,this,{bgSrc,resize},prefix+RealCanvas.strN(startN++,midLength)+suffix);
 				case 1:{
-					while(length --> 0) temp.then(
+					while(length --> 0) temp.thenDo(
 						this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true,resize},
 						(i = !i) || prefix+RealCanvas.strN(startN++,midLength)+suffix,
 						false,
@@ -972,7 +972,7 @@ RealCanvas = class RealCanvas extends RealElement{
 					break;
 				}
 				case 2:{
-					while(length --> 0) temp.then(
+					while(length --> 0) temp.thenDo(
 						this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true,resize},
 						1 === i ? prefix+RealCanvas.strN(startN + 1,midLength)+suffix : 2 === i && prefix+RealCanvas.strN(startN,midLength)+suffix,
 						false,
@@ -981,7 +981,7 @@ RealCanvas = class RealCanvas extends RealElement{
 					break;
 				}
 				case 3:{
-					while(length --> 0) temp.then(
+					while(length --> 0) temp.thenDo(
 						// this.multiDrawSrcArray,this,{bgSrc,autoOpacity: true},
 						// 3 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 0 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
 						// 2 === i ? prefix+RealCanvas.strN(startN,midLength)+suffix : 1 === i && prefix+RealCanvas.strN(startN + 1,midLength)+suffix,
@@ -996,7 +996,7 @@ RealCanvas = class RealCanvas extends RealElement{
 					break;
 				}
 			}
-			return temp.then(()=>(this.clearTemp(),resizeAfter && Object.assign(this,size),temp.destroy()));
+			return temp.thenDo(()=>(this.clearTemp(),resizeAfter && Object.assign(this,size),temp.destroy()));
 		})};
 	}
 	get ctx(){return this.proto.ctx;}
@@ -1769,12 +1769,12 @@ const RealStory = new class RealStory{
 		self = new Promise(StoryPromise.executor.bind(this));
 	};
 	newPage(){return new RealStory(this);}
-	newPagePromise(){return Promise.resolve([new RealStory(this)]);}
+	newPagePromise(){return Promise.resolve(new RealStory(this));}
 	/**
 	 * 
 	 * @param {()=>*} fn 
 	 */
-	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+	thenDo(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
 	getNextPage(){
 		const temp = this.ofStory.pages;
 		return temp[temp.indexOf(this) + 1];
@@ -1785,7 +1785,7 @@ const RealStory = new class RealStory{
 	}
 	newPromiseObj(){
 		const temp = new RealStory.promise;
-		return this.then(()=>temp.self),temp;
+		return this.thenDo(()=>temp.self),temp;
 	}
 	async clear(){
 		var i = 0,temp = this;
