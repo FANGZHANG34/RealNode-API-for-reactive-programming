@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ??= function(){},
 globalThis.performance ??= Date
 ;
@@ -71,9 +71,9 @@ class RealWorld{
 	ifFn;
 	/**@type {?()=>*} */
 	soFn;
-	constructor(timeSep = 4,...fnList){
+	constructor(timeSep,...fnList){
+		Reflect.defineProperty(this,'id',{value: setInterval(this.mainFn.bind(this),timeSep - timeSep !== 0 ? timeSep : 10),writable: false,enumerable: false});
 		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
-		Reflect.defineProperty(this,'id',{value: setInterval(this.mainFn.bind(this),timeSep),writable: false,enumerable: false});
 	}
 }
 class RealNode{
