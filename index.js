@@ -19,6 +19,11 @@ Array.prototype.iterLog = function*(start,end){
 class RealWorld{
 	static onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
+	static onceIf(ifFn){
+		if(typeof ifFn !== 'function') return;
+		const temp = new RealWorld;
+		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
+	}
 	/**@this {RealWorld} */
 	static mainFn(){
 		if(this.paused) return;
@@ -53,11 +58,6 @@ class RealWorld{
 	destroy(){clearInterval(this.id);}
 	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
-	onceIf(ifFn){
-		if(typeof ifFn !== 'function') return;
-		const temp = new RealWorld;
-		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
-	}
 	/**@type {Number} */
 	id;
 	info;
@@ -239,11 +239,8 @@ class RealNode{
 	 */
 	notify(noSelf,thisArg,count){
 		// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
-		for(const id of this.relativeRNs){
-			const realNode = RealNode.search(id);
-			if(noSelf && this === realNode) continue;
-			realNode?.react?.(),RealNode.justNow(()=>realNode.notify());
-		}
+		for(const id of this.relativeRNs) Promise.resolve(RealNode.search(id)).
+		then(realNode=>(noSelf && this === realNode) || (realNode?.react?.(),realNode.notify()));
 	}
 	/**
 	 * 
