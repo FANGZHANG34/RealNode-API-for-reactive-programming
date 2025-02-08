@@ -1,8 +1,13 @@
+"use strict";
 const fs = require('fs');
 const path = require('path');
+const getPath = (()=>{
+    const path = require('path');
+    return path.resolve.bind(path,__dirname);
+})();
 
 ['../index.js'].
-reduce((s,subPath)=>fs.readFile(path.resolve(__dirname,subPath),'utf-8',(e,value)=>{
+reduce((s,subPath)=>fs.readFile(getPath(subPath),'utf-8',(e,value)=>{
 	const testReg = /^[\s\t]{0,}[/\*]/;
 	console.log(
 		subPath,e ?? value.split(/\n|\r/).
