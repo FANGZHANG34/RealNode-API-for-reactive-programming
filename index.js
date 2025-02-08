@@ -24,15 +24,6 @@ class RealWorld{
 		const temp = new RealWorld;
 		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
 	}
-	mainFn(){
-		if(this.paused) return;
-		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
-		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
-		try{if(this.ifFn?.()){this.soFn?.();this.ifFn = this.soFn = null;}}catch(e0){
-			try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
-			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
-		}
-	}
 	/**
 	 * cb2promise 回调转异步类
 	 * @method
@@ -57,6 +48,15 @@ class RealWorld{
 	destroy(){clearInterval(this.id);}
 	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
+	mainFn(){
+		if(this.paused) return;
+		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
+		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
+		try{if(this.ifFn?.()){this.soFn?.();this.ifFn = this.soFn = null;}}catch(e0){
+			try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
+			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
+		}
+	}
 	/**@type {Number} */
 	id;
 	info;
