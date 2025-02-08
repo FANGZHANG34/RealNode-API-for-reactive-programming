@@ -20,9 +20,9 @@ class RealWorld{
 	static onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
 	static onceIf(ifFn){
-		if(typeof ifFn !== 'function') return;
+		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld;
-		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
+		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
 	}
 	/**
 	 * cb2promise 回调转异步类
@@ -45,7 +45,7 @@ class RealWorld{
 			else throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"methodName" not in "thisArg" !');
 		};
 	})();
-	destroy(){clearInterval(this.id);}
+	destroy(){return clearInterval(this.id);}
 	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
 	mainFn(){
@@ -60,6 +60,7 @@ class RealWorld{
 	/**@type {Number} */
 	id;
 	info;
+	/**@type {HTMLDivElement & {}} */
 	self = browserMode ? document.createElement('div') : {};
 	/**@type {Boolean} */
 	paused;
