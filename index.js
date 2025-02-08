@@ -239,7 +239,7 @@ class RealNode{
 	notify(noSelf,thisArg,count){
 		// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
 		for(const id of this.relativeRNs) Promise.resolve(RealNode.search(id)).
-		then(realNode=>(noSelf && this === realNode) || (realNode?.react?.(),realNode.notify()));
+		then(realNode=>((noSelf && this === realNode) || (realNode?.react?.(),realNode.notify())));
 	}
 	/**
 	 * 
