@@ -24,8 +24,7 @@ class RealWorld{
 		const temp = new RealWorld;
 		return [new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy()),temp];
 	}
-	/**@this {RealWorld} */
-	static mainFn(){
+	mainFn(){
 		if(this.paused) return;
 		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
 		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
@@ -74,7 +73,7 @@ class RealWorld{
 	soFn;
 	constructor(timeSep = 4,...fnList){
 		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
-		Reflect.defineProperty(this,'id',{value: setInterval(RealWorld.mainFn.bind(this),timeSep),writable: false,enumerable: false});
+		Reflect.defineProperty(this,'id',{value: setInterval(this.mainFn.bind(this),timeSep),writable: false,enumerable: false});
 	}
 }
 class RealNode{
@@ -1765,7 +1764,7 @@ const RealStory = new class RealStory{
 		 * @param {(value)=>void} resolve 
 		 * @param {(reason?)=>void} reject 
 		 */
-		static executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
+		static executor(resolve,reject){if(this instanceof StoryPromise) this.resolve = resolve,this.reject = reject;}
 		/**@type {(value)=>void} */
 		resolve;
 		/**@type {(reason?)=>void} */
