@@ -2,12 +2,15 @@
 globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ??= function(){},
 globalThis.performance ??= Date
 ;
+/**# 搜索## */
 var exports = exports ?? {};
 var
 t0 = performance.now(),
 nodeRequire = globalThis.require
 ;
+/**##   */
 
+/**## browserMode 是否存在浏览器环境 */
 const browserMode = 'document' in globalThis;
 var t0 = performance.now();
 Array.prototype.iterLog = function*(start,end){
@@ -15,17 +18,19 @@ Array.prototype.iterLog = function*(start,end){
 	if(end - end !== 0) end = this.length;
 	while(start < end) yield this[start++];
 };
-
+/**# RealWorld 事件循环类 */
 class RealWorld{
+	/**## onload 环境准备好时兑现的承诺 */
 	static onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
+	/**## onceIf 生成条件检测承诺 */
 	static onceIf(ifFn){
 		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld;
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
 	}
 	/**
-	 * cb2promise 回调转异步类
+	 * ## cb2promise 回调转承诺
 	 * @method
 	 * @param {{thisArg: {},methodName: String,callback?: (...value: *[])=>"this.resolve(value)"}} param0 
 	 * @param {...*} [parameters] 
@@ -45,10 +50,13 @@ class RealWorld{
 			else throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"methodName" not in "thisArg" !');
 		};
 	})();
-	destroy(){return clearInterval(this.id);}
+	/**## destroy 销毁本对象 */
+	destroy(){return clearInterval(this._id);}
+	/**## then 添加函数入执行队列 */
 	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+	/**## 生成RealElement实例 */
 	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
-	mainFn(){
+	_mainFn(){
 		if(this.paused) return;
 		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
 		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
@@ -58,7 +66,7 @@ class RealWorld{
 		}
 	}
 	/**@type {Number} */
-	id;
+	_id;
 	info;
 	/**@type {HTMLDivElement & {}} */
 	self = browserMode ? document.createElement('div') : {};
@@ -73,7 +81,7 @@ class RealWorld{
 	/**@type {?()=>*} */
 	soFn;
 	constructor(timeSep,...fnList){
-		Reflect.defineProperty(this,'id',{value: setInterval(this.mainFn.bind(this),timeSep - timeSep !== 0 ? timeSep : 10),writable: false,enumerable: false});
+		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),timeSep - timeSep !== 0 ? timeSep : 10),writable: false,enumerable: false});
 		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
 	}
 }
@@ -81,7 +89,7 @@ class RealNode{
 	/**@throws {Error} */
 	static error(message){throw new Error(this.name+' : '+message);}
 	/**@type {Map<Symbol,RealNode>} */
-	static sys = new Map;
+	static _sys = new Map;
 	static t0 = Date.now();
 	static now = Promise.resolve();
 	static eventLoop = new RealWorld;
@@ -114,7 +122,7 @@ class RealNode{
 	 * 
 	 * @param {Symbol} id 
 	 */
-	static search(id){return this.sys.get(id);}
+	static search(id){return this._sys.get(id);}
 	/**
 	 * 
 	 * @param {()=>*} fn 
@@ -139,7 +147,7 @@ class RealNode{
 	 * 
 	 * @param {RealNode} realNode 
 	 */
-	static check(realNode){for(const temp of this.sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
+	static check(realNode){for(const temp of this._sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
 	/**
 	 * 
 	 * @param {()=>*} fn 
@@ -169,8 +177,8 @@ class RealNode{
 	 * @this {RealNode}
 	 * @param {RealNode} realNode 
 	 */
-	static react(realNode,react = true,notify = true,noSelf = true){var value;try{
-		const temp = this.getPositionsOfChildRN(realNode);
+	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse();
 			if(!position.length) return this.realSet(realNode.value,react,notify,noSelf);else{
@@ -235,7 +243,7 @@ class RealNode{
 	 * @param {Boolean} noSelf 
 	 * @param {RealNode} [thisArg] 
 	 * @param {number} [count] 
-	 * @returns {Promise<void> | null}
+	 * @returns {?Promise<void>}
 	 */
 	notify(noSelf,thisArg,count){
 		// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
@@ -254,8 +262,8 @@ class RealNode{
 		const oldValue = this.proto.value;
 		return (this.proto._set.call(
 			this,
-			this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
-			this.dealWithPositionsOfRNs(temp,value) : value
+			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+			this._dealWithPositionsOfRNs(temp,value) : value
 		) ?? oldValue !== this.proto.value) && (react && this.react?.(),notify && this.notify(noSelf),true);
 	}
 	/**
@@ -263,7 +271,7 @@ class RealNode{
 	 * @param {RealNode} realNode 
 	 * @returns {String[][]}
 	 */
-	getPositionsOfChildRN(realNode){
+	_getPositionsOfChildRN(realNode){
 		const childRNs = this.proto.childRNs,temp = [];
 		for(var i = childRNs.length,iter;i --> 0;) iter = childRNs[i].info.values(),realNode === iter.next().value && temp.push(...iter);
 		return temp;
@@ -317,12 +325,12 @@ class RealNode{
 	 * @param {String[]} [position] 
 	 * @returns {[RealNode, ...string[]][]} 
 	 */
-	computePositionsOfRNs(value,deep = 2,position = [],count = 0){
+	_computePositionsOfRNs(value,deep = 2,position = [],count = 0){
 		/**@type {[RealNode, ...string[]][]} */
 		var temp = [],i,keys;
 		if(value instanceof RealNode) return temp.push((position.unshift(value),position)),temp;
 		else if(count < deep && typeof value === 'object' && value) for(i = (keys = Reflect.ownKeys(value)).length;i --> 0;){
-			temp = temp.concat(this.computePositionsOfRNs(value[keys[i]],deep,[...position,keys[i]],count + 1));
+			temp = temp.concat(this._computePositionsOfRNs(value[keys[i]],deep,[...position,keys[i]],count + 1));
 		}
 		return temp;
 	}
@@ -330,7 +338,7 @@ class RealNode{
 	 * 
 	 * @param {[RealNode, ...string[]][]} realNodeMap 
 	 */
-	dealWithPositionsOfRNs(realNodeMap,expression){
+	_dealWithPositionsOfRNs(realNodeMap,expression){
 		const temp = this.clearChildRNs().proto.childRNs,list = [];
 		var value,i,end;
 		while(realNodeMap.length){
@@ -342,13 +350,13 @@ class RealNode{
 			}
 			i = list.indexOf(realNode);
 			i < 0 ? (list.push(realNode),temp.push(realNode.relate(
-				new RealNode({info: [realNode,dir],react: this.constructor.react.bind(this,realNode)})
+				new RealNode({info: [realNode,dir],react: this.constructor._react.bind(this,realNode)})
 			))) : temp[i].info.push(dir);
 		}
 		return expression;
 	}
 	get childRNs(){return this.proto.childRNs;}
-	get display(){return RealNode.sys.has(this.id);}
+	get display(){return RealNode._sys.has(this.id);}
 	get tryRealNode(){return this.proto.tryRealNode;}
 	/**@type {Symbol} */
 	get id(){return this.proto.id;}
@@ -357,7 +365,7 @@ class RealNode{
 	/**@type {()=>void} */
 	get react(){return this.proto.react;}
 	get value(){return this.get();}
-	set display(display){display ? RealNode.sys.set(this.id,this) : RealNode.sys.delete(this.id);}
+	set display(display){display ? RealNode._sys.set(this.id,this) : RealNode._sys.delete(this.id);}
 	set tryRealNode(tryRealNode){
 		var i;
 		tryRealNode = (this.proto.tryRealNode = Boolean(tryRealNode)) ? 'appear' : 'disappear';
@@ -446,7 +454,7 @@ class RealElement extends RealNode{
 	static searchByElement(element){
 		/**@type {RealElement[]} */const temp = [];
 		if(typeof element !== 'object' || !element) return temp;
-		for(const realElement of this.sys.values()) if(element === realElement.self) temp.push(realElement);
+		for(const realElement of this._sys.values()) if(element === realElement.self) temp.push(realElement);
 		return temp;
 	}
 	/**@method */
@@ -482,8 +490,8 @@ class RealElement extends RealNode{
 	 * @this {RealElement}
 	 * @param {RealNode} realNode 
 	 */
-	static react(realNode,react = true,notify = true,noSelf = true){var value;try{
-		const temp = this.getPositionsOfChildRN(realNode);
+	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse();
 			if(!position.length) return this.realSet(realNode.value,react,notify,noSelf);else{
@@ -683,7 +691,7 @@ class RealElement extends RealNode{
 	 */
 	realSet(value,react,notify,noSelf){
 		var temp;
-		return this.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ? this.dealWithPositionsOfRNs(temp,value) :
+		return this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ? this._dealWithPositionsOfRNs(temp,value) :
 		this.proto._set.call(this,value) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
 	}
 	/**
@@ -923,8 +931,8 @@ RealCanvas = class RealCanvas extends RealElement{
 		return this.loaded = Array.isArray(value) ? this.multiDrawSrcArray({},...value).then(()=>{this.proto.value = value;}) :
 		Promise.resolve(this.proto._set.call(
 			this,
-			this.proto.tryRealNode && (temp = this.computePositionsOfRNs(value)).length ?
-			this.dealWithPositionsOfRNs(temp,value) : value
+			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+			this._dealWithPositionsOfRNs(temp,value) : value
 		)).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true));
 	}
 	multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
@@ -1100,7 +1108,7 @@ RealLoader = class RealLoader extends RealElement{
 			})
 		);
 	})(nodeRequire);
-	static configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
+	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
 		for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
 			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
 			temp.react?.();
@@ -1184,7 +1192,7 @@ RealLoader = class RealLoader extends RealElement{
 		isDownload = Boolean(isDownload);
 		this.type = isDownload ? 'download' : 'upload';
 		this.temp = document.createElement(isDownload ? 'a' : 'input');
-		Reflect.defineProperty(this,'type',RealLoader.configDescriptor);
+		Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 		isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
 	}
 };
@@ -1199,8 +1207,8 @@ RealSelect = class RealSelect extends RealElement{
 	 * @this {RealSelect}
 	 * @param {RealNode} realNode 
 	 */
-	static react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
-		const temp = this.getPositionsOfChildRN(realNode);
+	static _react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
+		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse(),tempValue = realNode.value;
 			if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
@@ -1365,8 +1373,8 @@ RealDivList = class RealDivList extends RealElement{
 	 * @this {RealDivList}
 	 * @param {RealNode} realNode 
 	 */
-	static react(realNode,react = true,notify = true,noSelf = true){var value;try{
-		const temp = this.getPositionsOfChildRN(realNode);
+	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse(),tempValue = realNode.value;
 			if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
@@ -1494,8 +1502,8 @@ RealImgList = class RealImgList extends RealDivList{
 	 * @this {RealImgList}
 	 * @param {RealNode} realNode 
 	 */
-	static react(realNode,react = true,notify = true,noSelf = true){var value;try{
-		const temp = this.getPositionsOfChildRN(realNode);
+	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse(),tempValue = realNode.value;
 			if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
@@ -1637,6 +1645,7 @@ RealDivQueue = class RealDivQueue extends RealDivList{
 	/**@type {Number[]} */
 	get queueArray(){return this.proto.queueArray?.concat?.();}
 };
+
 }
 console.log(performance.now() - t0,'ms');
 
@@ -1752,11 +1761,11 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
  */
 function createRealDivSearch(placeholder){return RealDivList.createByClassName('realDivSearch',placeholder);}
 const RealStory = new class RealStory{
-	/**@type {RealStory[]} */
-	static pages = [];
+	/**@type {RealStory} */
+	static _;
 	static isClearing = false;
 	static intervalId = setInterval(()=>(RealStory.isClearing || (
-		RealStory.isClearing = true,RealStory.pages[0].clear().then(()=>RealStory.isClearing = false)
+		RealStory.isClearing = true,RealStory._.clear().then(()=>RealStory.isClearing = false)
 	)),50);
 	static promise = class StoryPromise{
 		/**
@@ -1773,17 +1782,19 @@ const RealStory = new class RealStory{
 		self = new Promise(StoryPromise.executor.bind(this));
 	};
 	newPage(){return new RealStory(this);}
-	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
-	getNextPage(){
-		const temp = this.ofStory.pages;
-		return temp[temp.indexOf(this) + 1];
-	}
 	/**
 	 * 
 	 * @param {(page: RealStory)=>void} fn 
 	 */
 	newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
+	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+	getNextPage(){
+		if(!(this.ofStory instanceof RealStory)) return;
+		const temp = this.ofStory.pages;
+		return temp[temp.indexOf(this) + 1];
+	}
 	getPreviousPage(){
+		if(!(this.ofStory instanceof RealStory)) return;
 		const temp = this.ofStory.pages;
 		return temp[temp.indexOf(this) - 1];
 	}
@@ -1793,21 +1804,21 @@ const RealStory = new class RealStory{
 	}
 	async clear(){
 		var i = 0,temp = this;
-		while(RealStory !== temp) temp = temp.ofStory,i++;
+		while((temp = temp.ofStory) instanceof RealStory) i++;
 		while(this.pages.length || this.fnList.length){
 			while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
 			try{await this.pages.shift()?.clear?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
 		}
 	}
-	get index(){return this.ofStory.pages.indexOf(this);}
-	/**@type {RealStory} */
+	get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
+	/**@type {?RealStory} */
 	ofStory;
 	/**@type {RealStory[]} */
 	pages = [];
 	info;
 	/**@type {(()=>*)[]} */
 	fnList = [];
-	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory ? ofStory : RealStory).pages.push(this);}
+	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) ? ofStory.pages.push(this) : RealStory._ = this;}
 }();
 const RealPromise = (()=>{
 	/**
