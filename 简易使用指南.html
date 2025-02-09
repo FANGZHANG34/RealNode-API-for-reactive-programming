@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>简易使用指南.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97indexjs">使用指南：<code>index.js</code></h1>
+<p><code>index.js</code> 是一个复杂的 JavaScript 文件，定义了一系列类和工具函数，主要用于处理浏览器环境中的 DOM 操作、事件处理、动画、加载器等。以下是对该文件的主要功能和使用方法的简要指南。</p>
+<h2 id="1-%E5%85%A8%E5%B1%80%E8%AE%BE%E7%BD%AE%E4%B8%8E%E5%88%9D%E5%A7%8B%E5%8C%96">1. <strong>全局设置与初始化</strong></h2>
+<ul>
+<li>文件开头定义了一些全局变量和初始化操作，确保在浏览器环境中正常运行。</li>
+<li><code>browserMode</code> 用于检测当前是否在浏览器环境中运行。</li>
+</ul>
+<h2 id="2-%E6%A0%B8%E5%BF%83%E7%B1%BB">2. <strong>核心类</strong></h2>
+<ul>
+<li>
+<p><strong><code>RealWorld</code></strong>: 事件循环类，用于管理异步任务和事件监听。</p>
+<ul>
+<li><code>onload</code>: 环境准备好时兑现的承诺。</li>
+<li><code>onceIf</code>: 生成条件检测承诺。</li>
+<li><code>cb2promise</code>: 将回调函数转换为 Promise。</li>
+<li><code>destroy</code>: 销毁对象。</li>
+<li><code>then</code>: 添加函数到执行队列。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealNode</code></strong>: 基础节点类，用于创建和管理节点。</p>
+<ul>
+<li><code>createExpression</code>: 创建表达式节点。</li>
+<li><code>check</code>: 检查节点是否存在。</li>
+<li><code>afterNow</code>: 在当前事件循环后执行函数。</li>
+<li><code>copyObj</code>: 复制对象。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealElement</code></strong>: 继承自 <code>RealNode</code>，用于处理 HTML 元素。</p>
+<ul>
+<li><code>getDomByString</code>: 通过字符串获取 DOM 元素。</li>
+<li><code>makeElement</code>: 创建 HTML 元素。</li>
+<li><code>addCSSRules</code>: 添加 CSS 规则。</li>
+<li><code>applyCSS</code>: 应用 CSS 样式。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealCanvas</code></strong>: 继承自 <code>RealElement</code>，用于处理 Canvas 元素。</p>
+<ul>
+<li><code>getImageBySrc</code>: 通过 URL 获取图像。</li>
+<li><code>animate</code>: 创建动画。</li>
+<li><code>toBlob</code>: 将 Canvas 内容转换为 Blob。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealLoader</code></strong>: 继承自 <code>RealElement</code>，用于处理文件加载。</p>
+<ul>
+<li><code>load</code>: 加载文件。</li>
+<li><code>onerror</code>: 加载错误时的回调。</li>
+<li><code>onloadend</code>: 加载完成时的回调。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealSelect</code></strong>: 继承自 <code>RealElement</code>，用于处理下拉选择框。</p>
+<ul>
+<li><code>protoSet</code>: 设置选项。</li>
+<li><code>fix</code>: 更新下拉框内容。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealDivList</code></strong>: 继承自 <code>RealElement</code>，用于处理动态列表。</p>
+<ul>
+<li><code>defineDivListClass</code>: 定义列表类。</li>
+<li><code>createByClassName</code>: 通过类名创建列表。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealImgList</code></strong>: 继承自 <code>RealDivList</code>，用于处理图像列表。</p>
+<ul>
+<li><code>cloneImgList</code>: 克隆图像列表。</li>
+</ul>
+</li>
+<li>
+<p><strong><code>RealDivQueue</code></strong>: 继承自 <code>RealDivList</code>，用于处理队列。</p>
+<ul>
+<li><code>applyQueue</code>: 应用队列。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-%E5%B7%A5%E5%85%B7%E5%87%BD%E6%95%B0">3. <strong>工具函数</strong></h2>
+<ul>
+<li><strong><code>createRealDivSelect</code></strong>: 创建一个自定义的下拉选择框。</li>
+<li><strong><code>createRealDivSearch</code></strong>: 创建一个自定义的搜索框。</li>
+<li><strong><code>RealPromise</code></strong>: 自定义的 Promise 实现，用于处理异步任务。</li>
+</ul>
+<h2 id="4-%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86">4. <strong>事件处理</strong></h2>
+<ul>
+<li><strong><code>RealWorld.onload</code></strong>: 在页面加载完成后执行的操作。</li>
+<li><strong><code>RealElement.addEventListenerBySelectors</code></strong>: 通过选择器添加事件监听器。</li>
+</ul>
+<h2 id="5-%E5%8A%A8%E7%94%BB%E4%B8%8E%E5%8A%A0%E8%BD%BD">5. <strong>动画与加载</strong></h2>
+<ul>
+<li><strong><code>RealCanvas.animate</code></strong>: 创建 Canvas 动画。</li>
+<li><strong><code>RealLoader.load</code></strong>: 加载文件或资源。</li>
+</ul>
+<h2 id="6-%E7%A4%BA%E4%BE%8B%E7%94%A8%E6%B3%95">6. <strong>示例用法</strong></h2>
+<h3 id="61-%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA-canvas-%E5%8A%A8%E7%94%BB">6.1 创建一个 Canvas 动画</h3>
+<pre class="hljs"><code><div><span class="hljs-keyword">const</span> canvas = <span class="hljs-keyword">new</span> RealCanvas(<span class="hljs-string">'myCanvas'</span>, <span class="hljs-number">800</span>, <span class="hljs-number">600</span>);
+canvas.animate({
+  <span class="hljs-attr">prefix</span>: <span class="hljs-string">'./img/frame_'</span>,
+  <span class="hljs-attr">suffix</span>: <span class="hljs-string">'.png'</span>,
+  <span class="hljs-attr">startN</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">length</span>: <span class="hljs-number">60</span>,
+  <span class="hljs-attr">timeSep</span>: <span class="hljs-number">100</span>
+});
+</div></code></pre>
+<h3 id="62-%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%8B%E6%8B%89%E9%80%89%E6%8B%A9%E6%A1%86">6.2 创建一个自定义下拉选择框</h3>
+<pre class="hljs"><code><div><span class="hljs-keyword">const</span> select = createRealDivSelect({
+  <span class="hljs-attr">option1</span>: <span class="hljs-string">'Option 1'</span>,
+  <span class="hljs-attr">option2</span>: <span class="hljs-string">'Option 2'</span>
+}, <span class="hljs-literal">false</span>, (e) =&gt; {
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Selected:'</span>, e.target.value);
+});
+<span class="hljs-built_in">document</span>.body.appendChild(select.self);
+</div></code></pre>
+<h3 id="63-%E5%8A%A0%E8%BD%BD%E6%96%87%E4%BB%B6">6.3 加载文件</h3>
+<pre class="hljs"><code><div><span class="hljs-keyword">const</span> loader = <span class="hljs-keyword">new</span> RealLoader(<span class="hljs-literal">true</span>, <span class="hljs-string">'file.txt'</span>, () =&gt; fetch(<span class="hljs-string">'./file.txt'</span>).then(<span class="hljs-function"><span class="hljs-params">res</span> =&gt;</span> res.text()));
+loader.onloadend = <span class="hljs-function">(<span class="hljs-params">n</span>) =&gt;</span> {
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'File loaded:'</span>, n);
+};
+loader.load();
+</div></code></pre>
+<h3 id="64-%E4%BD%BF%E7%94%A8-realpromise">6.4 使用 RealPromise</h3>
+<pre class="hljs"><code><div>RealPromise().then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'RealPromise resolved'</span>);
+});
+RealPromise.resolve(<span class="hljs-literal">true</span>);
+</div></code></pre>
+<h2 id="7-%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9">7. <strong>注意事项</strong></h2>
+<ul>
+<li>该文件依赖于浏览器环境，部分功能在非浏览器环境中可能无法正常运行。</li>
+<li>使用 <code>RealCanvas</code> 和 <code>RealLoader</code> 时，确保资源路径正确。</li>
+<li><code>RealPromise</code> 是一个自定义的 Promise 实现，使用时需注意其与标准 Promise 的差异。</li>
+</ul>
+<h2 id="8-%E6%80%BB%E7%BB%93">8. <strong>总结</strong></h2>
+<p><code>index.js</code> 提供了一个强大的工具集，用于处理浏览器中的 DOM 操作、事件处理、动画和文件加载等任务。通过合理使用这些类和函数，可以大大简化复杂的前端开发任务。</p>
+
+</body>
+</html>
