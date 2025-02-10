@@ -1,6 +1,7 @@
 "use strict";
 
-RealElement.defaultInit().then(()=>RealNode.time((temp=>{
+RealElement.defaultInit().then(()=>RealNode.time((()=>{
+	const temp = RealStory.newPage().newPromiseObj();
 	var
 	teacher = new RealNode({id: 'Ms. White'}),
 	boy = new RealNode({id: 'Mike',value: 0},false),
@@ -8,10 +9,7 @@ RealElement.defaultInit().then(()=>RealNode.time((temp=>{
 	;
 	boy.relate(teacher);
 	/**@type {RealElement} */
-	const mainEle = new RealDivList('mainEle',false,[],true);
-	mainEle.value = [boy,girl,teacher];
-	mainEle.fix();
-	console.log(mainEle.childRNs);
+	const mainEle = new RealDivList('mainEle',false,[boy,girl,teacher],true);
 	
 	// var
 	// boy = RealElement.createDiv('Mike',0),
@@ -46,4 +44,4 @@ RealElement.defaultInit().then(()=>RealNode.time((temp=>{
 		queue[0] < 1e3 ? RealNode.afterNow(tempFn) : temp.resolve('\t=>'+queue[0]+' : '+(queue[0] - queue[1]),teacher.value = queue[0].id.description+' wins!!!');
 	};
 	return temp.self;
-})(RealStory.newPage().newPromiseObj())).then(result=>console.log(result.value,'in +',result.time,'ms')));
+})()).then(result=>console.log(result.value,'in +',result.time,'ms')));
