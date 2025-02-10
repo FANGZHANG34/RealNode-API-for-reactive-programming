@@ -92,6 +92,7 @@ class RealNode{
 	/**@type {Map<Symbol,RealNode>} */
 	static _sys = new Map;
 	static t0 = Date.now();
+	static tryRealNode = false;
 	static now = Promise.resolve();
 	static eventLoop = new RealWorld(4);
 	/**
@@ -387,7 +388,7 @@ class RealNode{
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
 	 * @param {...(Symbol | RealNode)} [relativeRNs] 
 	 */
-	constructor(config,tryRealNode = true,...relativeRNs){
+	constructor(config,tryRealNode = RealNode.tryRealNode,...relativeRNs){
 		const {get,set,react,id,info} = config = Object(config);
 		/**@type {AntiNode} */
 		this.proto = new this.constructor.proto;
