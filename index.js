@@ -81,8 +81,9 @@ class RealWorld{
 	/**@type {?()=>*} */
 	soFn;
 	constructor(timeSep,...fnList){
-		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),timeSep - timeSep !== 0 ? timeSep : 10),writable: false,enumerable: false});
+		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),timeSep - timeSep === 0 ? timeSep : 10),writable: false,enumerable: false});
 		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
+		const temp = ()=>this.destroy();
 	}
 }
 class RealNode{
@@ -92,7 +93,7 @@ class RealNode{
 	static _sys = new Map;
 	static t0 = Date.now();
 	static now = Promise.resolve();
-	static eventLoop = new RealWorld;
+	static eventLoop = new RealWorld(4);
 	/**
 	 * @typedef {{
 	 * tryRealNode: Boolean,
@@ -187,7 +188,7 @@ class RealNode{
 				realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
 			}
 		}
-		return react && this.react(noSelf),notify && this.notify(noSelf),true;
+		return react && this.react?.(noSelf),notify && this.notify(noSelf),true;
 	}catch(e){
 		if(this instanceof RealNode) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -341,6 +342,7 @@ class RealNode{
 	_dealWithPositionsOfRNs(realNodeMap,expression){
 		const temp = this.clearChildRNs().proto.childRNs,list = [];
 		var value,i,end;
+		realNodeMap = realNodeMap.concat();
 		while(realNodeMap.length){
 			/**@type {[RealNode, ...string[]]} */
 			const [realNode,...dir] = realNodeMap.pop();
@@ -425,6 +427,7 @@ class RealElement extends RealNode{
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 	static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
+	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent',initValue},{id});}
 	static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
 	static deleteId(id){typeof id !== 'string' && this.error('=> Please use String "id" !');return this.idSet.delete(id);}
 	static getRandomId(){
@@ -500,7 +503,7 @@ class RealElement extends RealNode{
 				realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
 			}
 		}
-		return this.fix(),react && this.react(noSelf),notify && this.notify(noSelf),true;
+		return this.fix(),react && this.react?.(noSelf),notify && this.notify(noSelf),true;
 	}catch(e){
 		if(this instanceof RealElement) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -533,8 +536,8 @@ class RealElement extends RealNode{
 	static defaultInit = (()=>{
 		var onload = false;
 		return ()=>{
-			return onload ? RealWorld.onload : RealWorld.onload = RealWorld.onload.
-			then(()=>(RealElement.addCSSRules('',{
+			return onload ? RealWorld.onload : RealWorld.onload = (onload = true,RealWorld.onload.
+			then(()=>void RealElement.addCSSRules('',{
 				'*':{
 					'margin':'0',
 					'padding':'0',
@@ -669,7 +672,7 @@ class RealElement extends RealNode{
 					'transform':'translate(-50%,-50%)',
 					'top':'50%',
 				},
-			}),onload = true));
+			})));
 		};
 	})();
 	getIndexWithin(){
@@ -695,8 +698,9 @@ class RealElement extends RealNode{
 	 */
 	realSet(value,react,notify,noSelf){
 		var temp;
-		return this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ? this._dealWithPositionsOfRNs(temp,value) :
-		this.proto._set.call(this,value) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
+		return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+			this.proto._set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto._set.call(this,value)
+		) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
 	}
 	/**
 	 * 
@@ -760,10 +764,10 @@ class RealElement extends RealNode{
 	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
 		super(config,tryRealNode,...relativeRNs);
 		/**@type {AntiHTMLNode} */this.proto;
-		this.proto.value = initValue;
 		this.self = self;
 		this.key = key;
 		this.transform = transform;
+		(tryRealNode ? this : this.proto).value = initValue;
 		this.addClassName(this.constructor.name);
 	}
 }
@@ -823,7 +827,7 @@ class RealGroup{
 		if(value && typeof value === 'object'){
 			const temp = [];
 			for(const [,realNode] of this[Symbol.iterator](null,Reflect.ownKeys(value),true)) realNode.realSet(value[key],react) && temp.push(realNode);
-			if(temp.length) react && this.react(keys1),notify && this.notify();
+			if(temp.length) react && this.react?.(keys1),notify && this.notify();
 			return temp;
 		}else this.error('=> "value" must be Object !');
 	}
@@ -1228,7 +1232,7 @@ RealSelect = class RealSelect extends RealElement{
 				}
 			}
 		}
-		return react && this.react(noSelf),notify && this.notify(noSelf),true;
+		return react && this.react?.(noSelf),notify && this.notify(noSelf),true;
 	}catch(e){
 		if(this instanceof RealSelect) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -1380,7 +1384,7 @@ RealDivList = class RealDivList extends RealElement{
 	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
-			const position = temp.pop().reverse(),tempValue = realNode.value;
+			const position = temp.pop().reverse().concat(),tempValue = realNode.value;
 			if(!position.length) return this.realSet(tempValue,react,notify,noSelf);else{
 				value = this.proto.value;
 				while(position.length > 1) value = value[position.pop()];
@@ -1390,7 +1394,7 @@ RealDivList = class RealDivList extends RealElement{
 				position[1][this.tryHTML ? 'innerHTML' : 'textContent'] = tempValue;
 			}
 		}
-		return react && this.react(noSelf),notify && this.notify(noSelf),true;
+		return react && this.react?.(noSelf),notify && this.notify(noSelf),true;
 	}catch(e){
 		if(this instanceof RealDivList) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
@@ -1517,7 +1521,7 @@ RealImgList = class RealImgList extends RealDivList{
 				if(value === this.proto.value) this.proto.childrenList[position[0]][0].src = String(tempValue?.src ?? tempValue);
 			}
 		}
-		return react && this.react(noSelf),notify && this.notify(noSelf),true;
+		return react && this.react?.(noSelf),notify && this.notify(noSelf),true;
 	}catch(e){
 		if(this instanceof RealImgList) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);

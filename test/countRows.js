@@ -2,8 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const getPath = (()=>{
-    const path = require('path');
-    return path.resolve.bind(path,__dirname);
+	const path = require('path');
+	return path.resolve.bind(path,__dirname);
 })();
 
 ['../index.js'].
