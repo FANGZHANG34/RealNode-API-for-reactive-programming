@@ -12,7 +12,6 @@ nodeRequire = globalThis.require
 
 /**## browserMode 是否存在浏览器环境 */
 const browserMode = 'document' in globalThis;
-var t0 = performance.now();
 Array.prototype.iterLog = function*(start,end){
 	if(start - start !== 0) start = 0;
 	if(end - end !== 0) end = this.length;
