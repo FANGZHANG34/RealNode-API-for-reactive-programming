@@ -1,6 +1,6 @@
 # RealNode-API-for-reactive-programming
 
-为响应式编程提供了若干实用的ES6类，基类为`RealNode`。
+为响应式编程提供了若干实用的ES10类，基类为`RealNode`。
 
 - `RealNode`的子类`RealElement`可用于任何对象以及网页元素，并提供了用于创建样式的静态方法。
 
