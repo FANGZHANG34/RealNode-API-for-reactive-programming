@@ -406,9 +406,9 @@ class RealNode{
 	}
 }
 class RealElement extends RealNode{
-	/**@typedef {AntiNode & {self: HTMLElement,isElement: Boolean,transform(value)=>*}} AntiHTMLNode */
+	/**@typedef {AntiNode & {self: HTMLElement & {},isElement: Boolean,transform(value)=>*}} AntiHTMLNode */
 	static proto = class AntiHTMLNode extends RealNode.proto{
-		/**@type {HTMLElement} */
+		/**@type {HTMLElement & {}} */
 		self;
 		/**@type {Boolean} */
 		isElement;
