@@ -857,10 +857,9 @@ class RealGroup{
 	}else this.error('=> "realNodeDict" must be Object !');}
 }
 
-var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue;
 if(browserMode){
 
-RealCanvas = class RealCanvas extends RealElement{
+var RealCanvas = class RealCanvas extends RealElement{
 	/**@typedef {AntiHTMLNode & {
 	 * self: HTMLCanvasElement;
 	 * temp: CanvasRenderingContext2D;
@@ -1068,7 +1067,7 @@ RealCanvas = class RealCanvas extends RealElement{
 		this.proto.ctx = this.proto.self.getContext('2d');
 	}
 };
-RealLoader = class RealLoader extends RealElement{
+var RealLoader = class RealLoader extends RealElement{
 	/**@typedef {AntiHTMLNode & {onerror: null | (error: Error)=>void,onloadend: null | (n: Number)=>void}} AntiLoader */
 	static proto = class AntiLoader extends RealElement.proto{
 		/**@type {null | (error: Error)=>void} */
@@ -1205,7 +1204,7 @@ RealLoader = class RealLoader extends RealElement{
 		isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
 	}
 };
-RealSelect = class RealSelect extends RealElement{
+var RealSelect = class RealSelect extends RealElement{
 	/**@typedef {AntiHTMLNode & {list: HTMLOptionElement[]}} AntiSelect */
 	static proto = class AntiSelect extends RealElement.proto{
 		/**@type {HTMLOptionElement[]} */
@@ -1302,7 +1301,7 @@ RealSelect = class RealSelect extends RealElement{
 		this.fix();
 	}
 };
-RealComtag = class RealComtag extends RealElement{
+var RealComtag = class RealComtag extends RealElement{
 	fix(){
 		this.self.classList.add('disappear');
 		this.self.innerHTML = '';
@@ -1355,7 +1354,7 @@ RealComtag = class RealComtag extends RealElement{
 		Object.assign(this.fix().self,selfAssign);
 	}
 };
-RealDivList = class RealDivList extends RealElement{
+var RealDivList = class RealDivList extends RealElement{
 	/**@typedef {AntiHTMLNode & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
 	static proto = class AntiList extends RealElement.proto{
 		/**@type {HTMLDivElement[]} */
@@ -1505,7 +1504,7 @@ RealDivList = class RealDivList extends RealElement{
 		Object.assign(this.fix().self,selfAssign);
 	}
 };
-RealImgList = class RealImgList extends RealDivList{
+var RealImgList = class RealImgList extends RealDivList{
 	/**
 	 * 
 	 * @this {RealImgList}
@@ -1579,7 +1578,7 @@ RealImgList = class RealImgList extends RealDivList{
 	 */
 	constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
 };
-RealDivQueue = class RealDivQueue extends RealDivList{
+var RealDivQueue = class RealDivQueue extends RealDivList{
 	/**@typedef {AntiList & {queueArray: Number[]}} AntiQueue */
 	static proto = class AntiQueue extends RealDivList.proto{
 		/**@type {Number[]} */
@@ -1654,11 +1653,14 @@ RealDivQueue = class RealDivQueue extends RealDivList{
 	/**@type {Number[]} */
 	get queueArray(){return this.proto.queueArray?.concat?.();}
 };
-
-}
-console.log(performance.now() - t0,'ms');
-
-if(browserMode) RealWorld.onload = RealWorld.onload.
+/**
+ * 
+ * @param {{[key: String]: *}} [optionConfig] 
+ * @param {Boolean} [multiple] 
+ * @param {(this: RealDivList,e: Event)=>void} [onchange] 
+ */
+var createRealDivSelect = (optionConfig,multiple,onchange)=>RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);
+RealWorld.onload = RealWorld.onload.
 then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	'': {'background':'linear-gradient(135deg,#fff,#000)'},
 	'>div': {'background-color':'#333','transform':'scale(0.8,1)'},
@@ -1705,12 +1707,10 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 })()));
 /**
  * 
- * @param {{[key: String]: *}} [optionConfig] 
- * @param {Boolean} [multiple] 
- * @param {(this: RealDivList,e: Event)=>void} [onchange] 
+ * @param {String} [placeholder] 
  */
-function createRealDivSelect(optionConfig,multiple,onchange){return RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);}
-if(browserMode) RealWorld.onload = RealWorld.onload.
+var createRealDivSearch = placeholder=>RealDivList.createByClassName('realDivSearch',placeholder);
+RealWorld.onload = RealWorld.onload.
 then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
 	/**@type {RealDivList} */
 	var tempRealDivList;
@@ -1764,11 +1764,11 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		this.set = tempSet;
 	};
 })()));
-/**
- * 
- * @param {String} [placeholder] 
- */
-function createRealDivSearch(placeholder){return RealDivList.createByClassName('realDivSearch',placeholder);}
+
+}
+var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
+console.log(performance.now() - t0,'ms');
+
 const RealStory = new class RealStory{
 	/**@type {RealStory} */
 	static _;
