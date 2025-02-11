@@ -261,11 +261,12 @@ class RealNode{
 	realSet(value,react,notify,noSelf){
 		var temp;
 		const oldValue = this.proto.value;
-		return (this.proto._set.call(
+		try{return (this.proto._set.call(
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		) ?? oldValue !== this.proto.value) && (react && this.react?.(),notify && this.notify(noSelf),true);
+		) ?? oldValue !== this.proto.value) && (react && this.react?.(),notify && this.notify(noSelf),true);}
+		catch(e){return console.error(e),e;}
 	}
 	/**
 	 * 
@@ -698,9 +699,9 @@ class RealElement extends RealNode{
 	 */
 	realSet(value,react,notify,noSelf){
 		var temp;
-		return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+		try{return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this.proto._set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto._set.call(this,value)
-		) && (this.fix(),react && this.react,notify && this.notify(noSelf),true);
+		) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
 	}
 	/**
 	 * 
@@ -941,7 +942,7 @@ RealCanvas = class RealCanvas extends RealElement{
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		)).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true));
+		)).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(console.error(e),e));
 	}
 	multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
 		var i = -1,temp = bgSrc ?? srcArray[0] ?? false;
