@@ -3,7 +3,7 @@ globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ?
 globalThis.performance ??= Date
 ;
 /**# 搜索## */
-var exports = exports ?? {};
+var require,exports = exports ?? {};
 var
 t0 = performance.now(),
 nodeRequire = require
