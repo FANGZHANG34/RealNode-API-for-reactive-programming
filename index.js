@@ -3,18 +3,15 @@ globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ?
 globalThis.performance ??= Date
 ;
 /**# 搜索## */
-var require,exports = exports ?? {};
-var
-t0 = performance.now(),
-nodeRequire = require
-;
+var require,nodeRequire = require,t0 = performance.now(),exports = exports ?? {};
+
 /**##   */
 
 /**## browserMode 是否存在浏览器环境 */
 const browserMode = 'document' in globalThis;
 Array.prototype.iterLog = function*(start,end){
-	if(start - start !== 0) start = 0;
-	if(end - end !== 0) end = this.length;
+	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
+	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 };
 /**# RealWorld 事件循环类 */
