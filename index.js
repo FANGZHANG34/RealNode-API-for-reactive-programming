@@ -6,7 +6,7 @@ globalThis.performance ??= Date
 var exports = exports ?? {};
 var
 t0 = performance.now(),
-nodeRequire = globalThis.require
+nodeRequire = require
 ;
 /**##   */
 
