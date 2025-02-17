@@ -246,7 +246,7 @@ class RealNode{
 	notify(noSelf,thisArg,count){
 		// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
 		for(const id of this.relativeRNs) Promise.resolve(RealNode.search(id)).
-		then(realNode=>((noSelf && this === realNode) || (realNode?.react?.(),realNode.notify())));
+		then(realNode=>((noSelf && this === realNode) || (realNode?.react?.(),realNode?.notify?.())));
 	}
 	/**
 	 * 
@@ -355,27 +355,26 @@ class RealNode{
 		}
 		return expression;
 	}
-	get childRNs(){return this.proto.childRNs;}
-	get display(){return RealNode._sys.has(this.id);}
-	get tryRealNode(){return this.proto.tryRealNode;}
 	/**@type {Symbol} */
 	get id(){return this.proto.id;}
+	get childRNs(){return this.proto.childRNs;}
+	get value(){return this.get();}
+	set value(value){this.realSet(value,true,true);}
 	get set(){return this.realSet;}
+	set set(set){this.proto._set = typeof set === 'function' ? set : this.protoSet;}
 	get get(){return this.proto._get;}
+	set get(get){this.proto._get = typeof get === 'function' ? get : this.protoGet;}
 	/**@type {()=>void} */
 	get react(){return this.proto.react;}
-	get value(){return this.get();}
+	set react(react){this.proto.react = typeof react === 'function' ? react : null;}
+	get display(){return RealNode._sys.has(this.id);}
 	set display(display){display ? RealNode._sys.set(this.id,this) : RealNode._sys.delete(this.id);}
+	get tryRealNode(){return this.proto.tryRealNode;}
 	set tryRealNode(tryRealNode){
 		var i;
 		tryRealNode = (this.proto.tryRealNode = Boolean(tryRealNode)) ? 'appear' : 'disappear';
 		for(i = this.proto.childRNs.length;i --> 0;) this.proto.childRNs[tryRealNode]();
 	}
-	/**@param {()=>*} get */
-	set get(get){this.proto._get = typeof get === 'function' ? get : this.protoGet;}
-	set set(set){this.proto._set = typeof set === 'function' ? set : this.protoSet;}
-	set react(react){this.proto.react = typeof react === 'function' ? react : null;}
-	set value(value){this.realSet(value,true,true);}
 	/**@type {Symbol[]} */
 	relativeRNs = [];
 	/**@type {Promise[][]} */
@@ -743,11 +742,11 @@ class RealElement extends RealNode{
 		if(fix) temp.fix();
 		return temp;
 	}
-	get self(){return this.proto.self;}
 	get isElement(){return this.proto.isElement;}
 	get transform(){return this.proto.transform;}
 	/**@param {(value)=>*} transform */
 	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
+	get self(){return this.proto.self;}
 	set self(self){
 		self && typeof self === 'object' ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
 		this.error('=> "self" must be HTMLElement !');
@@ -1018,25 +1017,25 @@ var RealCanvas = class RealCanvas extends RealElement{
 	}
 	get ctx(){return this.proto.ctx;}
 	get img(){return this.proto.img;}
-	get self(){return this.proto.self;}
-	get temp(){return this.proto.temp.canvas;}
-	get width(){return this.proto.self.width;}
-	get height(){return this.proto.self.height;}
 	get imgW(){return this.proto.img.naturalWidth;}
 	get imgH(){return this.proto.img.naturalHeight;}
-	get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
-	get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
+	get self(){return this.proto.self;}
 	set self(self){this.proto.self ??= self;}
+	get width(){return this.proto.self.width;}
 	set width(width){this.proto.self.width = this.proto.temp.canvas.width = width ?? 640;}
+	get height(){return this.proto.self.height;}
 	set height(height){this.proto.self.height = this.proto.temp.canvas.height = height ?? 360;}
+	get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
+	set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
+	get temp(){return this.proto.temp.canvas;}
+	set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
+	get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
 	/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 	set opacity(opacityConfig){
 		Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
 		this.loaded = this.loaded.then(()=>opacityConfig[0]).
 		then(value=>{this.proto.ctx.globalAlpha = value * (opacityConfig[1] ?? 1);});
 	}
-	set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
-	set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
 	/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 	set tempOpacity(opacityConfig){
 		Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
@@ -1169,13 +1168,13 @@ var RealLoader = class RealLoader extends RealElement{
 		})()
 	);
 	protoSet(value){this.self[this.key] = value;}
-	get onerror(){return this.proto.onerror;}
-	get onloadend(){return this.proto.onloadend;}
-	get fileName(){return 'upload' === this.type ? this.error('Uploader bans "fileName" !') : this.temp.download;}
 	/**@returns {FileList} */
 	get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
+	get onerror(){return this.proto.onerror;}
 	set onerror(onerror){this.proto.onerror = typeof onerror === 'function' ? onerror : null;}
+	get onloadend(){return this.proto.onloadend;}
 	set onloadend(onloadend){this.proto.onloadend = typeof onloadend === 'function' ? onloadend : null;}
+	get fileName(){return 'upload' === this.type ? this.error('Uploader bans "fileName" !') : this.temp.download;}
 	set fileName(fileName){
 		'upload' === this.type && this.error('Uploader bans "fileName" !');
 		typeof fileName === 'symbol' && this.error('"fileName" must be String but not Symbol !');
@@ -1596,8 +1595,10 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		if(list0.pop() !== list1.pop()) return;
 		target = [];
 		while((target[0] = list0.pop()) === (target[1] = list1.pop())) if(!list0.length) return;
+		const [target0,target1] = target;
+		if(!target0 || !target1) return;
 		/**@type {HTMLElement} */
-		const temp = target[0].parentElement,[target0,target1] = target;
+		const temp = target0.parentElement;
 		if(temp.classList.contains('RealDivQueue')){
 			for(realDivQueue of RealElement.searchByElement(temp)) if(realDivQueue instanceof RealDivQueue) break;
 			queue = realDivQueue.queueArray;
