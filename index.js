@@ -14,6 +14,8 @@ Array.prototype.iterLog = function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 };
+Promise.newWithList = class PromiseWithlist extends Promise{list = [];};
+
 /**# RealWorld 事件循环类 */
 class RealWorld{
 	/**## onload 环境准备好时兑现的承诺 */
@@ -1072,11 +1074,14 @@ var RealLoader = class RealLoader extends RealElement{
 		onloadend;
 	};
 	static fs = (nodeRequire=>new class DocumentFs{
+		static fetch = (temp=>path=>Promise.any([
+			fetch(path,{mode:'no-cors'}).then(temp),fetch(path).then(temp)
+		]))(response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !'));
 		/**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
 		stat = (
 			nodeRequire
 			? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),methodName: 'stat'},path)
-			: (path=>fetch(path,{mode:'no-cors'}).then(response=>[,response],e=>[e]))
+			: (path=>DocumentFs.fetch(path).catch(e=>[e]))
 		);
 		readdir = (
 			nodeRequire
