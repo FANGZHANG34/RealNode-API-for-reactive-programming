@@ -14,7 +14,31 @@ Array.prototype.iterLog = function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 };
-Promise.newWithList = class PromiseWithlist extends Promise{list = [];};
+Promise.newWithList = function(){
+	/**
+	 * 
+	 * @param {(resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 */
+	function tempFn(executor){return new PromiseWithlist(executor);}
+	class PromiseWithlist extends Promise{
+		/**
+		 * 
+		 * @param {((value)=>any) | null | undefined} onfulfilled 
+		 * @param {((reason)=>PromiseLike<never>) | null | undefined} onrejected 
+		 */
+		then(onfulfilled,onrejected){
+			/**@type {PromiseWithlist} */
+			const result = this.protoThen(typeof onfulfilled === 'function' ? (v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected);
+			var temp = result.list;
+			temp.unshift(...this.list);
+			return result;
+		}
+		list = [];
+	}
+	PromiseWithlist.prototype.protoThen = Promise.prototype.then;
+	for(const key of Object.keys(Promise)) tempFn[key] = typeof Promise[key] === 'function' ? Promise[key].bind(PromiseWithlist) : Promise[key];
+	return tempFn;
+}();
 
 /**# RealWorld 事件循环类 */
 class RealWorld{
@@ -30,23 +54,29 @@ class RealWorld{
 	/**
 	 * ## cb2promise 回调转承诺
 	 * @method
-	 * @param {{thisArg: {},methodName: String,callback?: (...value: *[])=>"this.resolve(value)"}} param0 
-	 * @param {...*} [parameters] 
-	 * @returns {Promise<[Error | null,*] | undefined>}
 	 */
 	static cb2promise = (()=>{
 		function thisResolve(...value){this.resolve(value);}
-		return ({thisArg,methodName,callback = thisResolve} = {},...parameters)=>{
-			if(thisArg && typeof thisArg === 'object' && methodName in thisArg) return new Promise(resolve=>{
-				const temp = {callback,resolve};
-				try{thisArg[methodName](...parameters,(...value)=>temp.callback(...value));}catch({stack: message0}){
-					try{thisArg[methodName]((...value)=>temp.callback(...value),...parameters);}catch({stack: message1}){
-						return [new Error('=> Neither head or tail of parameters is Callback !\n'+message0+'\n'+message1)];
+		return(
+			/**
+			 * ## cb2promise 回调转承诺
+			 * @param {{thisArg?: *,useFn: (()=>*) | String,callback?: (...value: *[])=>"this.resolve(value)"}} param0 
+			 * @param {...[]} [parameters] 
+			 * @returns {Promise<[Error | null,*] | undefined>}
+			 */
+			({thisArg,useFn,callback = thisResolve} = {},...parameters)=>{
+				if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
+				if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
+				return new Promise(resolve=>{
+					const temp = {callback,resolve};
+					try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch({stack: message0}){
+						try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch({stack: message1}){
+							temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+message0+'\n'+message1)]);
+						}
 					}
-				}
-			}).catch(e=>console.error(e.stack));
-			else throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"methodName" not in "thisArg" !');
-		};
+				}).catch(e=>console.error(e.stack));
+			}
+		);
 	})();
 	/**## destroy 销毁本对象 */
 	destroy(){return clearInterval(this._id);}
@@ -923,7 +953,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @returns {Promise<Blob>}
 	 */
 	toBlob(){try{
-		return RealWorld.cb2promise({thisArg: this.self,methodName: 'toBlob'}).then(result=>(result[0] instanceof Error ? new Blob : result[0]));
+		return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).then(result=>(result[0] instanceof Error ? new Blob : result[0]));
 	}catch(e){return console.error(e),Promise.resolve(new Blob);}}
 	/**
 	 * 
@@ -1074,19 +1104,21 @@ var RealLoader = class RealLoader extends RealElement{
 		onloadend;
 	};
 	static fs = (nodeRequire=>new class DocumentFs{
-		static fetch = (temp=>path=>Promise.any([
-			fetch(path,{mode:'no-cors'}).then(temp),fetch(path).then(temp)
-		]))(response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !'));
+		static fetch = (()=>{
+			const temp = response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !');
+			return browserMode && document.location.protocol === 'file:' ? path=>fetch(path,{mode:'no-cors'}).then(temp) :
+			path=>fetch(path).then(temp);
+		})();
 		/**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
 		stat = (
 			nodeRequire
-			? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),methodName: 'stat'},path)
+			? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'stat'},path)
 			: (path=>DocumentFs.fetch(path).catch(e=>[e]))
 		);
 		readdir = (
 			nodeRequire
 			/**@type {(path: String)=>Promise<[Error | null,String[]]>} */
-			? (path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),methodName: 'readdir'},path))
+			? (path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'readdir'},path))
 			/**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>} */
 			: (async function readdir(path,...strArgs){
 				try{
@@ -1136,15 +1168,15 @@ var RealLoader = class RealLoader extends RealElement{
 			const fs = nodeRequire('fs');
 			const data = await realLoader.dataGetter();
 			const [,prefix,suffix] = /(.+)(\..+)/.exec(realLoader.temp.download) || [,'file',''];
-			return RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},'./'+realLoader.temp.download).
+			return RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download).
 			then(async (value)=>{
 				if(!value) this.error('Unknown Error !');
 				if(value[0]) return RealLoader.getArrayBufferFrom(data).
-				then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
+				then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
 				for(var i = 1;true;i++){
 					const path = './'+prefix+' - '+i+suffix;
-					if((await RealWorld.cb2promise({thisArg: fs,methodName: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
-					then(ab=>RealWorld.cb2promise({thisArg: fs,methodName: 'writeFile'},path,Buffer.from(ab))).then(result=>[result[0],i]);
+					if((await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
+					then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},path,Buffer.from(ab))).then(result=>[result[0],i]);
 				}
 			});
 		}catch(e){return [e];}}) :
