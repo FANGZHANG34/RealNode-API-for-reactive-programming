@@ -1865,20 +1865,20 @@ const RealStory = new class RealStory{
 	fnList = [];
 	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) ? ofStory.pages.push(this) : RealStory._ = this;}
 }();
-const RealPromise = (()=>{
-	/**
-	 * 
-	 * @returns {Promise<Boolean>}
-	 */
-	const RealPromise = ()=>Promise.resolve(
-		typeof RealPromise.resolve !== 'function' && new Promise(value=>Reflect.defineProperty(RealPromise,'resolve',{value})).
-		then(()=>Reflect.defineProperty(RealPromise,'resolve',{value: undefined}))
-	);
-	return Reflect.defineProperty(RealPromise,'resolve',{configurable: true,writable: false}),RealPromise;
-})();
+// const RealPromise = (()=>{
+// 	/**
+// 	 * 
+// 	 * @returns {Promise<Boolean>}
+// 	 */
+// 	const RealPromise = ()=>Promise.resolve(
+// 		typeof RealPromise.resolve !== 'function' && new Promise(value=>Reflect.defineProperty(RealPromise,'resolve',{value})).
+// 		then(()=>Reflect.defineProperty(RealPromise,'resolve',{value: undefined}))
+// 	);
+// 	return Reflect.defineProperty(RealPromise,'resolve',{configurable: true,writable: false}),RealPromise;
+// })();
 
 Object.assign(exports,{
 	RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
-	createRealDivSelect,createRealDivSearch,RealPromise,
+	createRealDivSelect,createRealDivSearch,// RealPromise,
 	RealStory,
 });
