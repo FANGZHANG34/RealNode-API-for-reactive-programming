@@ -153,6 +153,7 @@ class RealNode{
 	 * @param {Symbol} id 
 	 */
 	static search(id){return this._sys.get(id);}
+	static is(value1,value2){return Object.is(value1,value2) || value1 === value2;}
 	/**
 	 * 
 	 * @param {()=>*} fn 
