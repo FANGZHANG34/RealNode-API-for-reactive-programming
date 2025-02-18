@@ -15,29 +15,23 @@ Array.prototype.iterLog = function*(start,end){
 	while(start < end) yield this[start++];
 };
 Promise.newWithList = function(){
-	/**
-	 * 
-	 * @param {(resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
-	 */
-	function tempFn(executor){return new PromiseWithlist(executor);}
-	class PromiseWithlist extends Promise{
+	var PromiseWithList = new Proxy(class PromiseWithList extends Promise{
 		/**
 		 * 
 		 * @param {((value)=>any) | null | undefined} onfulfilled 
 		 * @param {((reason)=>PromiseLike<never>) | null | undefined} onrejected 
 		 */
 		then(onfulfilled,onrejected){
-			/**@type {PromiseWithlist} */
+			/**@type {PromiseWithList} */
 			const result = this.protoThen(typeof onfulfilled === 'function' ? (v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected);
 			var temp = result.list;
 			temp.unshift(...this.list);
 			return result;
 		}
 		list = [];
-	}
-	PromiseWithlist.prototype.protoThen = Promise.prototype.then;
-	for(const key of Object.keys(Promise)) tempFn[key] = typeof Promise[key] === 'function' ? Promise[key].bind(PromiseWithlist) : Promise[key];
-	return tempFn;
+	},{apply(target,thisArg,argArray){return Reflect.construct(target,argArray);}});
+	PromiseWithList.prototype.protoThen = Promise.prototype.then;
+	return PromiseWithList;
 }();
 
 /**# RealWorld 事件循环类 */
