@@ -135,7 +135,12 @@ class RealWorld{
 	}
 }
 class RealNode{
-	/**@throws {Error} */
+	/**
+	 * 
+	 * @throws
+	 * @param {String} message 
+	 * @returns {never}
+	 */
 	static error(message){throw new Error(this.name+' : '+message);}
 	/**@type {Map<Symbol,RealNode>} */
 	static _sys = new Map;
@@ -276,6 +281,12 @@ class RealNode{
 	 */
 	protoSet(value){return value !== this.proto.value && (this.proto.value = value,true);}
 	clearChildRNs(){while(this.proto.childRNs.length){this.proto.childRNs.pop().display = false;}return this;}
+	/**
+	 * 
+	 * @throws
+	 * @param {String} message 
+	 * @returns {never}
+	 */
 	error(message){throw new Error("RealNode "+(this.id.description ?? '')+'\n"""\n'+String(message)+'\n"""');}
 	[Symbol.toPrimitive](hint){return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';}
 	/**
@@ -874,6 +885,12 @@ class RealElement extends RealNode{
 	}
 }
 class RealGroup{
+	/**
+	 * 
+	 * @throws
+	 * @param {String} message 
+	 * @returns {never}
+	 */
 	error(message,...proof){console.log(...proof);throw new Error('RealGroup """\n'+String(message)+'\n"""');}
 	/**
 	 * 
