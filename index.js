@@ -1,36 +1,62 @@
 "use strict";
-globalThis.HTMLElement ??= globalThis.clearInterval ??= globalThis.setInterval ??= function(){},
-globalThis.performance ??= Date
+var require,
+nodeRequire = require,
+prevent = function(){},
+exports = exports ?? {},
+HTMLElement = globalThis.HTMLElement ?? prevent,
+clearInterval = globalThis.clearInterval ?? prevent,
+setInterval = globalThis.setInterval ?? prevent,
+performance = globalThis.performance ?? Date,
+t0 = performance.now()
 ;
+
 /**# 搜索## */
-var require,nodeRequire = require,t0 = performance.now(),exports = exports ?? {};
-
 /**##   */
-
 /**## browserMode 是否存在浏览器环境 */
 const browserMode = 'document' in globalThis;
-Array.prototype.iterLog = function*(start,end){
+/**## browserMode 是否存在nodejs环境 */
+const nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]';
+
+Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
-};
-Promise.newWithList = function(){
-	var PromiseWithList = new Proxy(class PromiseWithList extends Promise{
+});
+var PromiseWithList = Promise.WithList = function(){
+	/**
+	 * @typedef {Promise & {
+	 * list: [];
+	 * protoThen: (onfulfilled: ((value)=>any) | null | undefined,onrejected: ((reason)=>PromiseLike<never>) | null | undefined)=>Promise;
+	 * }} PromiseWithList
+	 */
+
+	/**
+	 * 
+	 * @param {Promise | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 * @returns {PromiseWithList}
+	 */
+	function PromiseWithList(executor){
+		const temp = Object.create(executor instanceof Promise ? executor : new Promise(executor),proto);
+		return Object.create(temp,{list: {value: []}});
+	}
+	const proto = {
+		protoThen: {value: Promise.prototype.then},
 		/**
 		 * 
 		 * @param {((value)=>any) | null | undefined} onfulfilled 
 		 * @param {((reason)=>PromiseLike<never>) | null | undefined} onrejected 
 		 */
-		then(onfulfilled,onrejected){
-			/**@type {PromiseWithList} */
-			const result = this.protoThen(typeof onfulfilled === 'function' ? (v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected);
+		then: {value(onfulfilled,onrejected){
+			const result = PromiseWithList(
+				Reflect.getPrototypeOf(Reflect.getPrototypeOf(this)).then(typeof onfulfilled === 'function' ?
+				(v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected)
+			);
 			var temp = result.list;
 			temp.unshift(...this.list);
 			return result;
-		}
-		list = [];
-	},{apply(target,thisArg,argArray){return Reflect.construct(target,argArray);}});
-	PromiseWithList.prototype.protoThen = Promise.prototype.then;
+		}}
+	};
+	Reflect.setPrototypeOf(Reflect.getPrototypeOf(PromiseWithList),Promise);
 	return PromiseWithList;
 }();
 
@@ -103,7 +129,7 @@ class RealWorld{
 	/**@type {?()=>*} */
 	soFn;
 	constructor(timeSep,...fnList){
-		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),timeSep - timeSep === 0 ? timeSep : 10),writable: false,enumerable: false});
+		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),Number.isFinite(+timeSep) ? timeSep : 10),writable: false,enumerable: false});
 		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
 		const temp = ()=>this.destroy();
 	}
@@ -442,6 +468,39 @@ class RealElement extends RealNode{
 	static myStyle = new Map;
 	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
 	static selectorEventListeners = {};
+	static keyboardController = (browserMode && addEventListener('keydown',e=>{
+		/**@type {?HTMLElement} */
+		const onkeyboardController = document.querySelector('.onkeyboardControl') ?? document.querySelector('.keyboardController');
+		if(!onkeyboardController) return;
+		var i,temp;
+		switch(e.key){
+			case RealElement.keyboardController.previous: i = -1;break;
+			case RealElement.keyboardController.next: i = 1;break;
+			case RealElement.keyboardController.enter: (temp = RealElement.searchByElement(onkeyboardController)[0]) instanceof RealDivList ?
+			temp.proto.list.length ? (onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
+			(temp = onkeyboardController).click() :
+			(temp = onkeyboardController.querySelector('.keyboardController')) ? (onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
+			(temp = onkeyboardController).click();break;
+			case RealElement.keyboardController.back:{
+				temp = onkeyboardController;
+				while(temp = temp.parentElement) if(temp.classList.contains('keyboardController')) break;
+				temp ? (onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
+				(temp = onkeyboardController).classList.add('onkeyboardControl');
+				break;
+			}
+		}
+		i && (
+			temp = Array.from(onkeyboardController.parentElement.children),
+			onkeyboardController.classList.remove('onkeyboardControl'),
+			(temp = temp[(temp.indexOf(onkeyboardController) + temp.length + i) % temp.length]).classList.add('onkeyboardControl')
+		);
+		temp && temp.animate({'opacity':[1,0,1]},{duration: 500});
+	}),{
+		previous: 'ArrowUp',
+		next: 'ArrowDown',
+		enter:'ArrowRight',
+		back: 'ArrowLeft'
+	});
 	/**@method @type {(innerHTML: String)=>HTMLElement | null}*/
 	static getDomByString = (template=>innerHTML=>{
 		template.innerHTML = innerHTML;
@@ -459,11 +518,11 @@ class RealElement extends RealNode{
 		return temp;
 	}
 	/**
-	 * 
-	 * @param {keyof HTMLElementTagNameMap | HTMLElement} tagName 
+	 * @template {HTMLElement} T
+	 * @param {keyof HTMLElementTagNameMap | T} tagName 
 	 * @param {{[attr: String]: String}} [config] 
 	 * @param {{[attr: String]: String}} [cssConfig] 
-	 * @returns {HTMLElement}
+	 * @returns {T}
 	 */
 	static makeElement(tagName,config,cssConfig){
 		tagName instanceof HTMLElement || (tagName = document.createElement(tagName));
@@ -473,6 +532,20 @@ class RealElement extends RealNode{
 		if(id) typeof id !== 'string' ? this.error('=> Please use String "id" !') :
 		this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
 		this.idSet.add(id);
+	}
+	/**
+	 * @param {...(HTMLElement | {self: HTMLElement})}
+	 */
+	static applyKeyboardController(){
+		for(const ele of arguments) ele instanceof HTMLElement ? ele.classList.add('keyboardController') :
+		ele?.self instanceof HTMLElement && ele.self.classList.add('keyboardController');
+	}
+	/**
+	 * @param {...(HTMLElement | {self: HTMLElement})}
+	 */
+	static cancelKeyboardController(){
+		for(const ele of arguments) ele instanceof HTMLElement ? ele.classList.remove('keyboardController') :
+		ele?.self instanceof HTMLElement && ele.self.classList.remove('keyboardController');
 	}
 	/**
 	 * 
@@ -704,6 +777,11 @@ class RealElement extends RealNode{
 		while(temp = this.self.previousElementSibling) i++;
 		return i;
 	}
+	/**
+	 * 
+	 * @template T
+	 * @param {T} value 
+	 */
 	protoTransform(value){return value;}
 	fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
 	clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
@@ -1098,7 +1176,7 @@ var RealLoader = class RealLoader extends RealElement{
 		/**@type {null | (n: Number)=>void} */
 		onloadend;
 	};
-	static fs = (nodeRequire=>new class DocumentFs{
+	static fs = (nodeMode=>new class DocumentFs{
 		static fetch = (()=>{
 			const temp = response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !');
 			return browserMode && document.location.protocol === 'file:' ? path=>fetch(path,{mode:'no-cors'}).then(temp) :
@@ -1106,16 +1184,16 @@ var RealLoader = class RealLoader extends RealElement{
 		})();
 		/**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
 		stat = (
-			nodeRequire
+			nodeMode
 			? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'stat'},path)
 			: (path=>DocumentFs.fetch(path).catch(e=>[e]))
 		);
 		readdir = (
-			nodeRequire
+			nodeMode ?
 			/**@type {(path: String)=>Promise<[Error | null,String[]]>} */
-			? (path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'readdir'},path))
+			(path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'readdir'},path)) :
 			/**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>} */
-			: (async function readdir(path,...strArgs){
+			(async function readdir(path,...strArgs){
 				try{
 					const length = strArgs.length,fileNameList = [];
 					var i = length,j;
@@ -1143,7 +1221,7 @@ var RealLoader = class RealLoader extends RealElement{
 				}catch(e){return [e,[]];}
 			})
 		);
-	})(nodeRequire);
+	})(nodeMode);
 	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
 		for(const temp of RealElement.searchByElement(e.target)) if(temp instanceof RealLoader){
 			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
@@ -1158,7 +1236,7 @@ var RealLoader = class RealLoader extends RealElement{
 	);}
 	/**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
 	static load = (
-		nodeRequire ? (async (realLoader)=>{try{
+		nodeMode ? (async (realLoader)=>{try{
 			if('upload' === realLoader.type) return realLoader.temp.click(),[];
 			const fs = nodeRequire('fs');
 			const data = await realLoader.dataGetter();
@@ -1210,7 +1288,7 @@ var RealLoader = class RealLoader extends RealElement{
 	set fileName(fileName){
 		'upload' === this.type && this.error('Uploader bans "fileName" !');
 		typeof fileName === 'symbol' && this.error('"fileName" must be String but not Symbol !');
-		if(nodeRequire && !/^\.\//.test(fileName)) fileName = './'+fileName;
+		if(nodeMode && !/^\.\//.test(fileName)) fileName = './'+fileName;
 		this.temp.download = fileName;
 	}
 	/**@type {()=>*} */
