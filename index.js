@@ -467,6 +467,7 @@ class RealNode{
 }
 class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
+		static arr = [];
 		apply(){return this.self;}
 		['get'](target,key){return this.realGroup.get(key);}
 		construct(){return this.realGroup.getByFilter();}
@@ -512,9 +513,9 @@ class RealGroup extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {(String | Symbol)[]} keyArray 
+	 * @param {(String | Symbol)[]} [keyArray] 
 	 */
-	protoReact(keyArray){
+	protoReact(keyArray = RealGroup.tempProxy.arr){
 		Array.isArray(keyArray) || this.error('"keyArray" must be Array !');
 		var i,l;
 		for(const [ifKeyOrFn,listenerArray] of this.listenerMap){
