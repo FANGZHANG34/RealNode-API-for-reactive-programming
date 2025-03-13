@@ -88,7 +88,7 @@
 
 ### 构造函数 `new RealNode(config,tryRealNode,...relativeRNs)`
 
-`config`（可选）应为一个对象，根据`config`的属性决定。
+`config`（可选）应为一个对象，根据`config`的属性决定某些行为。
 
 - `get`（可选）对2级实例属性`get`进行赋值。
 
