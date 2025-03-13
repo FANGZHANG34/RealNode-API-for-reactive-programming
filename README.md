@@ -26,7 +26,7 @@
 
 ## 方法分级
 
-类/实例的属性在使用频率的方面被分为三级：
+类/实例的方法在使用频率的方面被分为三级：
 
 - 一 常用方法
 
@@ -42,9 +42,11 @@
 
 # 各种类的使用指南
 
-- [**`RealWorld`**](#RealWorld)
+- ### [**`RealWorld`**](#RealWorld)
 
-- [**`RealNode`**](#RealNode)
+- ### [**`RealNode`**](#RealNode)
+
+- ### [**`RealGroup`**（extends `RealNode`）](#RealGroup（extends RealNode）)
 
 ## **`RealWorld`**
 
@@ -55,6 +57,10 @@
 `timeSep`（可选）应为一个数值，否则默认为10，单位为毫秒。
 
 `...fnList`（可选）应为函数，但不建议使用。
+
+### 1级属性
+
+- `timeSep` 实例属性，`Number`类型。
 
 ### 2级属性
 
@@ -68,7 +74,7 @@
 
 ### 3级属性
 
-- `fnList` 实例属性，`Array`类型。会在二级实例方法`_mainFn()`调用时执行`fnList.pop()`并对其返回值作为函数执行。
+- `fnList` 实例属性，`Array`类型。会在二级实例方法`_mainFn()`调用时执行`fnList.pop()`并执行其返回值。
 
 ### 4级属性
 
@@ -77,6 +83,8 @@
 ### 一级方法
 
 - `destroy()` 实例方法，返回`undefined`。永久停止实例的运行，原理是使用`clearInterval()`函数。
+
+- `setTimeSep()` 实例方法，返回`Boolean`类型。接收一个参数作为新的时间间隔，更改成功则返回`true`，否则反之。
 
 - `then()` 实例方法，返回实例本身。接收一个参数`fn`，若`fn`是为`Function`类型，则插入到3级实例属性`fnList`的第一位。
 
@@ -153,5 +161,9 @@
 - `realSet()` 实例方法，返回`Boolean`类型。将根据6级实例属性`relativeRNs`查询`RealNode`实例并依次生成微任务，将依次执行2级实例属性`react`和调用一级实例方法`notify()`。
 
 - `time()` 静态方法，返回`Promise`类型。接收一个参数，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number,value: any | Error}`。
+
+## **`RealGroup`**（extends `RealNode`）
+
+这是针对对象的响应式类，基于`Promise`的微任务队列实现。对该类的一个实例而言，可以存储一个值，并在变更存储的值时会产生响应。
 
 敬请期待后续更新
