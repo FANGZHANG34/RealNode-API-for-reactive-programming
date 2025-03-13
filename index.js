@@ -484,6 +484,7 @@ class RealGroup extends RealNode{
 			this.realGroup = realGroup;
 		}
 	};
+	static groupMap = new Map;
 	static _ = ()=>true;
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
 	/**
@@ -559,10 +560,12 @@ class RealGroup extends RealNode{
 	 * @param {{self?: {}}} param0 
 	 */
 	constructor({id,info,self = Object.create(null)} = {}){
+		if(RealGroup.groupMap.get(self) instanceof RealGroup) return RealGroup.groupMap.get(self);
 		super({id,info});
 		if(Object(self) !== self) this.error('"self" not typeof object !');
 		const temp = new RealGroup.tempProxy(self,this);
 		this.proto.value = new Proxy(temp,temp);
+		RealGroup.groupMap.set(self,this);
 	}
 }
 class RealElement extends RealNode{
