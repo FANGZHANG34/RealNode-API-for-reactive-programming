@@ -502,11 +502,12 @@ class RealGroup extends RealNode{
 	}
 	/**
 	 * 
+	 * @param {String | Symbol | null | undefined | (keyArray: (String | Symbol)[])=>Boolean} ifKeyOrFn 
 	 * @param {()=>void} listener 
-	 * @param {String | Symbol | (keyArray: (String | Symbol)[])=>Boolean} [ifKeyOrFn] 
 	 */
-	addListener(listener,ifKeyOrFn = RealGroup._){
+	addListener(ifKeyOrFn,listener){
 		if(typeof listener !== 'function') this.error('"listener" must be function !');
+		ifKeyOrFn ??= RealGroup._;
 		var temp;
 		Array.isArray(temp = this.listenerMap.get(ifKeyOrFn)) || this.listenerMap.set(ifKeyOrFn,temp = []);
 		temp.push(listener);
@@ -565,7 +566,7 @@ class RealGroup extends RealNode{
 	}
 	get proxy(){return this.proto.value;}
 	get react(){return this.protoReact;}
-	set react(react){}
+	set react(react){this.addListener(null,react);}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
@@ -1989,6 +1990,6 @@ const RealStory = new class RealStory{
 
 Object.assign(exports,{
 	RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
-	createRealDivSelect,createRealDivSearch,// RealPromise,
+	createRealDivSelect,createRealDivSearch,
 	RealStory,
 });
