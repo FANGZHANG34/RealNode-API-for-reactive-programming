@@ -484,9 +484,21 @@ class RealGroup extends RealNode{
 			this.realGroup = realGroup;
 		}
 	};
+	/**@type {Map<{},RealGroup>} */
 	static groupMap = new Map;
 	static _ = ()=>true;
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
+	/**
+	 * 
+	 * @param {Boolean} notify 
+	 * @param {Boolean} noSelf 
+	 * @returns {Boolean}
+	 */
+	realSet(value,notify,noSelf){
+		const oldValue = this.proto.value;
+		try{return (this.proto._set.call(this,value) ?? oldValue !== this.proto.value) && (notify && this.notify(noSelf),true);}
+		catch(e){return console.error(e),e;}
+	}
 	/**
 	 * 
 	 * @param {()=>void} listener 
@@ -502,7 +514,7 @@ class RealGroup extends RealNode{
 	 * 
 	 * @param {(String | Symbol)[]} keyArray 
 	 */
-	react(keyArray){
+	protoReact(keyArray){
 		Array.isArray(keyArray) || this.error('"keyArray" must be Array !');
 		var i,l;
 		for(const [ifKeyOrFn,listenerArray] of this.listenerMap){
@@ -527,7 +539,7 @@ class RealGroup extends RealNode{
 	 * 
 	 * @param {{}} obj 
 	 */
-	protoSet(obj){this.log(Object(obj) !== obj)
+	protoSet(obj){
 		if(Object(obj) !== obj) return false;
 		const self = this.proxy(),keyArray = Reflect.ownKeys(Object(obj)),temp = [];
 		for(const key of keyArray) self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
@@ -551,6 +563,8 @@ class RealGroup extends RealNode{
 		return temp;
 	}
 	get proxy(){return this.proto.value;}
+	get react(){return this.protoReact;}
+	set react(react){}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */

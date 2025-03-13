@@ -3,7 +3,7 @@ const getPath = (()=>{
 	const path = require('path');
 	return path.resolve.bind(path,__dirname);
 })();
-// require(getPath('./countRows.js'));
+require(getPath('./countRows.js'));
 const {RealWorld,RealNode,RealElement,RealGroup,RealStory,RealPromise} = require(getPath('../'));
 const process = require('process');
 
