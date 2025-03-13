@@ -186,7 +186,7 @@ class RealNode{
 	 */
 	static justNow(fn,thisArg,...argArray){return RealNode.now.then(fn.bind(thisArg,...argArray));}
 	static arrayToObject(){
-		const temp = {},array = Array.from(arguments).flat(),length = array.length;
+		const temp = Object.create(null),array = Array.from(arguments).flat(),length = array.length;
 		for(var i = 0;i < length;i++) temp[String(array[i])] = array[i];
 		return temp;
 	}
@@ -222,8 +222,8 @@ class RealNode{
 	})(e=>e);
 	/**@method */
 	static copyObj = function copyObj(obj){
-		if(obj === Object(obj)){
-			const newObj = Array.isArray(obj) ? [] : {};
+		if(Object(obj) === obj){
+			const newObj = Array.isArray(obj) ? [] : Object.create(null);
 			for(const i of Object.keys(obj)){95 === i.charCodeAt(0) || (newObj[i] = copyObj(obj[i]));}
 			return newObj;
 		}else return new.target ? Object(obj) : obj;
@@ -287,8 +287,8 @@ class RealNode{
 	 * @param {String} message 
 	 * @returns {never}
 	 */
-	error(message){throw new Error("RealNode "+(this.id.description ?? '')+'\n"""\n'+String(message)+'\n"""');}
-	[Symbol.toPrimitive](hint){return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';}
+	error(message){throw new Error(this+'\n"""\n'+String(message)+'\n"""');}
+	[Symbol.toPrimitive](hint){try{return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';}catch(e){return NaN;}}
 	/**
 	 * 
 	 * @returns {Promise[][]}
@@ -435,9 +435,9 @@ class RealNode{
 	set display(display){display ? RealNode._sys.set(this.id,this) : RealNode._sys.delete(this.id);}
 	get tryRealNode(){return this.proto.tryRealNode;}
 	set tryRealNode(tryRealNode){
-		var i;
 		tryRealNode = (this.proto.tryRealNode = Boolean(tryRealNode)) ? 'appear' : 'disappear';
-		for(i = this.proto.childRNs.length;i --> 0;) this.proto.childRNs[tryRealNode]();
+		var i = this.proto.childRNs.length;
+		while(i --> 0) this.proto.childRNs[tryRealNode]();
 	}
 	/**@type {Symbol[]} */
 	relativeRNs = [];
@@ -463,6 +463,106 @@ class RealNode{
 		this.relate(...relativeRNs);
 		this.tryRealNode = tryRealNode;
 		if('value' in config) this.value = config.value;
+	}
+}
+class RealGroup extends RealNode{
+	static tempProxy = class AntiGroup extends Function{
+		apply(){return this.self;}
+		['get'](target,key){return this.realGroup.get(key);}
+		construct(){return this.realGroup.getByFilter();}
+		deleteProperty(target,key){return Reflect.deleteProperty(this.self,key);}
+		['set'](target,key,value){return this.realGroup.set(Object.create(null,{[key]:{value}}));}
+		defineProperty(target,key,attributes){return Reflect.defineProperty(this.self,key,attributes);}
+		/**
+		 * 
+		 * @param {{}} self 
+		 * @param {RealGroup} realGroup 
+		 */
+		constructor(self,realGroup){
+			super('');
+			this.self = self;
+			this.realGroup = realGroup;
+		}
+	};
+	static _ = ()=>true;
+	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
+	/**
+	 * 
+	 * @param {()=>void} listener 
+	 * @param {String | Symbol | (keyArray: (String | Symbol)[])=>Boolean} [ifKeyOrFn] 
+	 */
+	addListener(listener,ifKeyOrFn = RealGroup._){
+		if(typeof listener !== 'function') this.error('"listener" must be function !');
+		var temp;
+		Array.isArray(temp = this.listenerMap.get(ifKeyOrFn)) || this.listenerMap.set(ifKeyOrFn,temp = []);
+		temp.push(listener);
+	}
+	/**
+	 * 
+	 * @param {(String | Symbol)[]} keyArray 
+	 */
+	react(keyArray){
+		Array.isArray(keyArray) || this.error('"keyArray" must be Array !');
+		var i,l;
+		for(const [ifKeyOrFn,listenerArray] of this.listenerMap){
+			if(typeof ifKeyOrFn === 'function' ? ifKeyOrFn(keyArray) : keyArray.indexOf(ifKeyOrFn) !== -1){
+				for(l = listenerArray.length,i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
+			}
+		}
+	}
+	/**
+	 * 
+	 * @param {(key: String)=>Boolean} [filterFn] 
+	 * @returns {{}}
+	 */
+	getByFilter(filterFn){
+		const self = this.proxy(),keyArray = Reflect.ownKeys(self),notFn = typeof filterFn !== 'function',temp = Object.create(null);
+		var i = keyArray.length;
+		while(i --> 0) if(notFn || filterFn(keyArray[i])) Reflect.
+		set(temp,keyArray[i],self[keyArray[i]] instanceof RealNode ? self[keyArray[i]].value : self[keyArray[i]]);
+		return temp;
+	}
+	/**
+	 * 
+	 * @param {{}} obj 
+	 */
+	protoSet(obj){this.log(Object(obj) !== obj)
+		if(Object(obj) !== obj) return false;
+		const self = this.proxy(),keyArray = Reflect.ownKeys(Object(obj)),temp = [];
+		for(const key of keyArray) self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
+		obj[key] !== self[key] && (self[key] = obj[key],temp.push(key));
+		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e.stack);}
+		return Boolean(temp.length);
+	}
+	/**
+	 * 
+	 * @param {String | Symbol | {}} [keyOrkeyObj] 
+	 */
+	protoGet(keyOrkeyObj){
+		var temp;
+		if(!arguments.length) return this.getByFilter();
+		if(Object(keyOrkeyObj) !== keyOrkeyObj) return (temp = this.proxy()[keyOrkeyObj],temp instanceof RealNode ? temp.value : temp);
+		const self = this.proxy(),keyArray = Reflect.ownKeys(Object(keyOrkeyObj));
+		/**@type {{}} */
+		temp = Object.create(null);
+		var i = keyArray.length;
+		while(i --> 0) Reflect.set(temp,keyArray[i],self[keyArray[i]] instanceof RealNode ? self[keyArray[i]].value : self[keyArray[i]]);
+		return temp;
+	}
+	get proxy(){return this.proto.value;}
+	get tryRealNode(){return false;}
+	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
+	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
+	listenerMap = new Map;
+	/**
+	 * 
+	 * @param {{self?: {}}} param0 
+	 */
+	constructor({id,info,self = Object.create(null)} = {}){
+		super({id,info});
+		if(Object(self) !== self) this.error('"self" not typeof object !');
+		const temp = new RealGroup.tempProxy(self,this);
+		this.proto.value = new Proxy(temp,temp);
 	}
 }
 class RealElement extends RealNode{
@@ -630,7 +730,11 @@ class RealElement extends RealNode{
 		const tempInsertRule = !myCSS.insertRule ? (selector,rulesStr)=>myCSS.addRule(selector,rulesStr,-1) :
 		(selector,rulesStr)=>myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length);
 		return function addCSSRules(prefix,ruleObjObj){
-			typeof prefix === 'string' || RealElement.error('"prefix" in addCSSRules must be String !');
+			if(Array.isArray(prefix)){
+				let i = prefix.length
+				while(i --> 0) typeof prefix[i] === 'string' && addCSSRules(prefix[i],ruleObjObj);
+				return addCSSRules;
+			}else typeof prefix === 'string' || RealElement.error('"prefix" in addCSSRules must be String !');
 			for(const selector of getKeys(ruleObjObj)){
 				const ruleObj = ruleObjObj[selector],temp = [];
 				for(const key of getKeys(ruleObj)){temp.push(key,':',String(ruleObj[key]),';\n');}
@@ -864,7 +968,7 @@ class RealElement extends RealNode{
 	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
 	get self(){return this.proto.self;}
 	set self(self){
-		self && typeof self === 'object' ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
+		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
 		this.error('=> "self" must be HTMLElement !');
 	}
 	/**
@@ -883,96 +987,6 @@ class RealElement extends RealNode{
 		(tryRealNode ? this : this.proto).value = initValue;
 		this.addClassName(this.constructor.name);
 	}
-}
-class RealGroup{
-	/**
-	 * 
-	 * @throws
-	 * @param {String} message 
-	 * @returns {never}
-	 */
-	error(message,...proof){console.log(...proof);throw new Error('RealGroup """\n'+String(message)+'\n"""');}
-	/**
-	 * 
-	 * @param {String[]} [without] 
-	 * @param {String[]} [within] 
-	 */
-	fix(without,within){for(const realNode of this[Symbol.iterator](without,within,true)) realNode.fix?.();}
-	/**
-	 * 
-	 * @param {String[]} [without] 
-	 * @param {String[]} [within] 
-	 */
-	react(without,within){for(const realNode of this[Symbol.iterator](without,within,true)) realNode.react?.();}
-	/**
-	 * 
-	 * @returns {Promise<(0 | void)[]>}
-	 */
-	notify(){
-		const temp = Reflect.ownKeys(this.dict);
-		for(var i = temp.length;i --> 0;) temp[i] = this.dict[temp[i]].notify(true);
-		return Promise.all(temp);
-	}
-	/**
-	 * 
-	 * @param {{[key: String]: RealNode}} realNodeDict 
-	 * @returns {RealGroup}
-	 */
-	extra(realNodeDict){
-		return realNodeDict && typeof realNodeDict === 'object' ?
-		new RealGroup(Object.assign(Object.create(null),this.dict,realNodeDict)) :
-		this.error('=> "realNodeDict" must be Object !');
-	}
-	/**
-	 * 
-	 * @param {String[]} [without] 
-	 * @param {String[] | IterableIterator<String>} [within] 
-	 * @param {Boolean} [all] 
-	 */
-	*[Symbol.iterator](without,within,all){
-		Array.isArray(without) || (without = []);
-		for(const key of (within[Symbol.iterator] ? within : all ? Reflect.ownKeys(this.dict) : this.keys)){
-			without.includes(key) || (yield [key,this.dict[key]]);
-		}
-	}
-	/**
-	 * 
-	 * @param {{[key: String]}} value 
-	 * @param {Boolean} react 
-	 * @param {Boolean} notify 
-	 * @returns {Boolean}
-	 */
-	set(value,react,notify){
-		if(value && typeof value === 'object'){
-			const temp = [];
-			for(const [,realNode] of this[Symbol.iterator](null,Reflect.ownKeys(value),true)) realNode.realSet(value[key],react) && temp.push(realNode);
-			if(temp.length) react && this.react?.(keys1),notify && this.notify();
-			return temp;
-		}else this.error('=> "value" must be Object !');
-	}
-	get value(){
-		const temp = {},keys = Object.keys(this.dict);
-		for(var i = keys.length;i --> 0;) temp[keys[i]] = this.dict[keys[i]].value;
-		return temp;
-	}
-	/**@param {{[key: String]}} value */
-	set value(value){this.set(value,true,true);}
-	/**@type {readonly {[key: String]: RealNode}} */
-	dict = Object.create(null);
-	/**@type {String[]} */
-	keys;
-	/**
-	 * 
-	 * @param {{[key: String]: RealNode}} realNodeDict 
-	 */
-	constructor(realNodeDict){var i;if(realNodeDict && typeof realNodeDict === 'object'){
-		Reflect.defineProperty(this,'dict',{enumerable: false,writable: false,configurable: false});
-		const temp = Reflect.ownKeys(realNodeDict);
-		for(i = temp.length;i --> 0;) realNodeDict[temp[i]] instanceof RealNode && (this.dict[temp[i]] = realNodeDict[temp[i]]);
-		// this.error('=> Value ['+String(temp[i])+'] in "realNodeDict" must be RealNode !');
-		Object.freeze(this.dict);
-		Reflect.defineProperty(this,'keys',{value: Object.freeze(Object.keys(this.dict)),writable: false,configurable: false});
-	}else this.error('=> "realNodeDict" must be Object !');}
 }
 
 if(browserMode){
@@ -1082,10 +1096,10 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @returns {{loaded: Promise<void>,finished: Promise<void>}}
 	 */
 	animate({
-		prefix = './img/w99_',suffix = '.png',startN = 1,length = 79,midLength = 2,
-		bgSrc = './img/w99_00.png',playMode = 0,timeSep = 100,sizeMode = 'std',resizeAfter = true,
+		prefix,suffix,startN = 0,length,midLength,
+		bgSrc,playMode = 0,timeSep = 100,sizeMode = 'std',resizeAfter = true,
 	} = {}){
-		const size = {width: this.width,height: this.height},config = [1,2,3,5],temp = {};
+		const size = {width: this.width,height: this.height},config = [1,2,3,5];
 		var i = startN + length + playMode;
 		length *= config[playMode] ?? 1;
 		timeSep /= config[playMode] ?? 1;
@@ -1954,17 +1968,6 @@ const RealStory = new class RealStory{
 	fnList = [];
 	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) ? ofStory.pages.push(this) : RealStory._ = this;}
 }();
-// const RealPromise = (()=>{
-// 	/**
-// 	 * 
-// 	 * @returns {Promise<Boolean>}
-// 	 */
-// 	const RealPromise = ()=>Promise.resolve(
-// 		typeof RealPromise.resolve !== 'function' && new Promise(value=>Reflect.defineProperty(RealPromise,'resolve',{value})).
-// 		then(()=>Reflect.defineProperty(RealPromise,'resolve',{value: undefined}))
-// 	);
-// 	return Reflect.defineProperty(RealPromise,'resolve',{configurable: true,writable: false}),RealPromise;
-// })();
 
 Object.assign(exports,{
 	RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
