@@ -42,11 +42,11 @@
 
 # 各种类的使用指南
 
-- ### [**`RealWorld`**](#RealWorld)
+- [**`RealWorld`**](#RealWorld)
 
-- ### [**`RealNode`**](#RealNode)
+- [**`RealNode`**](#RealNode)
 
-- ### [**`RealGroup`**](#RealGroup)
+- [**`RealGroup`**](#RealGroup)
 
 ## **`RealWorld`**
 
@@ -164,7 +164,7 @@
 
 ## **`RealGroup`**
 
-> ### extends`RealNode`
+> extends `RealNode`
 
 这是针对对象的响应式类，基于`Promise`的微任务队列实现。对该类的一个实例而言，可以存储一个值，并在变更存储的值时会产生响应。
 
