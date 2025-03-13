@@ -162,7 +162,9 @@
 
 - `time()` 静态方法，返回`Promise`类型。接收一个参数，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number,value: any | Error}`。
 
-## **`RealGroup`** extends `RealNode`
+## **`RealGroup`**
+
+> ### extends`RealNode`
 
 这是针对对象的响应式类，基于`Promise`的微任务队列实现。对该类的一个实例而言，可以存储一个值，并在变更存储的值时会产生响应。
 
