@@ -44,7 +44,7 @@
 
 ## **`RealWorld`**
 
-这是一个事件循环类，基于setInterval实现。对该类的一个实例而言，每过一段固定时间将会调用二级实例方法`_mainFn()`。
+这是一个事件循环类，基于`setInterval`实现。对该类的一个实例而言，每过一段固定时间将会调用二级实例方法`_mainFn()`。
 
 ### 构造函数 `new RealWorld(timeSep,...fnList)`
 
