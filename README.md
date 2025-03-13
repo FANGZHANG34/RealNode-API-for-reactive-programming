@@ -56,7 +56,7 @@
 
 `timeSep`（可选）应为一个数值，否则默认为10，单位为毫秒。
 
-`...fnList`（可选）应为函数，但不建议使用。
+`...fnList`（可选）应为`Function`类型，但不建议使用。
 
 ### 1级属性
 
@@ -158,14 +158,52 @@
 
 ### 二级方法
 
-- `realSet()` 实例方法，返回`Boolean`类型。将根据6级实例属性`relativeRNs`查询`RealNode`实例并依次生成微任务，将依次执行2级实例属性`react`和调用一级实例方法`notify()`。
+- `realSet()` 实例方法，返回`Boolean`类型。执行时接收四个参数`value`、`react`、`notify`、`noSelf`，将根据6级实例属性`relativeRNs`查询`RealNode`实例并依次生成微任务，将依次执行2级实例属性`react`和调用一级实例方法`notify()`。
 
-- `time()` 静态方法，返回`Promise`类型。接收一个参数，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number,value: any | Error}`。
+- `time()` 静态方法，返回`Promise`类型。接收一个参数`promise`，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number,value: any | Error}`。
 
 ## **`RealGroup`**
 
-> extends [**`RealNode`**](#RealNode)
+> 继承[**`RealNode`**](#RealNode)
 
-这是针对对象的响应式类，基于`Promise`的微任务队列实现。对该类的一个实例而言，可以存储一个值，并在变更存储的值时会产生响应。
+这是针对对象的响应式类，是`RealNode`类的子类。对该类的一个实例而言，可以代理一个对象，并在代理变更对象的值时会产生响应。
+
+### 构造函数 `new RealGroup({id,info,self})`
+
+`self`（可选）默认是一个`null`为原型的空对象。必须是一个对象，否则会报错！（注意：根据相同对象创建的`RealGroup`实例是同一个实例！）
+
+`id`（可选）初始化1级实例属性`id`时作为`description`。
+
+`info`（可选）对4级实例属性`info`进行赋值。
+
+### 1级属性
+
+- `proxy` 实例属性，`Proxy`类型。对该属性的读写操作将完全转移到构造实例时的`self`对象上。当执行该属性时，将返回构造实例时的`self`对象。
+
+- `get` 实例属性（请自觉只读！！！），返回三级实例方法`protoGet`。执行时：若没有参数，则返回构造实例时的`self`对象的浅拷贝；接收一个参数`keyOrkeyObj`，若是一个对象，则返回一个`null`为原型的相同结构的对象，否则返回对应键的值。
+
+- `set` 实例属性（请自觉只读！！！），返回三级实例方法`realSet`。执行时接收三个参数`value`、`notify`、`noSelf`，`value`必须是对象，不能读取其原型链上的属性。
+
+- `react` 实例属性（请自觉只读！！！）。
+
+### 3级属性
+
+- `listenerMap` 实例属性,`Map`类型。键为`String`类型或`Function`类型，值为`Array`类型，所有元素为`Function`类型。
+
+### 6级属性（高危写入操作！！！请勿轻易尝试！！！）
+
+- `get` 实例属性。
+
+- `set` 实例属性。
+
+- `react` 实例属性。
+
+### 一级方法
+
+- `keys()` 实例方法，返回`Array`实例，每个元素为`String`类型或`Symbol`类型。接收一个参数`all`，若为真值，则返回值包括`Symbol`类型和不可枚举的键。
+
+- `addListener()` 实例方法，返回`undefined`。接收两个参数`ifKeyOrFn`和`listener`，若为真值，`ifKeyOrFn`必须为`String`类型或`Function`类型，`listener`必须为`Function`类型。
+
+- `getByFilter()` 实例方法，返回`undefined`。接收一个参数`filterFn`，必须为`Function`类型，根据筛选出的键返回一个`null`为原型的含对应键值对的对象。
 
 敬请期待后续更新
