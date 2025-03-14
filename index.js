@@ -512,6 +512,7 @@ class RealGroup extends RealNode{
 	 * @param {()=>void} listener 
 	 */
 	addListener(ifKeyOrFn,listener){
+		if(!listener) return;
 		if(typeof listener !== 'function') this.error('"listener" must be function !');
 		ifKeyOrFn ??= RealGroup._;
 		var temp;
