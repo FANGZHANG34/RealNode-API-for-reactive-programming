@@ -160,8 +160,8 @@ class RealNode{
 	 * @typedef {{
 	 * tryRealNode: Boolean,
 	 * childRNs: ({info: [RealNode,String[],String[]]} & RealNode)[],
-	 * _get()=>*,
-	 * _set(value)=>Boolean,
+	 * get()=>*,
+	 * set(value)=>Boolean,
 	 * react()=>Boolean,
 	 * id: Symbol,
 	 * value,
@@ -172,9 +172,9 @@ class RealNode{
 		/**@type {(RealNode & {info: [RealNode,String[],String[]]})[]} */
 		childRNs = [];
 		/**@type {()=>*} */
-		_get;
+		['get'];
 		/**@type {(value)=>Boolean} */
-		_set;
+		['set'];
 		/**@type {()=>Boolean} */
 		react;
 		/**@type {Symbol} */
@@ -332,7 +332,7 @@ class RealNode{
 	realSet(value,react,notify,noSelf){
 		var temp;
 		const oldValue = this.proto.value;
-		try{return (this.proto._set.call(
+		try{return (this.proto.set.call(
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
@@ -435,9 +435,9 @@ class RealNode{
 	get value(){return this.get();}
 	set value(value){this.realSet(value,true,true);}
 	get set(){return this.realSet;}
-	set set(set){this.proto._set = typeof set === 'function' ? set : this.protoSet;}
-	get get(){return this.proto._get;}
-	set get(get){this.proto._get = typeof get === 'function' ? get : this.protoGet;}
+	set set(set){this.proto.set = typeof set === 'function' ? set : this.protoSet;}
+	get get(){return this.proto.get;}
+	set get(get){this.proto.get = typeof get === 'function' ? get : this.protoGet;}
 	/**@type {()=>void} */
 	get react(){return this.proto.react;}
 	set react(react){this.proto.react = typeof react === 'function' ? react : null;}
@@ -507,7 +507,7 @@ class RealGroup extends RealNode{
 	 */
 	realSet(value,notify,noSelf){
 		const oldValue = this.proto.value;
-		try{return (this.proto._set.call(this,value) ?? oldValue !== this.proto.value) && (notify && this.notify(noSelf),true);}
+		try{return (this.proto.set.call(this,value) ?? oldValue !== this.proto.value) && (notify && this.notify(noSelf),true);}
 		catch(e){return console.error(e),e;}
 	}
 	/**
@@ -951,7 +951,7 @@ class RealTarget extends RealNode{
 	realSet(value,react,notify,noSelf){
 		var temp;
 		try{return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
-			this.proto._set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto._set.call(this,value)
+			this.proto.set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto.set.call(this,value)
 		) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
 	}
 	/**
@@ -986,8 +986,8 @@ class RealTarget extends RealNode{
 		const param0 = {self,key: this.key,transform: this.transform};
 		if(keepValue) param0.initValue = this.proto.value;
 		const temp = new RealTarget(param0,{
-			get: this.proto._get,
-			set: this.proto._set,
+			get: this.proto.get,
+			set: this.proto.set,
 			react: this.proto.react,
 			id: this.id.description+'-clone',
 			info: this.info,
@@ -1106,7 +1106,7 @@ var RealCanvas = class RealCanvas extends RealTarget{
 	realSet(value,react,notify,noSelf){
 		var temp;
 		return this.loaded = Array.isArray(value) ? this.multiDrawSrcArray({},...value).then(()=>{this.proto.value = value;}) :
-		Promise.resolve(this.proto._set.call(
+		Promise.resolve(this.proto.set.call(
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
@@ -1201,7 +1201,7 @@ var RealCanvas = class RealCanvas extends RealTarget{
 	get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
 	set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
 	get temp(){return this.proto.temp.canvas;}
-	set temp(src){return this.proto._set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
+	set temp(src){return this.proto.set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
 	get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
 	/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 	set opacity(opacityConfig){
