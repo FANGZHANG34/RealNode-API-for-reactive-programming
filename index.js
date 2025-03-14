@@ -64,6 +64,7 @@ var PromiseWithList = Promise.WithList = function(){
 const RealWorld = (()=>{
 	const tempConfig = {writable: false,enumerable: false};
 	function RealWorld(timeSep,...fnList){
+		if(!new.target) return Reflect.construct(RealWorld,arguments);
 		this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
 		this._id = setInterval(this._mainFn.bind(this),this.timeSep);
 		/**@type {(()=>*)[]} */
