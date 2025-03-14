@@ -121,7 +121,9 @@ const RealWorld = (()=>{
 	/**## then 添加函数入执行队列 */
 	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;};
 	/**## 生成RealElement实例 */
-	RealWorld.prototype.getRealElement = function(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});};
+	RealWorld.prototype.getRealElement = function(){
+		return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});
+	};
 	/**## 变更时间间隔 */
 	RealWorld.prototype.setTimeSep = function(timeSep){
 		return (timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10) !== this.timeSep && (
@@ -294,7 +296,9 @@ class RealNode{
 	 * @returns {never}
 	 */
 	error(message){throw new Error(this+'\n"""\n'+String(message)+'\n"""');}
-	[Symbol.toPrimitive](hint){try{return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';}catch(e){return NaN;}}
+	[Symbol.toPrimitive](hint){try{
+		return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';
+	}catch(e){return NaN;}}
 	/**
 	 * 
 	 * @returns {Promise[][]}
@@ -615,9 +619,11 @@ class RealElement extends RealNode{
 			case RealElement.keyboardController.previous: i = -1;break;
 			case RealElement.keyboardController.next: i = 1;break;
 			case RealElement.keyboardController.enter: (temp = RealElement.searchByElement(onkeyboardController)[0]) instanceof RealDivList ?
-			temp.proto.list.length ? (onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
+			temp.proto.list.length ?
+			(onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click() :
-			(temp = onkeyboardController.querySelector('.keyboardController')) ? (onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
+			(temp = onkeyboardController.querySelector('.keyboardController')) ?
+			(onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click();break;
 			case RealElement.keyboardController.back:{
 				temp = onkeyboardController;
@@ -1935,12 +1941,12 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
 console.log(performance.now() - t0,'ms');
 
-const RealStory = new class RealStory{
+const RealStory = new(class RealStory{
 	/**@type {RealStory} */
 	static _;
-	static isClearing = false;
-	static intervalId = setInterval(()=>(RealStory.isClearing || (
-		RealStory.isClearing = true,RealStory._.clear().then(()=>RealStory.isClearing = false)
+	static isBusy = false;
+	static intervalId = setInterval(()=>(RealStory.isBusy || (
+		RealStory.isBusy = true,RealStory._.launch().then(()=>RealStory.isBusy = false)
 	)),50);
 	static promise = class StoryPromise{
 		/**
@@ -1977,12 +1983,13 @@ const RealStory = new class RealStory{
 		const temp = new RealStory.promise;
 		return this.then(()=>temp.self),temp;
 	}
-	async clear(){
+	async launch(){
 		var i = 0,temp = this;
 		while((temp = temp.ofStory) instanceof RealStory) i++;
 		while(this.pages.length || this.fnList.length){
-			while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
-			try{await this.pages.shift()?.clear?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+			while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
+			catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
+			try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
 		}
 	}
 	get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
@@ -1994,7 +2001,7 @@ const RealStory = new class RealStory{
 	/**@type {(()=>*)[]} */
 	fnList = [];
 	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) ? ofStory.pages.push(this) : RealStory._ = this;}
-}();
+})();
 
 Object.assign(exports,{
 	RealWorld,RealNode,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
