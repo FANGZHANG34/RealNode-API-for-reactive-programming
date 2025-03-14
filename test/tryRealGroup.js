@@ -18,7 +18,7 @@ console.log('\n',proxy);
 console.log('\n',proxy());
 
 console.log('\n','====== test3 ======'); // 测试3
-group.addListener(()=>console.log('\n','something changes !'));
+group.addListener(null,()=>console.log('\n','something changes !'));
 group.set({a: 1});
 proxy.b = 2;
 console.log('\n',group.get());
@@ -26,8 +26,8 @@ console.log('\n',group.get('a'),proxy.a);
 console.log('\n',group.get({a: 0}));
 
 console.log('\n','====== test4 ======'); // 测试4
-group.addListener(()=>console.log('\n','"a" changes !'),'a');
-group.addListener(()=>console.log('\n','"b" changes !'),(keyArray)=>keyArray.includes('b'));
+group.addListener('a',()=>console.log('\n','"a" changes !'));
+group.addListener(keyArray=>keyArray.includes('b'),()=>console.log('\n','"b" changes !'));
 group.set({a: 3,b: 4});
 group.value = {a: 1,b: 2};
 
