@@ -166,7 +166,7 @@
 
 > 继承[**`RealNode`**](#RealNode)
 
-这是针对对象的响应式类，是`RealNode`类的子类。对该类的一个实例而言，可以代理一个对象，并在代理变更对象的值时会产生响应。
+这是针对对象的响应式类，是`RealNode`类的子类。对该类的一个实例而言，可以代理一个对象，并在代理变更对象的键值对时会产生响应。
 
 ### **构造函数** `new RealGroup({id,info,self})`
 
@@ -180,15 +180,15 @@
 
 - `proxy` 实例属性，`Proxy`类型。对该属性的读写操作将完全转移到构造实例时的`self`对象上。当执行该属性时，将返回构造实例时的`self`对象。
 
-- `get` 实例属性（请自觉只读！！！），返回三级实例方法`protoGet`。执行时：若没有参数，则返回构造实例时的`self`对象的浅拷贝；接收一个参数`keyOrkeyObj`，若是一个对象，则返回一个`null`为原型的相同结构的对象，否则返回对应键的值。
+- `get` 实例属性（请自觉只读！！！），返回三级实例方法`protoGet()`。执行时：若没有参数，则返回构造实例时的`self`对象的浅拷贝；接收一个参数`keyOrkeyObj`，若是一个对象，则返回一个`null`为原型的相同结构的对象，否则返回对应键的值。
 
-- `set` 实例属性（请自觉只读！！！），返回三级实例方法`realSet`。执行时接收三个参数`value`、`notify`、`noSelf`，`value`必须是对象，不能读取其原型链上的属性。
+- `set` 实例属性（请自觉只读！！！），返回三级实例方法`realSet()`。执行时接收三个参数`value`、`notify`、`noSelf`，`value`必须是对象，不能读取其原型链上的属性。
 
-- `react` 实例属性（请自觉只读！！！），返回三级实例方法`protoReact`。
+- `react` 实例属性（请自觉只读！！！），返回三级实例方法`protoReact()`。
 
 ### **3级属性**
 
-- `listenerMap` 实例属性,`Map`类型。键为`String`类型或`Function`类型，值为`Array`类型，所有元素为`Function`类型。
+- `listenerMap` 实例属性，`Map`类型。键为`String`类型或`Function`类型，值为`Array`类型，所有元素为`Function`类型。
 
 ### **6级属性（高危写入操作！！！请勿轻易尝试！！！）**
 
@@ -202,7 +202,7 @@
 
 - `keys()` 实例方法，返回`Array`实例，每个元素为`String`类型或`Symbol`类型。接收一个参数`all`，若为真值，则返回值包括`Symbol`类型和不可枚举的键。
 
-- `addListener()` 实例方法，返回`undefined`。接收两个参数`ifKeyOrFn`和`listener`，若为真值，`ifKeyOrFn`必须为`String`类型或`Function`类型，`listener`必须为`Function`类型。
+- `addListener()` 实例方法，返回`undefined`。接收两个参数`ifKeyOrFn`和`listener`，`ifKeyOrFn`必须为`String`类型或返回`Boolean`类型的`Function`类型，`listener`必须为`Function`类型。
 
 - `getByFilter()` 实例方法，返回`undefined`。接收一个参数`filterFn`，必须为`Function`类型，根据筛选出的键返回一个`null`为原型的含对应键值对的对象。
 

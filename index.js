@@ -61,21 +61,39 @@ var PromiseWithList = Promise.WithList = function(){
 }();
 
 /**# RealWorld 事件循环类 */
-class RealWorld{
+const RealWorld = (()=>{
+	const tempConfig = {writable: false,enumerable: false};
+	function RealWorld(timeSep,...fnList){
+		this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
+		this._id = setInterval(this._mainFn.bind(this),this.timeSep);
+		/**@type {(()=>*)[]} */
+		this.fnList = fnList;
+		this.info = void 0;
+		/**@type {HTMLDivElement & {}} */
+		this.self = browserMode ? document.createElement('div') : {};
+		/**@type {Boolean} */
+		this.paused = false;
+		/**@type {?()=>*} */
+		this.intervalFn = this.info;
+		/**@type {?()=>*} */
+		this.ifFn = this.info;
+		/**@type {?()=>*} */
+		this.soFn = this.info;
+		Reflect.defineProperty(this,'_id',tempConfig);
+		Reflect.defineProperty(this,'fnList',tempConfig);
+		Reflect.defineProperty(this,'timeSep',tempConfig);
+	}
 	/**## onload 环境准备好时兑现的承诺 */
-	static onload = !browserMode ? Promise.resolve() :
+	RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
 	/**## onceIf 生成条件检测承诺 */
-	static onceIf(ifFn){
+	RealWorld.onceIf = function(ifFn){
 		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld;
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
-	}
-	/**
-	 * ## cb2promise 回调转承诺
-	 * @method
-	 */
-	static cb2promise = (()=>{
+	};
+	/**## cb2promise 回调转承诺 */
+	RealWorld.cb2promise = (()=>{
 		function thisResolve(...value){this.resolve(value);}
 		return(
 			/**
@@ -99,12 +117,19 @@ class RealWorld{
 		);
 	})();
 	/**## destroy 销毁本对象 */
-	destroy(){return clearInterval(this._id);}
+	RealWorld.prototype.destroy = function(){return clearInterval(this._id);};
 	/**## then 添加函数入执行队列 */
-	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;};
 	/**## 生成RealElement实例 */
-	getRealElement(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});}
-	_mainFn(){
+	RealWorld.prototype.getRealElement = function(){return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});};
+	/**## 变更时间间隔 */
+	RealWorld.prototype.setTimeSep = function(timeSep){
+		return (timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10) !== this.timeSep && (
+			clearInterval(this._id),Reflect.defineProperty(this,'timeSep',{value: timeSep}),
+			Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),this.timeSep)})
+		);
+	};
+	RealWorld.prototype._mainFn = function(){
 		if(this.paused) return;
 		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
 		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
@@ -112,28 +137,9 @@ class RealWorld{
 			try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
 			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
 		}
-	}
-	/**@type {Number} */
-	_id;
-	info;
-	/**@type {HTMLDivElement & {}} */
-	self = browserMode ? document.createElement('div') : {};
-	/**@type {Boolean} */
-	paused;
-	/**@type {?()=>*} */
-	intervalFn;
-	/**@type {(()=>*)[]} */
-	fnList;
-	/**@type {?()=>*} */
-	ifFn;
-	/**@type {?()=>*} */
-	soFn;
-	constructor(timeSep,...fnList){
-		Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),Number.isFinite(+timeSep) ? timeSep : 10),writable: false,enumerable: false});
-		Reflect.defineProperty(this,'fnList',{value: fnList,writable: false,enumerable: false});
-		const temp = ()=>this.destroy();
-	}
-}
+	};
+	return RealWorld;
+})();
 class RealNode{
 	/**
 	 * 
@@ -579,6 +585,7 @@ class RealGroup extends RealNode{
 		if(RealGroup.groupMap.get(self) instanceof RealGroup) return RealGroup.groupMap.get(self);
 		super({id,info});
 		if(Object(self) !== self) this.error('"self" not typeof object !');
+		Reflect.defineProperty(this,'listenerMap',{writable: false,enumerable: false});
 		const temp = new RealGroup.tempProxy(self,this);
 		this.proto.value = new Proxy(temp,temp);
 		RealGroup.groupMap.set(self,this);
