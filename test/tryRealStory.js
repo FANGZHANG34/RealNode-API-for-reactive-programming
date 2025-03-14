@@ -4,7 +4,7 @@ const getPath = (()=>{
 	return path.resolve.bind(path,__dirname);
 })();
 require(getPath('./countRows.js'));
-const {RealWorld,RealNode,RealElement,RealGroup,RealStory,RealPromise} = require(getPath('../'));
+const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = require(getPath('../'));
 const process = require('process');
 
 RealStory.newPrivatePage(async page=>console.log(await page.then(()=>new RealElement({self:{}}))));

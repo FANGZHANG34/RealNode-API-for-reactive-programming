@@ -515,7 +515,7 @@ class RealGroup extends RealNode{
 	 * @param {String | Symbol | null | undefined | (keyArray: (String | Symbol)[])=>Boolean} ifKeyOrFn 
 	 * @param {()=>void} listener 
 	 */
-	addListener(ifKeyOrFn,listener){
+	addSetterListener(ifKeyOrFn,listener){
 		if(!listener) return;
 		if(typeof listener !== 'function') this.error('"listener" must be function !');
 		ifKeyOrFn ??= RealGroup._;
@@ -577,7 +577,7 @@ class RealGroup extends RealNode{
 	}
 	get proxy(){return this.proto.value;}
 	get react(){return this.protoReact;}
-	set react(react){this.addListener(null,react);}
+	set react(react){this.addSetterListener(null,react);}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
@@ -587,7 +587,9 @@ class RealGroup extends RealNode{
 	 * @param {{self?: {}}} param0 
 	 */
 	constructor({id,info,self = Object.create(null)} = {}){
-		if(RealGroup.groupMap.get(self) instanceof RealGroup) return RealGroup.groupMap.get(self);
+		if(RealGroup.groupMap.get(self) instanceof RealGroup){
+			return console.log('Please do not new for "self":'+self+' again !'),RealGroup.groupMap.get(self);
+		}
 		super({id,info});
 		if(Object(self) !== self) this.error('"self" not typeof object !');
 		Reflect.defineProperty(this,'listenerMap',{writable: false,enumerable: false});

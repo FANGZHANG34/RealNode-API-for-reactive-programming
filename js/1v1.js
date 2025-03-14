@@ -1,5 +1,4 @@
 "use strict";
-
 RealElement.defaultInit().then(()=>RealNode.time((()=>{
 	const temp = RealStory.newPage().newPromiseObj();
 	var
@@ -12,12 +11,15 @@ RealElement.defaultInit().then(()=>RealNode.time((()=>{
 	const tempFn = ()=>Math.random() > Math.random() ? boy.value++ : girl.value++;
 	teacher.react = function(){
 		const queue = boy > girl ? [boy,girl] : [girl,boy];
-		queue[0] < 256 ? RealNode.afterNow(tempFn) : temp.resolve('\t=>'+queue[0]+' : '+(queue[0] - queue[1]),teacher.value = queue[0].id.description+' wins!!!');
+		queue[0] < 256 ? RealNode.afterNow(tempFn) : (
+			temp.resolve('\t=>'+queue[0]+' : '+(queue[0] - queue[1])),
+			teacher.protoSet(queue[0].id.description+' wins!!!')
+		);
 	};
 	teacher.value = 'pending...';
 
-	/**@type {RealElement} */
 	const mainEle = new RealDivList('mainEle',false,[boy,girl,teacher],true);
+	RealElement.applyKeyboardController(mainEle);
 	mainEle.applyCSS('',{
 		'':{
 			'transform':'translate(-50%,0)',

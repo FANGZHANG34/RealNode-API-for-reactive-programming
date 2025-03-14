@@ -202,7 +202,7 @@
 
 - `keys()` 实例方法，返回`Array`实例，每个元素为`String`类型或`Symbol`类型。接收一个参数`all`，若为真值，则返回值包括`Symbol`类型和不可枚举的键。
 
-- `addListener()` 实例方法，返回`undefined`。接收两个参数`ifKeyOrFn`和`listener`，`ifKeyOrFn`必须为`String`类型或返回`Boolean`类型的`Function`类型，`listener`必须为`Function`类型。
+- `addSetterListener()` 实例方法，返回`undefined`。接收两个参数`ifKeyOrFn`和`listener`，`ifKeyOrFn`必须为`String`类型或返回`Boolean`类型的`Function`类型，`listener`必须为`Function`类型。
 
 - `getByFilter()` 实例方法，返回`undefined`。接收一个参数`filterFn`，必须为`Function`类型，根据筛选出的键返回一个`null`为原型的含对应键值对的对象。
 
