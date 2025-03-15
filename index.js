@@ -600,9 +600,9 @@ class RealGroup extends RealNode{
 	}
 }
 class RealTarget extends RealNode{
-	/**@typedef {AntiNode & {self: HTMLElement & {},isElement: Boolean,transform(value)=>*}} AntiHTMLNode */
+	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiHTMLNode */
 	static proto = class AntiHTMLNode extends RealNode.proto{
-		/**@type {HTMLElement & {}} */
+		/**@type {HTMLElement | {}} */
 		self;
 		/**@type {Boolean} */
 		isElement;
@@ -1011,7 +1011,7 @@ class RealTarget extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {{self: HTMLElement,key,transform?: (value)=>*},initValue} param0 
+	 * @param {{self: HTMLElement,key,transform?: (value)=>*,initValue?: *}} param0 
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {...RealNode} [relativeRNs] 
@@ -1026,7 +1026,7 @@ class RealTarget extends RealNode{
 		this.addClassName(this.constructor.name);
 	}
 }
-/**@typedef {RealTarget} RealElement */
+/**@typedef {RealTarget & {self: HTMLElement}} RealElement*/
 const RealElement = RealTarget;
 
 if(browserMode){
