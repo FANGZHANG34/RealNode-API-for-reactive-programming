@@ -611,6 +611,144 @@ class RealTarget extends RealNode{
 	};
 	/**@type {Set<String>} */
 	static idSet = new Set;
+	static findId(id){return this.idSet.has(id);}
+	static deleteId(id){typeof id !== 'string' && this.error('=> Please use String "id" !');return this.idSet.delete(id);}
+	static getRandomId(){
+		for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
+		return temp;
+	}
+	/**
+	 * 
+	 * @param {{}} element 
+	 */
+	static searchByObj(element){
+		/**@type {RealTarget[]} */const temp = [];
+		if(typeof element !== 'object' || !element) return temp;
+		for(const realTarget of this._sys.values()) if(element === realTarget.self) temp.push(realTarget);
+		return temp;
+	}
+	/**
+	 * 
+	 * @this {RealTarget}
+	 * @param {RealNode} realNode 
+	 */
+	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+		const temp = this._getPositionsOfChildRN(realNode);
+		while(temp.length){
+			const position = temp.pop().reverse();
+			if(!position.length) return this.realSet(realNode.value,react,notify,noSelf);else{
+				value = this.proto.value;
+				while(position.length > 1) value = value[position.pop()];
+				realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
+			}
+		}
+		return this.fix(),react && this.react?.(noSelf),notify && this.notify(noSelf),true;
+	}catch(e){
+		if(this instanceof RealTarget) throw e;
+		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
+	}}
+	/**
+	 * 
+	 * @template T
+	 * @param {T} value 
+	 */
+	protoTransform(value){return value;}
+	fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
+	clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
+	/**@param {...String} */
+	addClassName(){return this.proto.isElement && (this.self.classList.add(...arguments),true);}
+	/**@param {String} className */
+	toggleClassName(className){return this.proto.isElement && this.self.classList.toggle(className);}
+	/**@param {...String} */
+	removeClassName(){return this.proto.isElement && (this.self.classList.remove(...arguments),true);}
+	getIndexWithin(){
+		var i = 0,temp;
+		while(temp = this.self.previousElementSibling) i++;
+		return i;
+	}
+	/**
+	 * 
+	 * @param {Boolean} react 
+	 * @param {Boolean} notify 
+	 * @param {Boolean} noSelf 
+	 * @returns {Boolean}
+	 */
+	realSet(value,react,notify,noSelf){
+		var temp;
+		try{return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+			this.proto.set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto.set.call(this,value)
+		) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
+	}
+	/**
+	 * 
+	 * @param {keyof HTMLElementTagNameMap} selfSelector 
+	 * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
+	 */
+	applyCSS(selfSelector,classNameOrRuleObjObj){
+		if(!(this.self instanceof HTMLElement)) this.error('I am not RealElement !');
+		const strReg = /^[A-Za-z]/;
+		var temp = selfSelector;
+		if(typeof selfSelector !== 'string'){
+			while(temp = temp?.parentElement) if(temp === this.self){selfSelector = ' #'+(selfSelector.id ||= RealElement.getRandomId());break;}
+			temp || this.error('"selfSelector" must be String or my descendant !');
+		}
+		const id = this.self.id ||= RealElement.getRandomId();
+		typeof classNameOrRuleObjObj === 'string' ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
+		classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
+		return !classNameOrRuleObjObj ? false : (RealElement.addCSSRules(
+			'#'+id+(strReg.test(selfSelector) ? ' ' : '')+selfSelector,classNameOrRuleObjObj
+		),RealElement.addId(id,false),true);
+	}
+	/**
+	 * 
+	 * @param {Boolean} keepValue 
+	 * @param {Boolean} fix 
+	 * @param {Boolean} [deepCopyRelativeRNs] 
+	 */
+	clone(keepValue,fix,deepCopyRelativeRNs){
+		const self = this.self instanceof HTMLElement ? this.self.cloneNode() :
+		Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
+		const param0 = {self,key: this.key,transform: this.transform};
+		if(keepValue) param0.initValue = this.proto.value;
+		const temp = new RealTarget(param0,{
+			get: this.proto.get,
+			set: this.proto.set,
+			react: this.proto.react,
+			id: this.id.description+'-clone',
+			info: this.info,
+		});
+		Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
+		if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
+		if(fix) temp.fix();
+		return temp;
+	}
+	get isElement(){return this.proto.isElement;}
+	get transform(){return this.proto.transform;}
+	/**@param {(value)=>*} transform */
+	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
+	get self(){return this.proto.self;}
+	set self(self){
+		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
+		this.error('=> "self" must be Object !');
+	}
+	/**
+	 * 
+	 * @param {{self: HTMLElement,key,transform?: (value)=>*,initValue?: *}} param0 
+	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
+	 * @param {Boolean} [tryRealNode] 
+	 * @param {...RealNode} [relativeRNs] 
+	 */
+	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
+		super(config,tryRealNode,...relativeRNs);
+		/**@type {AntiHTMLNode} */this.proto;
+		this.self = self;
+		this.key = key;
+		this.transform = transform;
+		(tryRealNode ? this : this.proto).value = initValue;
+		this.addClassName(this.constructor.name);
+	}
+}
+class RealElement extends RealTarget{
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
 	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
@@ -623,7 +761,7 @@ class RealTarget extends RealNode{
 		switch(e.key){
 			case RealTarget.keyboardController.previous: i = -1;break;
 			case RealTarget.keyboardController.next: i = 1;break;
-			case RealTarget.keyboardController.enter: (temp = RealTarget.searchByElement(onkeyboardController)[0]) instanceof RealDivList ?
+			case RealTarget.keyboardController.enter: (temp = RealTarget.searchByObj(onkeyboardController)[0]) instanceof RealDivList ?
 			temp.proto.list.length ?
 			(onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click() :
@@ -655,17 +793,11 @@ class RealTarget extends RealNode{
 		template.innerHTML = innerHTML;
 		return template.content.firstElementChild;
 	})(browserMode ? document.createElement('template') : {content: {}});
-	static findId(id){return this.idSet.has(id);}
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 	static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
 	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent',initValue},{id});}
 	static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
-	static deleteId(id){typeof id !== 'string' && this.error('=> Please use String "id" !');return this.idSet.delete(id);}
-	static getRandomId(){
-		for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
-		return temp;
-	}
 	/**
 	 * @template {HTMLElement} T
 	 * @param {keyof HTMLElementTagNameMap | T} tagName 
@@ -696,16 +828,6 @@ class RealTarget extends RealNode{
 		for(const ele of arguments) ele instanceof HTMLElement ? ele.classList.remove('keyboardController') :
 		ele?.self instanceof HTMLElement && ele.self.classList.remove('keyboardController');
 	}
-	/**
-	 * 
-	 * @param {{}} element 
-	 */
-	static searchByElement(element){
-		/**@type {RealElement[]} */const temp = [];
-		if(typeof element !== 'object' || !element) return temp;
-		for(const realElement of this._sys.values()) if(element === realElement.self) temp.push(realElement);
-		return temp;
-	}
 	/**@method */
 	static addEventListenerBySelectors = (()=>{
 		/**
@@ -734,26 +856,6 @@ class RealTarget extends RealNode{
 			);
 		}
 	})();
-	/**
-	 * 
-	 * @this {RealTarget}
-	 * @param {RealNode} realNode 
-	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
-		const temp = this._getPositionsOfChildRN(realNode);
-		while(temp.length){
-			const position = temp.pop().reverse();
-			if(!position.length) return this.realSet(realNode.value,react,notify,noSelf);else{
-				value = this.proto.value;
-				while(position.length > 1) value = value[position.pop()];
-				realNode.value === value[position[0]] || (value[position[0]] = realNode.value);
-			}
-		}
-		return this.fix(),react && this.react?.(noSelf),notify && this.notify(noSelf),true;
-	}catch(e){
-		if(this instanceof RealTarget) throw e;
-		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
-	}}
 	/**@typedef {(prefix: String,ruleObjObj: {[selector: String]: {[styleName: String]: String}})=>addCSSRules} addCSSRules */
 	/**@method @type {addCSSRules} */
 	static addCSSRules = (()=>{
@@ -925,109 +1027,13 @@ class RealTarget extends RealNode{
 			})));
 		};
 	})();
-	getIndexWithin(){
-		var i = 0,temp;
-		while(temp = this.self.previousElementSibling) i++;
-		return i;
-	}
-	/**
-	 * 
-	 * @template T
-	 * @param {T} value 
-	 */
-	protoTransform(value){return value;}
-	fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
-	clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
-	/**@param {...String} */
-	addClassName(){return this.proto.isElement && (this.self.classList.add(...arguments),true);}
-	/**@param {String} className */
-	toggleClassName(className){return this.proto.isElement && this.self.classList.toggle(className);}
-	/**@param {...String} */
-	removeClassName(){return this.proto.isElement && (this.self.classList.remove(...arguments),true);}
-	/**
-	 * 
-	 * @param {Boolean} react 
-	 * @param {Boolean} notify 
-	 * @param {Boolean} noSelf 
-	 * @returns {Boolean}
-	 */
-	realSet(value,react,notify,noSelf){
-		var temp;
-		try{return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
-			this.proto.set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto.set.call(this,value)
-		) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
-	}
-	/**
-	 * 
-	 * @param {keyof HTMLElementTagNameMap} selfSelector 
-	 * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
-	 */
-	applyCSS(selfSelector,classNameOrRuleObjObj){
-		const strReg = /^[A-Za-z]/;
-		var temp = selfSelector;
-		if(!(this.self instanceof HTMLElement)) this.error('I am not Element !');
-		if(typeof selfSelector !== 'string'){
-			while(temp = temp?.parentElement) if(temp === this.self){selfSelector = ' #'+(selfSelector.id ||= RealElement.getRandomId());break;}
-			temp || this.error('"selfSelector" must be String or my descendant !');
-		}
-		const id = this.self.id ||= RealElement.getRandomId();
-		typeof classNameOrRuleObjObj === 'string' ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
-		classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
-		return !classNameOrRuleObjObj ? false : (RealElement.addCSSRules(
-			'#'+id+(strReg.test(selfSelector) ? ' ' : '')+selfSelector,classNameOrRuleObjObj
-		),RealElement.addId(id,false),true);
-	}
-	/**
-	 * 
-	 * @param {Boolean} keepValue 
-	 * @param {Boolean} fix 
-	 * @param {Boolean} [deepCopyRelativeRNs] 
-	 */
-	clone(keepValue,fix,deepCopyRelativeRNs){
-		const self = this.self instanceof HTMLElement ? this.self.cloneNode() :
-		Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
-		const param0 = {self,key: this.key,transform: this.transform};
-		if(keepValue) param0.initValue = this.proto.value;
-		const temp = new RealTarget(param0,{
-			get: this.proto.get,
-			set: this.proto.set,
-			react: this.proto.react,
-			id: this.id.description+'-clone',
-			info: this.info,
-		});
-		Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
-		if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
-		if(fix) temp.fix();
-		return temp;
-	}
-	get isElement(){return this.proto.isElement;}
-	get transform(){return this.proto.transform;}
-	/**@param {(value)=>*} transform */
-	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
+	/**@type {HTMLElement} */
 	get self(){return this.proto.self;}
 	set self(self){
 		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
 		this.error('=> "self" must be HTMLElement !');
 	}
-	/**
-	 * 
-	 * @param {{self: HTMLElement,key,transform?: (value)=>*,initValue?: *}} param0 
-	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
-	 * @param {Boolean} [tryRealNode] 
-	 * @param {...RealNode} [relativeRNs] 
-	 */
-	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
-		super(config,tryRealNode,...relativeRNs);
-		/**@type {AntiHTMLNode} */this.proto;
-		this.self = self;
-		this.key = key;
-		this.transform = transform;
-		(tryRealNode ? this : this.proto).value = initValue;
-		this.addClassName(this.constructor.name);
-	}
 }
-/**@typedef {RealTarget & {self: HTMLElement}} RealElement*/
-const RealElement = RealTarget;
 
 if(browserMode){
 
@@ -1294,7 +1300,7 @@ var RealLoader = class RealLoader extends RealTarget{
 		);
 	})(nodeMode);
 	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealTarget.addEventListenerBySelectors('.RealLoader',"click",e=>{
-		for(const temp of RealTarget.searchByElement(e.target)) if(temp instanceof RealLoader){
+		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
 			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
 			temp.react?.();
 			temp.notify(true);
@@ -1781,7 +1787,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		/**@type {HTMLElement} */
 		const temp = target0.parentElement;
 		if(temp.classList.contains('RealDivQueue')){
-			for(realDivQueue of RealTarget.searchByElement(temp)) if(realDivQueue instanceof RealDivQueue) break;
+			for(realDivQueue of RealTarget.searchByObj(temp)) if(realDivQueue instanceof RealDivQueue) break;
 			queue = realDivQueue.queueArray;
 			queue = (target[0] = queue.indexOf(realDivQueue.proto.list.indexOf(target[0]))) >
 			(target[1] = queue.indexOf(realDivQueue.proto.list.indexOf(target[1]))) ?
@@ -1862,7 +1868,7 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	/**@type {(RS: RealDivList)=>Boolean} */
 	function tempReact(RS){return RS.react?.(),RS.self.dispatchEvent(new Event('change',changeConfig)),RS.notify();}
 	RealTarget.addEventListenerBySelectors('.realDivSelect>div','click',({target})=>{
-		var REList = RealTarget.searchByElement(target.parentElement),i = 0,temp;
+		var REList = RealTarget.searchByObj(target.parentElement),i = 0,temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
 		if(!temp) return;
 		/**@type {RealDivList} */
@@ -1907,13 +1913,13 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 	);}
 	addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
 	addEventListener('keyup',e=>{
-		var REList = RealTarget.searchByElement(document.activeElement?.parentElement?.parentElement),temp;
+		var REList = RealTarget.searchByObj(document.activeElement?.parentElement?.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
 		(1 === e.key.length || 'Backspace' === e.key || 'Delete' === e.key) && temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
 	});
 	RealTarget.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
-		var REList = RealTarget.searchByElement(e.target.parentElement.parentElement.parentElement),temp;
+		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
 		temp.info.inputer.value = temp.info.matcher.value[0];
@@ -1922,7 +1928,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
 	});
 	RealTarget.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
-		var REList = RealTarget.searchByElement(e.target.parentElement.parentElement),temp;
+		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
 		const testReg = new RegExp(temp.info.inputer.value,'i');
