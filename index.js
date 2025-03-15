@@ -1956,7 +1956,7 @@ console.log(performance.now() - t0,'ms');
 
 const RealStory = new(class RealStory{
 	/**@type {RealStory} */
-	static _;
+	static _ = RealStory.prototype.constructor = null;
 	static isBusy = false;
 	static intervalId = setInterval(()=>(RealStory.isBusy || (
 		RealStory.isBusy = true,RealStory._.launch().then(()=>RealStory.isBusy = false)
