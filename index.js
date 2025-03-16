@@ -1967,6 +1967,7 @@ var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQ
 const RealStory = (()=>{
 	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
 	function StoryPromise(){
+		if(!new.target) return new StoryPromise;
 		/**@type {(value)=>void} */
 		this.resolve = null;
 		/**@type {(reason?)=>void} */
@@ -2004,6 +2005,7 @@ const RealStory = (()=>{
 				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
 			}
 		}
+		get StoryPromise(){return StoryPromise;}
 		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
 		/**@type {?RealStory} */
 		ofStory;
@@ -2021,7 +2023,7 @@ const RealStory = (()=>{
 
 console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
-	RealWorld,RealNode,RealTarget,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
+	RealWorld,RealNode,RealGroup,RealTarget,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,
 	RealStory,
 });
