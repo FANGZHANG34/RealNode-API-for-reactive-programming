@@ -403,7 +403,7 @@ class RealNode{
 		/**@type {[RealNode, ...string[]][]} */
 		var temp = [],i,keys;
 		if(value instanceof RealNode) return temp.push((position.unshift(value),position)),temp;
-		else if(count < deep && typeof value === 'object' && value) for(i = (keys = Reflect.ownKeys(value)).length;i --> 0;){
+		else if(count < deep && Object(value) === value) for(i = (keys = Reflect.ownKeys(value)).length;i --> 0;){
 			temp = temp.concat(this._computePositionsOfRNs(value[keys[i]],deep,[...position,keys[i]],count + 1));
 		}
 		return temp;
@@ -502,11 +502,11 @@ class RealGroup extends RealNode{
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
 	/**
 	 * 
-	 * @param {Boolean} notify 
-	 * @param {Boolean} noSelf 
+	 * @param {Boolean} [notify] 
+	 * @param {Boolean} [noSelf] 
 	 * @returns {Boolean}
 	 */
-	realSet(value,notify,noSelf){
+	realSet(value,notify = true,noSelf = true){
 		const oldValue = this.proto.value;
 		try{return (this.proto.set.call(this,value) ?? oldValue !== this.proto.value) && (notify && this.notify(noSelf),true);}
 		catch(e){return console.error(e),e;}
@@ -577,8 +577,13 @@ class RealGroup extends RealNode{
 		return temp;
 	}
 	get proxy(){return this.proto.value;}
+	get set(){return this.realSet;}
+	set set(set){this.log('Invalid set "set" !');}
+	/**@type {(keyOrkeyObj?: String | Symbol | {})=> *} */
+	get get(){return this.protoGet;}
+	set get(get){this.log('Invalid set "get" !');}
 	get react(){return this.protoReact;}
-	set react(react){this.addSetterListener(null,react);}
+	set react(react){this.log('Invalid set "react" !');}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
@@ -600,8 +605,8 @@ class RealGroup extends RealNode{
 	}
 }
 class RealTarget extends RealNode{
-	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiHTMLNode */
-	static proto = class AntiHTMLNode extends RealNode.proto{
+	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
+	static proto = class AntiTarget extends RealNode.proto{
 		/**@type {HTMLElement | {}} */
 		self;
 		/**@type {Boolean} */
@@ -619,11 +624,13 @@ class RealTarget extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {{}} element 
+	 * @template T
+	 * @param {T} element 
+	 * @returns {T extends EventTarget ? RealElement[] : T extends {} ? RealTarget[] : RealElement[]}
 	 */
 	static searchByObj(element){
 		/**@type {RealTarget[]} */const temp = [];
-		if(typeof element !== 'object' || !element) return temp;
+		if(Object(element) !== element) return temp;
 		for(const realTarget of this._sys.values()) if(element === realTarget.self) temp.push(realTarget);
 		return temp;
 	}
@@ -740,7 +747,7 @@ class RealTarget extends RealNode{
 	 */
 	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
 		super(config,tryRealNode,...relativeRNs);
-		/**@type {AntiHTMLNode} */this.proto;
+		/**@type {AntiTarget} */this.proto;
 		this.self = self;
 		this.key = key;
 		this.transform = transform;
@@ -759,16 +766,16 @@ class RealElement extends RealTarget{
 		if(!onkeyboardController) return;
 		var i,temp;
 		switch(e.key){
-			case RealTarget.keyboardController.previous: i = -1;break;
-			case RealTarget.keyboardController.next: i = 1;break;
-			case RealTarget.keyboardController.enter: (temp = RealTarget.searchByObj(onkeyboardController)[0]) instanceof RealDivList ?
+			case RealElement.keyboardController.previous: i = -1;break;
+			case RealElement.keyboardController.next: i = 1;break;
+			case RealElement.keyboardController.enter: (temp = RealTarget.searchByObj(onkeyboardController)[0]) instanceof RealDivList ?
 			temp.proto.list.length ?
 			(onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click() :
 			(temp = onkeyboardController.querySelector('.keyboardController')) ?
 			(onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click();break;
-			case RealTarget.keyboardController.back:{
+			case RealElement.keyboardController.back:{
 				temp = onkeyboardController;
 				while(temp = temp.parentElement) if(temp.classList.contains('keyboardController')) break;
 				temp ? (onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
@@ -865,7 +872,7 @@ class RealElement extends RealTarget{
 		const myCSS = document.styleSheets[document.styleSheets.length - 1];
 		const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 		const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
-		const getKeys = obj=>obj && typeof obj === 'object' ? Object.keys(obj) : [];
+		const getKeys = obj=>Object(obj) === obj ? Object.keys(obj) : [];
 		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Number} */
 		const tempInsertRule = !myCSS.insertRule ? (selector,rulesStr)=>myCSS.addRule(selector,rulesStr,-1) :
 		(selector,rulesStr)=>myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length);
@@ -1037,14 +1044,16 @@ class RealElement extends RealTarget{
 
 if(browserMode){
 
-var RealCanvas = class RealCanvas extends RealTarget{
-	/**@typedef {AntiHTMLNode & {
+var RealCanvas = class RealCanvas extends RealElement{
+	/**
+	 * @typedef {AntiTarget & {
 	 * self: HTMLCanvasElement;
 	 * temp: CanvasRenderingContext2D;
 	 * img: HTMLImageElement;
 	 * clearBeforeDraw: Boolean;
 	 * ctx: CanvasRenderingContext2D;
-	 * }} AntiCanvas */
+	 * }} AntiCanvas 
+	 * */
 	static proto = class AntiCanvas extends RealTarget.proto{
 		temp = document.createElement('canvas').getContext('2d');
 		img = new Image;
@@ -1236,8 +1245,8 @@ var RealCanvas = class RealCanvas extends RealTarget{
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
 		self && self.tagName.toLocaleLowerCase() !== 'canvas' &&
 		RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
-		RealTarget.addId(id,!self);
-		super({self: self || RealTarget.makeElement('canvas',{id})},{id},tryRealNode,...relativeRNs);
+		RealElement.addId(id,!self);
+		super({self: self || RealElement.makeElement('canvas',{id})},{id},tryRealNode,...relativeRNs);
 		/**@type {AntiCanvas} */
 		this.proto;
 		this.width = width;
@@ -1245,8 +1254,8 @@ var RealCanvas = class RealCanvas extends RealTarget{
 		this.proto.ctx = this.proto.self.getContext('2d');
 	}
 };
-var RealLoader = class RealLoader extends RealTarget{
-	/**@typedef {AntiHTMLNode & {onerror: null | (error: Error)=>void,onloadend: null | (n: Number)=>void}} AntiLoader */
+var RealLoader = class RealLoader extends RealElement{
+	/**@typedef {AntiTarget & {onerror: null | (error: Error)=>void,onloadend: null | (n: Number)=>void}} AntiLoader */
 	static proto = class AntiLoader extends RealTarget.proto{
 		/**@type {null | (error: Error)=>void} */
 		onerror;
@@ -1299,7 +1308,7 @@ var RealLoader = class RealLoader extends RealTarget{
 			})
 		);
 	})(nodeMode);
-	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealTarget.addEventListenerBySelectors('.RealLoader',"click",e=>{
+	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
 		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
 			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
 			temp.react?.();
@@ -1387,8 +1396,8 @@ var RealLoader = class RealLoader extends RealTarget{
 		isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
 	}
 };
-var RealSelect = class RealSelect extends RealTarget{
-	/**@typedef {AntiHTMLNode & {list: HTMLOptionElement[]}} AntiSelect */
+var RealSelect = class RealSelect extends RealElement{
+	/**@typedef {AntiTarget & {list: HTMLOptionElement[]}} AntiSelect */
 	static proto = class AntiSelect extends RealTarget.proto{
 		/**@type {HTMLOptionElement[]} */
 		list = [];
@@ -1472,9 +1481,9 @@ var RealSelect = class RealSelect extends RealTarget{
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
 		if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
 		RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
-		RealTarget.addId(id,!self);
+		RealElement.addId(id,!self);
 		super({
-			self: self || RealTarget.makeElement('select',{id,multiple,onchange}),
+			self: self || RealElement.makeElement('select',{id,multiple,onchange}),
 			key: 'innerHTML',
 			initValue: Object.assign({},optionConfig)
 		},{id},tryRealNode);
@@ -1484,7 +1493,7 @@ var RealSelect = class RealSelect extends RealTarget{
 		this.fix();
 	}
 };
-var RealComtag = class RealComtag extends RealTarget{
+var RealComtag = class RealComtag extends RealElement{
 	fix(){
 		this.self.classList.add('disappear');
 		this.self.innerHTML = '';
@@ -1527,9 +1536,9 @@ var RealComtag = class RealComtag extends RealTarget{
 	 */
 	constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
-		RealTarget.addId(id,!self);
+		RealElement.addId(id,!self);
 		super({
-			self: self || RealTarget.makeElement('div',{id}),
+			self: self || RealElement.makeElement('div',{id}),
 			initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
 		},{id},tryRealNode);
 		/**@type {AntiList} */this.proto;
@@ -1537,8 +1546,8 @@ var RealComtag = class RealComtag extends RealTarget{
 		Object.assign(this.fix().self,selfAssign);
 	}
 };
-var RealDivList = class RealDivList extends RealTarget{
-	/**@typedef {AntiHTMLNode & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
+var RealDivList = class RealDivList extends RealElement{
+	/**@typedef {AntiTarget & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
 	static proto = class AntiList extends RealTarget.proto{
 		/**@type {HTMLDivElement[]} */
 		list = [];
@@ -1634,25 +1643,25 @@ var RealDivList = class RealDivList extends RealTarget{
 	 * 
 	 * @param {Boolean} [toRealElement] 
 	 * @param {String} [key] 
-	 * @returns {{[id: String]: HTMLElement} | {[id: String]: RealTarget}}}
+	 * @returns {{[id: String]: HTMLElement} | {[id: String]: RealElement}}}
 	 */
 	getIdDict(toRealElement,key){
-		/**@type {{[id: String]: HTMLElement} | {[id: String]: RealTarget}} */
+		/**@type {{[id: String]: HTMLElement} | {[id: String]: RealElement}} */
 		const list = Object.create(null);
 		var i = this.proto.list.length,temp;
 		if(toRealElement) while(i --> 0) (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id ||
-		(list[temp[0].id] = new RealTarget({self: this.proto.list[i],key}));
+		(list[temp[0].id] = new RealElement({self: this.proto.list[i],key}));
 		else while(i --> 0) (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id ||
 		(list[temp[0].id] = this.proto.list[i]);
 		return list;
 	}
 	/**
 	 * 
-	 * @returns {RealTarget[]}
+	 * @returns {RealElement[]}
 	 */
 	getRealEmentList(){
 		const temp = this.proto.list.concat();
-		for(var i = temp.length;i --> 0;) temp[i] = new RealTarget({self: temp[i]});
+		for(var i = temp.length;i --> 0;) temp[i] = new RealElement({self: temp[i]});
 		return temp;
 	}
 	fix(){
@@ -1677,9 +1686,9 @@ var RealDivList = class RealDivList extends RealTarget{
 	 */
 	constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
-		RealTarget.addId(id,!self);
+		RealElement.addId(id,!self);
 		super({
-			self: self || RealTarget.makeElement('div',{id}),
+			self: self || RealElement.makeElement('div',{id}),
 			initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
 		},{id},tryRealNode);
 		/**@type {AntiList} */this.proto;
@@ -1768,7 +1777,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		queueArray;
 	}
 	/**@type {HTMLElement} */
-	static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealTarget.addCSSRules('.RealDivQueue',{
+	static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
 		'>div': {'transition':'.1s'},
 		'>div:hover': {'transform':'scale(1.1,1)'},
 		'>div:active': {'transform':'scale(1.2,1)'},
@@ -1867,7 +1876,8 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	}
 	/**@type {(RS: RealDivList)=>Boolean} */
 	function tempReact(RS){return RS.react?.(),RS.self.dispatchEvent(new Event('change',changeConfig)),RS.notify();}
-	RealTarget.addEventListenerBySelectors('.realDivSelect>div','click',({target})=>{
+	RealElement.addEventListenerBySelectors('.realDivSelect>div','click',({target})=>{
+		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(target.parentElement),i = 0,temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
 		if(!temp) return;
@@ -1918,7 +1928,8 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		if(!temp) return;
 		(1 === e.key.length || 'Backspace' === e.key || 'Delete' === e.key) && temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
 	});
-	RealTarget.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
+		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
@@ -1927,14 +1938,15 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		tempRealDivList.react?.(),tempRealDivList.notify(true);
 		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
 	});
-	RealTarget.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
+		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
 		const testReg = new RegExp(temp.info.inputer.value,'i');
 		temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
 	});
-	RealTarget.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',e=>{
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',e=>{
 		e.target.dispatchEvent(new Event('change',changeConfig));
 	});
 	/**@type {(this: RealDivList)=>void} */
@@ -1952,70 +1964,62 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 
 }
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
-console.log(performance.now() - t0,'ms');
-
-const RealStory = new(class RealStory{
-	/**@type {RealStory} */
-	static _ = RealStory.prototype.constructor = null;
-	static isBusy = false;
-	static intervalId = setInterval(()=>(RealStory.isBusy || (
-		RealStory.isBusy = true,RealStory._.launch().then(()=>RealStory.isBusy = false)
-	)),50);
-	static promise = class StoryPromise{
+const RealStory = (()=>{
+	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
+	function StoryPromise(){
+		/**@type {(value)=>void} */
+		this.resolve = null;
+		/**@type {(reason?)=>void} */
+		this.reject = null;
+		this.self = new Promise(executor.bind(this));
+	}
+	class RealStory{
+		newPage(){return new RealStory(this);}
 		/**
 		 * 
-		 * @this {StoryPromise}
-		 * @param {(value)=>void} resolve 
-		 * @param {(reason?)=>void} reject 
+		 * @param {(page: RealStory)=>void} fn 
 		 */
-		static executor(resolve,reject){if(this instanceof StoryPromise) this.resolve = resolve,this.reject = reject;}
-		/**@type {(value)=>void} */
-		resolve;
-		/**@type {(reason?)=>void} */
-		reject;
-		self = new Promise(StoryPromise.executor.bind(this));
-	};
-	newPage(){return new RealStory(this);}
-	/**
-	 * 
-	 * @param {(page: RealStory)=>void} fn 
-	 */
-	newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
-	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
-	getNextPage(){
-		if(!(this.ofStory instanceof RealStory)) return;
-		const temp = this.ofStory.pages;
-		return temp[temp.indexOf(this) + 1];
-	}
-	getPreviousPage(){
-		if(!(this.ofStory instanceof RealStory)) return;
-		const temp = this.ofStory.pages;
-		return temp[temp.indexOf(this) - 1];
-	}
-	newPromiseObj(){
-		const temp = new RealStory.promise;
-		return this.then(()=>temp.self),temp;
-	}
-	async launch(){
-		var i = 0,temp = this;
-		while((temp = temp.ofStory) instanceof RealStory) i++;
-		while(this.pages.length || this.fnList.length){
-			while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
-			catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
-			try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+		newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
+		then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+		getNextPage(){
+			if(!(this.ofStory instanceof RealStory)) return;
+			const temp = this.ofStory.pages;
+			return temp[temp.indexOf(this) + 1];
 		}
+		getPreviousPage(){
+			if(!(this.ofStory instanceof RealStory)) return;
+			const temp = this.ofStory.pages;
+			return temp[temp.indexOf(this) - 1];
+		}
+		newPromiseObj(){
+			const temp = new StoryPromise;
+			return this.then(()=>temp.self),temp;
+		}
+		async launch(){
+			var i = 0,temp = this;
+			while((temp = temp.ofStory) instanceof RealStory) i++;
+			while(this.pages.length || this.fnList.length){
+				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
+				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
+				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+			}
+		}
+		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
+		/**@type {?RealStory} */
+		ofStory;
+		/**@type {RealStory[]} */
+		pages = [];
+		/**@type {(()=>*)[]} */
+		fnList = [];
+		info;
+		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
 	}
-	get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
-	/**@type {?RealStory} */
-	ofStory;
-	/**@type {RealStory[]} */
-	pages = [];
-	info;
-	/**@type {(()=>*)[]} */
-	fnList = [];
-	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) ? ofStory.pages.push(this) : RealStory._ = this;}
+	var isBusy = false;
+	RealStory.prototype.constructor = null;
+	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
 })();
 
+console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
 	RealWorld,RealNode,RealTarget,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealGroup,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,
