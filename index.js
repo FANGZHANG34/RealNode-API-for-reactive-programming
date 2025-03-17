@@ -9,56 +9,17 @@ setInterval = globalThis.setInterval ?? prevent,
 performance = globalThis.performance ?? Date,
 t0 = performance.now()
 ;
-
 /**# 搜索## */
 /**##   */
 /**## browserMode 是否存在浏览器环境 */
 const browserMode = 'document' in globalThis;
 /**## browserMode 是否存在nodejs环境 */
 const nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]';
-
 Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 });
-var PromiseWithList = Promise.WithList = function(){
-	/**
-	 * @typedef {Promise & {
-	 * list: [];
-	 * protoThen: (onfulfilled: ((value)=>any) | null | undefined,onrejected: ((reason)=>PromiseLike<never>) | null | undefined)=>Promise;
-	 * }} PromiseWithList
-	 */
-
-	/**
-	 * 
-	 * @param {Promise | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
-	 * @returns {PromiseWithList}
-	 */
-	function PromiseWithList(executor){
-		const temp = Object.create(executor instanceof Promise ? executor : new Promise(executor),proto);
-		return Object.create(temp,{list: {value: []}});
-	}
-	const proto = {
-		protoThen: {value: Promise.prototype.then},
-		/**
-		 * 
-		 * @param {((value)=>any) | null | undefined} onfulfilled 
-		 * @param {((reason)=>PromiseLike<never>) | null | undefined} onrejected 
-		 */
-		then: {value(onfulfilled,onrejected){
-			const result = PromiseWithList(
-				Reflect.getPrototypeOf(Reflect.getPrototypeOf(this)).then(typeof onfulfilled === 'function' ?
-				(v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected)
-			);
-			var temp = result.list;
-			temp.unshift(...this.list);
-			return result;
-		}}
-	};
-	Reflect.setPrototypeOf(Reflect.getPrototypeOf(PromiseWithList),Promise);
-	return PromiseWithList;
-}();
 
 /**# RealWorld 事件循环类 */
 const RealWorld = (()=>{
@@ -476,6 +437,7 @@ class RealNode{
 		if('value' in config) this.value = config.value;
 	}
 }
+/**@template {{}} T */
 class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
 		static arr = [];
@@ -507,8 +469,7 @@ class RealGroup extends RealNode{
 	 * @returns {Boolean}
 	 */
 	realSet(value,notify = true,noSelf = true){
-		const oldValue = this.proto.value;
-		try{return (this.proto.set.call(this,value) ?? oldValue !== this.proto.value) && (notify && this.notify(noSelf),true);}
+		try{return this.protoSet(value) && (notify && this.notify(noSelf),true);}
 		catch(e){return console.error(e),e;}
 	}
 	/**
@@ -556,7 +517,8 @@ class RealGroup extends RealNode{
 	protoSet(obj){
 		if(Object(obj) !== obj) return false;
 		const self = this.proxy(),keyArray = Reflect.ownKeys(Object(obj)),temp = [];
-		for(const key of keyArray) self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
+		for(const key of keyArray) obj[key] instanceof RealNode ? (self[key] = obj[key],temp.push(key)) :
+		self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
 		obj[key] !== self[key] && (self[key] = obj[key],temp.push(key));
 		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e.stack);}
 		return Boolean(temp.length);
@@ -576,6 +538,7 @@ class RealGroup extends RealNode{
 		while(i --> 0) Reflect.set(temp,keyArray[i],self[keyArray[i]] instanceof RealNode ? self[keyArray[i]].value : self[keyArray[i]]);
 		return temp;
 	}
+	/**@type {()=>T} */
 	get proxy(){return this.proto.value;}
 	get set(){return this.realSet;}
 	set set(set){this.log('Invalid set "set" !');}
@@ -590,7 +553,7 @@ class RealGroup extends RealNode{
 	listenerMap = new Map;
 	/**
 	 * 
-	 * @param {{self?: {}}} param0 
+	 * @param {{self?: T}} param0 
 	 */
 	constructor({id,info,self = Object.create(null)} = {}){
 		if(RealGroup.groupMap.get(self) instanceof RealGroup){
@@ -1964,7 +1927,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 
 }
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
-const RealStory = (()=>{
+const RealStory = function(){
 	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
 	function StoryPromise(){
 		if(!new.target) return new StoryPromise;
@@ -2019,11 +1982,52 @@ const RealStory = (()=>{
 	var isBusy = false;
 	RealStory.prototype.constructor = null;
 	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
-})();
+}();
+const RealPromise = new(class RealPromise{
+	/**
+	 * @template T
+	 * @type {(v: T)=>T}
+	 */
+	_push(v){return this.list.push(v),v;}
+	/**
+	 * 
+	 * @param {(reason)=>*} [onrejected] 
+	 */
+	catch(onrejected){return this.self = this.self.catch(onrejected),this;}
+	/**
+	 * 
+	 * @param {()=>void} [onfinally] 
+	 */
+	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
+	/**
+	 * 
+	 * @param {(value)=>*} [onfulfilled] 
+	 * @param {(reason)=>*} [onrejected] 
+	 */
+	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
+	async tryHandler(handler){
+		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
+		try{await this.self;}catch(e){}
+		var i = this.list.length;
+		while(i --> 0) try{return handler(await this.list[i]);}catch(e){console.error(e);}
+	}
+	list = [];
+	/**
+	 * 
+	 * @template T
+	 * @param {T | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 */
+	constructor(executor){
+		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
+		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
+		this.self = !arguments.length ? Promise.resolve() :
+		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
+	}
+});
 
 console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
 	RealWorld,RealNode,RealGroup,RealTarget,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,
-	RealStory,
+	RealStory,RealPromise
 });

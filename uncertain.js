@@ -89,3 +89,40 @@ class RealGroup{
 		Reflect.defineProperty(this,'keys',{value: Object.freeze(Object.keys(this.dict)),writable: false,configurable: false});
 	}else this.error('=> "realNodeDict" must be Object !');}
 }
+
+const RealPromise = function(){
+	/**
+	 * @typedef {Promise & {
+	 * list: [];
+	 * constructor: typeof PromiseWithList;
+	 * protoThen(onfulfilled: (any) | null | undefined,onrejected: ((reason)=>PromiseLike<never>) | null | undefined)=>Promise;
+	 * }} PromiseWithList
+	 * @param {Promise | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 * @returns {PromiseWithList}
+	 */
+	function PromiseWithList(executor){
+		const temp = Object.create(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor),proto);
+		return Object.create(temp,{list: {value: []}});
+	}
+	Reflect.setPrototypeOf(Reflect.getPrototypeOf(PromiseWithList),Promise);
+	/**@type {PropertyDescriptorMap & ThisType} */
+	const proto = {
+		constructor: {value: PromiseWithList},
+		protoThen: {value: Promise.prototype.then},
+		/**
+		 * 
+		 * @param {((value)=>any) | null | undefined} onfulfilled 
+		 * @param {((reason)=>PromiseLike<never>) | null | undefined} onrejected 
+		 */
+		then: {value(onfulfilled,onrejected){
+			const result = PromiseWithList(
+				Reflect.getPrototypeOf(Reflect.getPrototypeOf(this)).then(typeof onfulfilled === 'function' ?
+				(v=>(temp.push(v),onfulfilled(v))) : (v=>(temp.push(v),v)),onrejected)
+			);
+			var temp = result.list;
+			temp.unshift(...this.list);
+			return result;
+		}}
+	};
+	return PromiseWithList();
+}();
