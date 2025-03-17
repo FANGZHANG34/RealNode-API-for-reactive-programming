@@ -2053,7 +2053,7 @@ const RealPromise = new(class RealPromise{
 console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
 	RealWorld,RealNode,RealGroup,RealTarget,RealElement,
-	RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,
+	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,
 	RealStory,RealPromise
 });
