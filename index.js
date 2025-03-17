@@ -1,4 +1,8 @@
 "use strict";
+try{
+	const temp = ({default: exports})=>exports;
+	require ??= path=>import(String(path)).then(temp);
+}catch(e){console.error(e);}
 var require,
 nodeRequire = require,
 prevent = function(){},
@@ -1075,7 +1079,8 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @returns {Promise<Blob>}
 	 */
 	toBlob(){try{
-		return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).then(result=>(result[0] instanceof Error ? new Blob : result[0]));
+		return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).
+		then(result=>(result[0] instanceof Error ? (console.error(result[0]),new Blob) : result[0]));
 	}catch(e){return console.error(e),Promise.resolve(new Blob);}}
 	/**
 	 * 
@@ -1173,12 +1178,12 @@ var RealCanvas = class RealCanvas extends RealElement{
 	get img(){return this.proto.img;}
 	get imgW(){return this.proto.img.naturalWidth;}
 	get imgH(){return this.proto.img.naturalHeight;}
-	get self(){return this.proto.self;}
-	set self(self){this.proto.self ??= self;}
 	get width(){return this.proto.self.width;}
 	set width(width){this.proto.self.width = this.proto.temp.canvas.width = width ?? 640;}
 	get height(){return this.proto.self.height;}
 	set height(height){this.proto.self.height = this.proto.temp.canvas.height = height ?? 360;}
+	get self(){return this.proto.self;}
+	set self(self){if(self instanceof HTMLCanvasElement) this.proto.ctx = (this.proto.self = self).getContext('2d');}
 	get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
 	set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
 	get temp(){return this.proto.temp.canvas;}
@@ -1225,52 +1230,46 @@ var RealLoader = class RealLoader extends RealElement{
 		/**@type {null | (n: Number)=>void} */
 		onloadend;
 	};
-	static fs = (nodeMode=>new class DocumentFs{
-		static fetch = (()=>{
+	static fs = function(){
+		class DocumentFs{get stat(){return DocumentFs.stat;}get readdir(){return DocumentFs.readdir;}}
+		DocumentFs.fetch = (()=>{
 			const temp = response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !');
 			return browserMode && document.location.protocol === 'file:' ? path=>fetch(path,{mode:'no-cors'}).then(temp) :
 			path=>fetch(path).then(temp);
 		})();
 		/**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
-		stat = (
-			nodeMode
-			? path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'stat'},path)
-			: (path=>DocumentFs.fetch(path).catch(e=>[e]))
-		);
-		readdir = (
-			nodeMode ?
-			/**@type {(path: String)=>Promise<[Error | null,String[]]>} */
-			(path=>RealWorld.cb2promise({thisArg: nodeRequire('fs'),useFn: 'readdir'},path)) :
-			/**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>} */
-			(async function readdir(path,...strArgs){
-				try{
-					const length = strArgs.length,fileNameList = [];
-					var i = length,j;
-					/\/$/.test(path) || (path += '/');
-					iLoop: while(i --> 0){
-						if(Array.isArray(strArgs[i])){
-							for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
-							continue iLoop;
-						}
-						const str = String(strArgs[i]);
-						if('\\' === str[0]) switch(str[1]){
-							case 'w': strArgs[i] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';break;
-							case 'd': strArgs[i] = '0123456789';break;
-						}
-						else strArgs[i] = [str];
-					}
-					for(const temp = Array(length).fill(0);!('-1' in temp);){
-						j = '';
-						for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
-						console.log(path+j);
-						(await this.stat(path+j))[0] || console.log(fileNameList.push(j),j);
-						for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
-					}
-					return [null,fileNameList];
-				}catch(e){return [e,[]];}
-			})
-		);
-	})(nodeMode);
+		DocumentFs.stat = nodeMode ? (async (path)=>RealWorld.cb2promise({thisArg: await nodeRequire('fs'),useFn: 'stat'},path)) :
+		(path=>DocumentFs.fetch(path).catch(e=>[e]));
+		/**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>} */
+		DocumentFs.readdir = nodeMode ?
+		(async (path)=>RealWorld.cb2promise({thisArg: await nodeRequire('fs'),useFn: 'readdir'},path)) :
+		(async (path,...strArgs)=>{try{
+			const length = strArgs.length,fileNameList = [];
+			var i = length,j;
+			/\/$/.test(path) || (path += '/');
+			iLoop: while(i --> 0){
+				if(Array.isArray(strArgs[i])){
+					for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
+					continue iLoop;
+				}
+				const str = String(strArgs[i]);
+				if('\\' === str[0]) switch(str[1]){
+					case 'w': strArgs[i] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';break;
+					case 'd': strArgs[i] = '0123456789';break;
+				}
+				else strArgs[i] = [str];
+			}
+			for(const temp = Array(length).fill(0);!('-1' in temp);){
+				j = '';
+				for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
+				console.log(path+j);
+				(await DocumentFs.stat(path+j))[0] || console.log(fileNameList.push(j),j);
+				for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
+			}
+			return [null,fileNameList];
+		}catch(e){return [e,[]];}});
+		return new DocumentFs;
+	}();
 	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
 		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
 			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
@@ -1287,7 +1286,7 @@ var RealLoader = class RealLoader extends RealElement{
 	static load = (
 		nodeMode ? (async (realLoader)=>{try{
 			if('upload' === realLoader.type) return realLoader.temp.click(),[];
-			const fs = nodeRequire('fs');
+			const fs = await nodeRequire('fs');
 			const data = await realLoader.dataGetter();
 			const [,prefix,suffix] = /(.+)(\..+)/.exec(realLoader.temp.download) || [,'file',''];
 			return RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download).
@@ -2010,11 +2009,6 @@ const RealStory = function(){
 }();
 const RealPromise = new(class RealPromise{
 	/**
-	 * @template T
-	 * @type {(v: T)=>T}
-	 */
-	_push(v){return this.list.push(v),v;}
-	/**
 	 * 
 	 * @param {(reason)=>*} [onrejected] 
 	 */
@@ -2024,6 +2018,11 @@ const RealPromise = new(class RealPromise{
 	 * @param {()=>void} [onfinally] 
 	 */
 	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
+	/**
+	 * @template T
+	 * @type {(v: T)=>T}
+	 */
+	_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
 	/**
 	 * 
 	 * @param {(value)=>*} [onfulfilled] 
@@ -2052,8 +2051,8 @@ const RealPromise = new(class RealPromise{
 
 console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
-	RealWorld,RealNode,RealGroup,RealTarget,RealElement,
-	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
-	createRealDivSelect,createRealDivSearch,
-	RealStory,RealPromise
+	RealWorld,RealNode,RealGroup,RealTarget,RealElement,// 5
+	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,// 7
+	createRealDivSelect,createRealDivSearch,// 2
+	RealStory,RealPromise// 2
 });
