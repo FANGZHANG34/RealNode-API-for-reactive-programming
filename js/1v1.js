@@ -1,6 +1,6 @@
 "use strict";
 
-const mode = -1;
+const mode = 0;
 switch(mode){
 	/**
 	 * 原生JS 31行
