@@ -1457,6 +1457,30 @@ var RealSelect = class RealSelect extends RealElement{
 	}
 };
 var RealComtag = class RealComtag extends RealElement{
+	/**@type {Map<String,[Boolean,*[],Boolean,((this: RealComtag)=>void) | null]>} */
+	static comtagClassMap = new Map;
+	/**
+	 * 
+	 * @param {String} className 
+	 * @param {Boolean} tryHTML 
+	 * @param {ArrayLike} optionList 
+	 * @param {Boolean} [tryRealNode] 
+	 * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
+	 * @param {(this: RealComtag)=>void} [callback] 
+	 */
+	static defineComtagClass(className,tryHTML,optionList,tryRealNode,cssRuleObjObj,callback){
+		/^([A-Za-z]\w*)$/.test(className) || this.error('Illegal "className" !');
+		this.comtagClassMap.has(className) && this.error('"className" repeated !');
+		optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
+		this.addCSSRules('.'+className,cssRuleObjObj);
+		this.comtagClassMap.set(className,[tryHTML,optionList,tryRealNode,typeof callback === 'function' ? callback : null]);
+	}
+	static createByClassName(className,...argArray){
+		const config = this.comtagClassMap.get(className);
+		config || this.error('"className" not found !');
+		const temp = new RealComtag('',config[0],config[1],config[2]);
+		return config[3].apply(temp,argArray),temp.addClassName(className),temp;
+	}
 	fix(){
 		this.self.classList.add('disappear');
 		this.self.innerHTML = '';
@@ -1504,7 +1528,8 @@ var RealComtag = class RealComtag extends RealElement{
 			self: self || RealElement.makeElement('div',{id}),
 			initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
 		},{id},tryRealNode);
-		/**@type {AntiList} */this.proto;
+		/**@type {AntiList} */
+		this.proto;
 		this.tryHTML = tryHTML;
 		Object.assign(this.fix().self,selfAssign);
 	}
@@ -1556,10 +1581,10 @@ var RealDivList = class RealDivList extends RealElement{
 	}}
 	/**
 	 * 
-	 * @param {*} className 
-	 * @param {*} tryHTML 
-	 * @param {*} optionList 
-	 * @param {*} [tryRealNode] 
+	 * @param {String} className 
+	 * @param {Boolean} tryHTML 
+	 * @param {ArrayLike} optionList 
+	 * @param {Boolean} [tryRealNode] 
 	 * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
 	 * @param {(this: RealDivList)=>void} [callback] 
 	 */
@@ -2027,7 +2052,8 @@ const RealPromise = new(class RealPromise{
 
 console.log(performance.now() - t0,'ms');
 Object.assign(exports,{
-	RealWorld,RealNode,RealGroup,RealTarget,RealElement,RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,
+	RealWorld,RealNode,RealGroup,RealTarget,RealElement,
+	RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,
 	RealStory,RealPromise
 });
