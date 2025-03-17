@@ -1,8 +1,7 @@
 "use strict";
-const getPath = (()=>{
-	const path = require('path');
-	return path.resolve.bind(path,__dirname);
-})();
+var __dirname;
+const path = require('path');
+const getPath = path.resolve.bind(path,__dirname);
 require(getPath('./countRows.js'));
 const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = require(getPath('../'));
 const process = require('process');

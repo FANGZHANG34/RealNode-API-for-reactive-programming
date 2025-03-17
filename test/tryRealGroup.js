@@ -1,9 +1,7 @@
 "use strict";
-var nodeRequire = require;
-const getPath = (()=>{
-	const path = nodeRequire('path');
-	return path.resolve.bind(path,__dirname);
-})();
+var nodeRequire = require,__dirname;
+const path = nodeRequire('path');
+const getPath = path.resolve.bind(path,__dirname);
 const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = nodeRequire(getPath('../'));
 const process = nodeRequire('process');
 
