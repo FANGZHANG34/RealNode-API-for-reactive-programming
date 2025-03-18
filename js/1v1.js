@@ -222,3 +222,4 @@ switch(mode){
 	// 	return temp.self;
 	// })()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 }
+RealWorld.onload.then(()=>(RealPromise.require('./try.js'),RealPromise.require('./try.js')));

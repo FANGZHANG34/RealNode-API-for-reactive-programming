@@ -1,8 +1,5 @@
 "use strict";
-try{
-	const temp = ({default: exports})=>exports;
-	var require = require ?? (path=>import(String(path)).then(temp));
-}catch(e){console.error(e);}
+try{const temp = ({default: exports})=>exports;var require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 var require,
 nodeRequire = require,
 prevent = function(){},
@@ -775,8 +772,8 @@ class RealElement extends RealTarget{
 	/**
 	 * @template {HTMLElement} T
 	 * @param {keyof HTMLElementTagNameMap | T} tagName 
-	 * @param {{[attr: String]: String}} [config] 
-	 * @param {{[attr: String]: String}} [cssConfig] 
+	 * @param {{this: T | HTMLElement;[attr: String]: String}} [config] 
+	 * @param {{this: CSSStyleDeclaration;[attr: String]: String}} [cssConfig] 
 	 * @returns {T}
 	 */
 	static makeElement(tagName,config,cssConfig){
@@ -2042,6 +2039,20 @@ const RealPromise = new(class RealPromise{
 		var i = this.length;
 		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
 	}
+	get require(){return RealPromise.require;}
+	static require = function(){
+		/**@this {HTMLElement} */
+		function onfinally(){this.remove();}
+		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
+		return browserMode ? /**@type {(path: String,this: RealPromise)=>Promise<*,Error | ErrorEvent | void>} */function(path){
+			var temp,script;
+			path = String(path).replaceAll('\\','/');
+			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
+			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
+				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
+			),this._push(temp.self.finally(onfinally.bind(script)))));
+		} : /**@this {RealPromise} */function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));};
+	}();
 	get length(){return this.list.length;}
 	list = [];
 	/**
