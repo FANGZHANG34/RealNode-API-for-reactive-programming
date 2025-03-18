@@ -2038,10 +2038,11 @@ const RealPromise = new(class RealPromise{
 	 */
 	async tryHandler(handler,onerror){
 		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
-		try{await this.self;}catch(e){}
-		var i = this.list.length;
+		try{await this.self;}catch(e){console.error(this.length,e);}
+		var i = this.length;
 		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
 	}
+	get length(){return this.list.length;}
 	list = [];
 	/**
 	 * 
@@ -2059,6 +2060,7 @@ const RealPromise = new(class RealPromise{
 console.log(performance.now() - t0,'ms');
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
+/**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
 Object.assign(exports,{
 	RealStory,RealPromise,// 2
 	RealWorld,RealNode,RealGroup,RealTarget,RealElement,// 5
