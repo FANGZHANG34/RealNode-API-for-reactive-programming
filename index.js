@@ -2044,7 +2044,7 @@ const RealPromise = new(class RealPromise{
 		/**@this {HTMLElement} */
 		function onfinally(){this.remove();}
 		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
-		return browserMode ? /**@type {(path: String,this: RealPromise)=>Promise<*,Error | ErrorEvent | void>} */function(path){
+		return browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */function(path){
 			var temp,script;
 			path = String(path).replaceAll('\\','/');
 			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
