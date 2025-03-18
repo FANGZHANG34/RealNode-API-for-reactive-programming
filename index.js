@@ -2029,11 +2029,18 @@ const RealPromise = new(class RealPromise{
 	 * @param {(reason)=>*} [onrejected] 
 	 */
 	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
-	async tryHandler(handler){
+	/**
+	 * 
+	 * @template T
+	 * @param {(v: *)=>T} handler 
+	 * @param {(error: Error)=>void} [onerror] 
+	 * @returns 
+	 */
+	async tryHandler(handler,onerror){
 		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
 		try{await this.self;}catch(e){}
 		var i = this.list.length;
-		while(i --> 0) try{return handler(await this.list[i]);}catch(e){console.error(e);}
+		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
 	}
 	list = [];
 	/**
@@ -2044,7 +2051,7 @@ const RealPromise = new(class RealPromise{
 	constructor(executor){
 		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
 		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
-		this.self = !arguments.length ? Promise.resolve() :
+		this.self = !arguments.length ? RealWorld.onload :
 		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
 	}
 });
