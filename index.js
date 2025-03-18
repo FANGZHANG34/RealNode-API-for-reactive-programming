@@ -2005,6 +2005,7 @@ const RealStory = function(){
 	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
 }();
 const RealPromise = new(class RealPromise{
+	newOne(){return new RealPromise;}
 	/**
 	 * 
 	 * @param {(reason)=>*} [onrejected] 
