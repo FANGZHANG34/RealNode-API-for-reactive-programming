@@ -1,7 +1,7 @@
 "use strict";
 try{
 	const temp = ({default: exports})=>exports;
-	require ??= path=>import(String(path)).then(temp);
+	var require = require ?? (path=>import(String(path)).then(temp));
 }catch(e){console.error(e);}
 var require,
 nodeRequire = require,
@@ -1819,7 +1819,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		var i = length;
 		while(i --> 0) queueArray[i] ??= i,queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
 		i = [previousQueue.indexOf(this.proto.list.indexOf(target0)),previousQueue.indexOf(this.proto.list.indexOf(target1))];
-		if(~i[0] && ~i[1]) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) : target1.insertAdjacentElement('beforebegin',target0);
+		if(i[0] !== -1 && i[1] !== -1) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) : target1.insertAdjacentElement('beforebegin',target0);
 		else{
 			this.self.classList.add('disappear');
 			this.self.innerHTML = '',i = 0;
@@ -2050,9 +2050,11 @@ const RealPromise = new(class RealPromise{
 });
 
 console.log(performance.now() - t0,'ms');
+/**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
+// export default
 Object.assign(exports,{
+	RealStory,RealPromise,// 2
 	RealWorld,RealNode,RealGroup,RealTarget,RealElement,// 5
-	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,// 7
 	createRealDivSelect,createRealDivSearch,// 2
-	RealStory,RealPromise// 2
+	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,// 7
 });

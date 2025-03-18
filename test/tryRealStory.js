@@ -1,10 +1,10 @@
 "use strict";
-var __dirname;
-const path = require('path');
-const getPath = path.resolve.bind(path,__dirname);
-require(getPath('./countRows.js'));
-const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = require(getPath('../'));
-const process = require('process');
+import process from "process";
+try{
+	const temp = ({default: exports})=>exports;
+	var require = require ?? (path=>import(String(path)).then(temp));
+}catch(e){console.error(e);}
+const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = await require('../index.js');
 
 RealStory.newPrivatePage(async page=>console.log(await page.then(()=>new RealElement({self:{}}))));
 RealNode.time((()=>{
