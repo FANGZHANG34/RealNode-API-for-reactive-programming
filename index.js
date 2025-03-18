@@ -1,29 +1,29 @@
 "use strict";
 try{const temp = ({default: exports})=>exports;var require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
-var require,
-nodeRequire = require,
-prevent = function(){},
-exports = exports ?? {},
-HTMLElement = globalThis.HTMLElement ?? prevent,
-clearInterval = globalThis.clearInterval ?? prevent,
-setInterval = globalThis.setInterval ?? prevent,
-performance = globalThis.performance ?? Date,
-t0 = performance.now()
-;
-/**# 搜索## */
-/**##   */
-/**## browserMode 是否存在浏览器环境 */
-const browserMode = 'document' in globalThis;
-/**## browserMode 是否存在nodejs环境 */
-const nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]';
+{
+var require,exports = exports ?? {};
 Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 });
-
+	/**##   */
+	/**# 搜索## */
+	const
+	nodeRequire = require,
+	prevent = function(){},
+	HTMLElement = globalThis.HTMLElement ?? prevent,
+	clearInterval = globalThis.clearInterval ?? prevent,
+	setInterval = globalThis.setInterval ?? prevent,
+	performance = globalThis.performance ?? Date,
+	t0 = performance.now(),
+	/**## browserMode 是否存在浏览器环境 */
+	browserMode = 'document' in globalThis,
+	/**## browserMode 是否存在nodejs环境 */
+	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
+	;
 /**# RealWorld 事件循环类 */
-const RealWorld = (()=>{
+var RealWorld = (()=>{
 	const tempConfig = {writable: false,enumerable: false};
 	function RealWorld(timeSep,...fnList){
 		if(!new.target) return Reflect.construct(RealWorld,arguments);
@@ -105,7 +105,7 @@ const RealWorld = (()=>{
 	};
 	return RealWorld;
 })();
-class RealNode{
+var RealNode = class RealNode{
 	/**
 	 * 
 	 * @throws
@@ -439,7 +439,7 @@ class RealNode{
 	}
 }
 /**@template {{}} T */
-class RealGroup extends RealNode{
+var RealGroup = class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
 		static arr = [];
 		apply(){return this.self;}
@@ -568,7 +568,7 @@ class RealGroup extends RealNode{
 		RealGroup.groupMap.set(self,this);
 	}
 }
-class RealTarget extends RealNode{
+var RealTarget = class RealTarget extends RealNode{
 	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
 	static proto = class AntiTarget extends RealNode.proto{
 		/**@type {HTMLElement | {}} */
@@ -719,7 +719,7 @@ class RealTarget extends RealNode{
 		this.addClassName(this.constructor.name);
 	}
 }
-class RealElement extends RealTarget{
+var RealElement = class RealElement extends RealTarget{
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
 	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
@@ -1948,7 +1948,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 
 }
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
-const RealStory = function(){
+var RealStory = function(){
 	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
 	function StoryPromise(){
 		if(!new.target) return new StoryPromise;
@@ -2004,7 +2004,7 @@ const RealStory = function(){
 	RealStory.prototype.constructor = null;
 	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
 }();
-const RealPromise = new(class RealPromise{
+var RealPromise = new(class RealPromise{
 	newOne(){return new RealPromise;}
 	/**
 	 * 
@@ -2068,8 +2068,8 @@ const RealPromise = new(class RealPromise{
 		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
 	}
 });
-
-console.log(performance.now() - t0,'ms');
+	console.log(performance.now() - t0,'ms');
+}
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
 /**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
