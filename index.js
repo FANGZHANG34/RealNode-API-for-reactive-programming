@@ -199,11 +199,11 @@ var RealNode = class RealNode{
 		return keepNow || (this.now = temp.finally()),temp;
 	}
 	/**@method @type {(promise: (()=>*) & Promise)=>Promise<{value: * & Error,time: Number}>} */
-	static time = (temp=>promise=>{
+	static time = (temp=>promise=>{try{
 		const t0 = performance.now();
 		return Promise.resolve(typeof promise === 'function' ? promise() : promise).
 		then(temp,temp).then(value=>({value,time: performance.now() - t0}));
-	})(e=>e);
+	}catch(e){return Promise.resolve({value: e,time: performance.now() - t0});}})(e=>e);
 	/**@method */
 	static copyObj = function copyObj(obj){
 		if(Object(obj) === obj){
