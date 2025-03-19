@@ -1,5 +1,5 @@
 "use strict";
-try{const temp = ({default: exports})=>exports;var require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
+try{const temp = ({default: exports})=>exports;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
 var require,exports = exports ?? {};
 Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
