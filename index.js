@@ -451,8 +451,9 @@ var RealNode = class RealNode{
 		if('value' in config) this.value = config.value;
 	}
 };
+var RealGroup =
 /**@template {{}} T */
-var RealGroup = class RealGroup extends RealNode{
+class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
 		static arr = [];
 		apply(){return this.self;}
@@ -1246,7 +1247,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @param {{radiusX: Number;radiusY: Number;relative?: Boolean;}} param0 
 	 * @param {'rect' | 'circle'} [shape] 
 	 */
-	applyLookThrough({radiusX,radiusY,relative} = {},shape){
+	applyMouseClear({radiusX,radiusY,relative} = {},shape){
 		const self = this.proto.self,backup = this.proto.backup,nowStyle = getComputedStyle(self);
 		const mouseenter = ()=>(backup.canvas.width = self.width,backup.canvas.height = self.height,backup.drawImage(self,0,0)),
 		/**@type {(e: MouseEvent)=>Promise<void>} */
@@ -1256,13 +1257,13 @@ var RealCanvas = class RealCanvas extends RealElement{
 			radiusX,radiusY,relative
 		},shape)),mouseleave = ()=>this.clear().drawImage(backup.canvas,0,0),
 		/**## 唯一可以取消该功能的函数 */
-		cancelLookThrough = ()=>(
+		cancelMouseClear = ()=>(
 			self.removeEventListener('mouseenter',mouseenter),
 			self.removeEventListener('mouseleave',mouseleave),
 			self.removeEventListener('mousemove',mousemove)
 		);
 		self.addEventListener('mouseenter',mouseenter),self.addEventListener('mouseleave',mouseleave),self.addEventListener('mousemove',mousemove);
-		return cancelLookThrough;
+		return cancelMouseClear;
 	}
 	/**
 	 * 
