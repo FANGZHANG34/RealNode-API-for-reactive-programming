@@ -1,4 +1,14 @@
 "use strict";
+// ==UserScript==
+// @name         real-node
+// @namespace    http://tampermonkey.net/
+// @version      2024-12-14
+// @description  try to take over the world! But you should look at the end of this script before beginning.
+// @author       FANGZHANG34
+// @match        https://*/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
+// @grant        none
+// ==/UserScript==
 try{const temp = ({default: exports})=>exports;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
 var require,exports = exports ?? {};
@@ -49,10 +59,13 @@ var RealWorld = (()=>{
 	/**## onload 环境准备好时兑现的承诺 */
 	RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
-	/**## onceIf 生成条件检测承诺 */
-	RealWorld.onceIf = function(ifFn){
+	/**
+	 * ## onceIf 生成条件检测承诺 
+	 * @param [timeSep]
+	 */
+	RealWorld.onceIf = function(ifFn,timeSep){
 		if(typeof ifFn !== 'function') return Promise.reject();
-		const temp = new RealWorld;
+		const temp = new RealWorld(timeSep);
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
 	};
 	/**## cb2promise 回调转承诺 */
@@ -437,7 +450,7 @@ var RealNode = class RealNode{
 		this.tryRealNode = tryRealNode;
 		if('value' in config) this.value = config.value;
 	}
-}
+};
 /**@template {{}} T */
 var RealGroup = class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
@@ -567,7 +580,7 @@ var RealGroup = class RealGroup extends RealNode{
 		this.proto.value = new Proxy(temp,temp);
 		RealGroup.groupMap.set(self,this);
 	}
-}
+};
 var RealTarget = class RealTarget extends RealNode{
 	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
 	static proto = class AntiTarget extends RealNode.proto{
@@ -718,7 +731,7 @@ var RealTarget = class RealTarget extends RealNode{
 		(tryRealNode ? this : this.proto).value = initValue;
 		this.addClassName(this.constructor.name);
 	}
-}
+};
 var RealElement = class RealElement extends RealTarget{
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
@@ -1004,7 +1017,127 @@ var RealElement = class RealElement extends RealTarget{
 		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
 		this.error('=> "self" must be HTMLElement !');
 	}
-}
+};
+var RealStory = function(){
+	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
+	function StoryPromise(){
+		if(!new.target) return new StoryPromise;
+		/**@type {(value)=>void} */
+		this.resolve = null;
+		/**@type {(reason?)=>void} */
+		this.reject = null;
+		this.self = new Promise(executor.bind(this));
+	}
+	class RealStory{
+		newPage(){return new RealStory(this);}
+		/**
+		 * 
+		 * @param {(page: RealStory)=>void} fn 
+		 */
+		newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
+		then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+		getNextPage(){
+			if(!(this.ofStory instanceof RealStory)) return;
+			const temp = this.ofStory.pages;
+			return temp[temp.indexOf(this) + 1];
+		}
+		getPreviousPage(){
+			if(!(this.ofStory instanceof RealStory)) return;
+			const temp = this.ofStory.pages;
+			return temp[temp.indexOf(this) - 1];
+		}
+		newPromiseObj(){
+			const temp = new StoryPromise;
+			return this.then(()=>temp.self),temp;
+		}
+		async launch(){
+			var i = 0,temp = this;
+			while((temp = temp.ofStory) instanceof RealStory) i++;
+			while(this.pages.length || this.fnList.length){
+				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
+				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
+				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+			}
+		}
+		get StoryPromise(){return StoryPromise;}
+		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
+		/**@type {?RealStory} */
+		ofStory;
+		/**@type {RealStory[]} */
+		pages = [];
+		/**@type {(()=>*)[]} */
+		fnList = [];
+		info;
+		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
+	}
+	var isBusy = false;
+	RealStory.prototype.constructor = null;
+	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
+}();
+var RealPromise = new(class RealPromise{
+	newOne(){return new RealPromise;}
+	/**
+	 * 
+	 * @param {(reason)=>*} [onrejected] 
+	 */
+	catch(onrejected){return this.self = this.self.catch(onrejected),this;}
+	/**
+	 * 
+	 * @param {()=>void} [onfinally] 
+	 */
+	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
+	/**
+	 * @template T
+	 * @type {(v: T)=>T}
+	 */
+	_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
+	/**
+	 * 
+	 * @param {(value)=>*} [onfulfilled] 
+	 * @param {(reason)=>*} [onrejected] 
+	 */
+	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
+	/**
+	 * 
+	 * @template T
+	 * @param {(v: *)=>T} handler 
+	 * @param {(error: Error)=>void} [onerror] 
+	 * @returns 
+	 */
+	async tryHandler(handler,onerror){
+		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
+		try{await this.self;}catch(e){console.error(this.length,e);}
+		var i = this.length;
+		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
+	}
+	get require(){return RealPromise.require;}
+	static require = function(){
+		/**@this {HTMLElement} */
+		function onfinally(){this.remove();}
+		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
+		return browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */function(path){
+			var temp,script;
+			path = String(path).replaceAll('\\','/');
+			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
+			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
+				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
+			),this._push(temp.self.finally(onfinally.bind(script)))));
+		} : /**@this {RealPromise} */function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));};
+	}();
+	get length(){return this.list.length;}
+	list = [];
+	/**
+	 * 
+	 * @template T
+	 * @param {T | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 */
+	constructor(executor){
+		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
+		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
+		this.self = !arguments.length ? RealWorld.onload :
+		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
+	}
+})();
 
 if(browserMode){
 
@@ -1013,6 +1146,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @typedef {AntiTarget & {
 	 * self: HTMLCanvasElement;
 	 * temp: CanvasRenderingContext2D;
+	 * backup: CanvasRenderingContext2D;
 	 * img: HTMLImageElement;
 	 * clearBeforeDraw: Boolean;
 	 * ctx: CanvasRenderingContext2D;
@@ -1020,6 +1154,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * */
 	static proto = class AntiCanvas extends RealTarget.proto{
 		temp = document.createElement('canvas').getContext('2d');
+		backup = document.createElement('canvas').getContext('2d');
 		img = new Image;
 		isElement = true;
 		clearBeforeDraw = true;
@@ -1055,7 +1190,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 	})();
 	protoTransform(){}
 	protoGet(){return this.loaded.then(()=>this.proto.value);}
-	clearAsync(){return this.loaded = this.loaded.then(()=>{this.clear();});}
+	clearAsync(){return this.loaded = this.loaded.then(()=>this.clear());}
 	fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
 	testSrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
 	clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
@@ -1105,6 +1240,65 @@ var RealCanvas = class RealCanvas extends RealElement{
 			for(i = srcArray.length,temp = 0;i --> 0;) this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
 		}else for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];
 		return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
+	}
+	/**
+	 * 
+	 * @param {{radiusX: Number;radiusY: Number;relative?: Boolean;}} param0 
+	 * @param {'rect' | 'circle'} [shape] 
+	 */
+	applyPointerThrough({radiusX,radiusY,relative} = {},shape){
+		const self = this.proto.self,backup = this.proto.backup,nowStyle = getComputedStyle(self);
+		const mouseenter = ()=>(backup.canvas.width = self.width,backup.canvas.height = self.height,backup.drawImage(self,0,0)),
+		/**@type {(e: MouseEvent)=>Promise<void>} */
+		mousemove = e=>(mouseleave(),this.clearShape({
+			x: e.offsetX * self.width / +nowStyle.width.slice(0,-2),
+			y: e.offsetY * self.height / +nowStyle.height.slice(0,-2),
+			radiusX,radiusY,relative
+		},shape)),mouseleave = ()=>this.clear().drawImage(backup.canvas,0,0),
+		/**## 唯一可以取消该功能的函数 */
+		cancelPointerThrough = ()=>(
+			self.removeEventListener('mouseenter',mouseenter),
+			self.removeEventListener('mouseleave',mouseleave),
+			self.removeEventListener('mousemove',mousemove)
+		);
+		self.addEventListener('mouseenter',mouseenter),self.addEventListener('mouseleave',mouseleave),self.addEventListener('mousemove',mousemove);
+		return cancelPointerThrough;
+	}
+	/**
+	 * 
+	 * @param {{x: Number;y: Number;radiusX: Number;radiusY: Number;relative?: Boolean;}} param0 
+	 * @param {'rect' | 'circle'} [shape] 
+	 */
+	clearShape({x = 0,y = 0,radiusX,radiusY,relative} = {},shape){
+		var failed = false;
+		typeof radiusX === 'number' ? typeof radiusY === 'number' || (radiusY = radiusX) :
+		typeof radiusY === 'number' ? radiusX = radiusY : failed = true;
+		failed ||= !Number.isFinite(radiusX + radiusY);
+		if(failed) return Promise.reject(new Error('"radiusX": '+String(radiusX)+' or "radiusY": '+String(radiusY)+' must be legal number !'));
+		if(typeof x !== 'number') x = 0;if(typeof y !== 'number') y = 0;
+		failed ||= !Number.isFinite(x + y);
+		if(failed) return Promise.reject(new Error('"x": '+String(x)+' or "y": '+String(y)+' must be legal number !'));
+		return this.loaded = this.loaded.then(()=>{
+			const self = this.proto.self,temp = this.proto.temp;
+			var i = 0,j;
+			radiusX = Math.abs(relative ? radiusX * this.width / 2 : radiusX);
+			radiusY = Math.abs(relative ? radiusY * this.height / 2 : radiusY);
+			temp.canvas.width = self.width,temp.canvas.height = self.height;
+			temp.drawImage(self,0,0);
+			switch(shape){
+				default: {
+					x = Math.round(x),y = Math.round(y),radiusX = Math.ceil(radiusX),radiusY = Math.ceil(radiusY);
+					const yPOW2 = radiusY ** 2,yDIVxPOW2 = yPOW2 / radiusX ** 2;
+					while(i ++< radiusX) j = Math.floor(Math.sqrt(yPOW2 - i ** 2 * yDIVxPOW2)) + 1,temp.clearRect(x - i,y - j,i * 2,j * 2);
+					break;
+				}
+				case 'rect': {
+					temp.clearRect(Math.floor(x - radiusX),Math.floor(y - radiusY),Math.ceil(radiusX * 2),Math.ceil(radiusY * 2));
+					this.clear().drawImage(temp.canvas,0,0);
+					break;
+				}
+			}this.clear().drawImage(temp.canvas,0,0);
+		}).catch(e=>console.error(e));
 	}
 	/**
 	 * 
@@ -1948,126 +2142,6 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 
 }
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
-var RealStory = function(){
-	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
-	function StoryPromise(){
-		if(!new.target) return new StoryPromise;
-		/**@type {(value)=>void} */
-		this.resolve = null;
-		/**@type {(reason?)=>void} */
-		this.reject = null;
-		this.self = new Promise(executor.bind(this));
-	}
-	class RealStory{
-		newPage(){return new RealStory(this);}
-		/**
-		 * 
-		 * @param {(page: RealStory)=>void} fn 
-		 */
-		newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
-		then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
-		getNextPage(){
-			if(!(this.ofStory instanceof RealStory)) return;
-			const temp = this.ofStory.pages;
-			return temp[temp.indexOf(this) + 1];
-		}
-		getPreviousPage(){
-			if(!(this.ofStory instanceof RealStory)) return;
-			const temp = this.ofStory.pages;
-			return temp[temp.indexOf(this) - 1];
-		}
-		newPromiseObj(){
-			const temp = new StoryPromise;
-			return this.then(()=>temp.self),temp;
-		}
-		async launch(){
-			var i = 0,temp = this;
-			while((temp = temp.ofStory) instanceof RealStory) i++;
-			while(this.pages.length || this.fnList.length){
-				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
-				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
-				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
-			}
-		}
-		get StoryPromise(){return StoryPromise;}
-		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
-		/**@type {?RealStory} */
-		ofStory;
-		/**@type {RealStory[]} */
-		pages = [];
-		/**@type {(()=>*)[]} */
-		fnList = [];
-		info;
-		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
-	}
-	var isBusy = false;
-	RealStory.prototype.constructor = null;
-	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
-}();
-var RealPromise = new(class RealPromise{
-	newOne(){return new RealPromise;}
-	/**
-	 * 
-	 * @param {(reason)=>*} [onrejected] 
-	 */
-	catch(onrejected){return this.self = this.self.catch(onrejected),this;}
-	/**
-	 * 
-	 * @param {()=>void} [onfinally] 
-	 */
-	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
-	/**
-	 * @template T
-	 * @type {(v: T)=>T}
-	 */
-	_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
-	/**
-	 * 
-	 * @param {(value)=>*} [onfulfilled] 
-	 * @param {(reason)=>*} [onrejected] 
-	 */
-	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
-	/**
-	 * 
-	 * @template T
-	 * @param {(v: *)=>T} handler 
-	 * @param {(error: Error)=>void} [onerror] 
-	 * @returns 
-	 */
-	async tryHandler(handler,onerror){
-		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
-		try{await this.self;}catch(e){console.error(this.length,e);}
-		var i = this.length;
-		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
-	}
-	get require(){return RealPromise.require;}
-	static require = function(){
-		/**@this {HTMLElement} */
-		function onfinally(){this.remove();}
-		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
-		return browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */function(path){
-			var temp,script;
-			path = String(path).replaceAll('\\','/');
-			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
-			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
-				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
-			),this._push(temp.self.finally(onfinally.bind(script)))));
-		} : /**@this {RealPromise} */function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));};
-	}();
-	get length(){return this.list.length;}
-	list = [];
-	/**
-	 * 
-	 * @template T
-	 * @param {T | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
-	 */
-	constructor(executor){
-		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
-		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
-		this.self = !arguments.length ? RealWorld.onload :
-		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
-	}
-});
 	console.log(performance.now() - t0,'ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
@@ -2079,3 +2153,5 @@ Object.assign(exports,{
 	createRealDivSelect,createRealDivSearch,// 2
 	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,// 7
 });
+/**## 如果用作油猴脚本，请不要注释掉下面这一行。  */
+// Object.assign(globalThis,exports);
