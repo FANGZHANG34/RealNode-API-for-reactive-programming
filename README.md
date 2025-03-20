@@ -52,7 +52,7 @@
 
 - 元素属性响应式类[**`RealElement`**](#RealElement)
 
-## **`RealWorld`**
+## **RealWorld**
 
 这是一个事件循环类，基于`setInterval()`函数实现。对该类的一个实例而言，每过一段固定时间将会调用二级实例方法`_mainFn()`。
 
@@ -120,7 +120,7 @@
 
 	每过一段固定时间将会被调用。
 
-## **`RealNode`**
+## **RealNode**
 
 这是一个响应式类，基于`Promise`类的微任务队列实现。对该类的一个实例而言，可以存储一个值，并在变更存储的值时会产生响应。
 
@@ -226,7 +226,7 @@
 
 	接收一个参数`promise`，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number,value: any | Error}`。
 
-## **`RealGroup`**
+## **RealGroup**
 
 > 继承[**`RealNode`**](#RealNode)
 
@@ -276,7 +276,7 @@
 
 	接收一个参数`filterFn`，必须为`Function`类型，根据筛选出的键返回一个`null`为原型的含对应键值对的对象。
 
-## **`RealTarget`**
+## **RealTarget**
 
 > 继承[**`RealNode`**](#RealNode)
 
@@ -410,7 +410,7 @@
 
 	接收一个参数`element`，应为对象，搜索并返回所有绑定对象为参数`element`的`RealTarget`对象组成的`Array`对象。
 
-## **`RealElement`**
+## **RealElement**
 
 > 继承[**`RealTarget`**](#RealTarget)继承[**`RealNode`**](#RealNode)
 
