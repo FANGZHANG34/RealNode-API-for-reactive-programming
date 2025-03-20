@@ -726,6 +726,12 @@ var RealTarget = class RealTarget extends RealNode{
 	}
 };
 var RealElement = class RealElement extends RealTarget{
+	/**@type {HTMLElement} */
+	get self(){return this.proto.self;}
+	set self(self){
+		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
+		this.error('=> "self" must be HTMLElement !');
+	}
 	/**@type {Set<String>} */
 	static idSet = new Set;
 	static findId(id){return this.idSet.has(id);}
@@ -845,15 +851,18 @@ var RealElement = class RealElement extends RealTarget{
 	/**@method @type {addCSSRules} */
 	static addCSSRules = (()=>{
 		if(!browserMode) return ()=>{};
-		document.getElementsByTagName("head")[0].
-		appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
-		const myCSS = document.styleSheets[document.styleSheets.length - 1];
+		const myCSS = RealWorld.onload.then(()=>(
+			document.getElementsByTagName("head")[0].
+			appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode("")),
+			document.styleSheets[document.styleSheets.length - 1]
+		));
 		const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 		const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
 		const getKeys = obj=>Object(obj) === obj ? Object.keys(obj) : [];
 		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Number} */
-		const tempInsertRule = !myCSS.insertRule ? (selector,rulesStr)=>myCSS.addRule(selector,rulesStr,-1) :
-		(selector,rulesStr)=>myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length);
+		const tempInsertRule = !globalThis.CSSStyleSheet.prototype.insertRule ?
+		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.addRule(selector,rulesStr,-1),myCSS)) :
+		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length),myCSS));
 		return function addCSSRules(prefix,ruleObjObj){
 			if(Array.isArray(prefix)){
 				let i = prefix.length
@@ -1012,12 +1021,6 @@ var RealElement = class RealElement extends RealTarget{
 			})));
 		};
 	})();
-	/**@type {HTMLElement} */
-	get self(){return this.proto.self;}
-	set self(self){
-		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
-		this.error('=> "self" must be HTMLElement !');
-	}
 };
 var RealStory = function(){
 	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
@@ -1089,21 +1092,22 @@ var RealPromise = new(class RealPromise{
 	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
 	/**
 	 * @template T
-	 * @type {(v: T)=>T}
+	 * @param {T} v 
 	 */
 	_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
 	/**
 	 * 
-	 * @param {(value)=>*} [onfulfilled] 
-	 * @param {(reason)=>*} [onrejected] 
+	 * @template U
+	 * @template V
+	 * @param {(value)=>U} [onfulfilled] 
+	 * @param {(reason)=>V} [onrejected] 
 	 */
 	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
 	/**
 	 * 
 	 * @template T
-	 * @param {(v: *)=>T} handler 
+	 * @param {(v)=>T} handler 
 	 * @param {(error: Error)=>void} [onerror] 
-	 * @returns 
 	 */
 	async tryHandler(handler,onerror){
 		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
@@ -1130,15 +1134,16 @@ var RealPromise = new(class RealPromise{
 	/**
 	 * 
 	 * @template T
-	 * @param {T | (resolve: (value)=>void,reject: (reason?)=>void)=>void} executor 
+	 * @param {T | Promise<T> | (resolve: (value: T)=>void,reject: (reason?)=>void)=>void} executor 
 	 */
 	constructor(executor){
 		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
 		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
+		/**@type {Promise<T>} */
 		this.self = !arguments.length ? RealWorld.onload :
 		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
 	}
-})();
+})();RealPromise.self
 
 if(browserMode){
 
