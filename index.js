@@ -592,14 +592,6 @@ var RealTarget = class RealTarget extends RealNode{
 		/**@type {(value)=>*} */
 		transform;
 	};
-	/**@type {Set<String>} */
-	static idSet = new Set;
-	static findId(id){return this.idSet.has(id);}
-	static deleteId(id){typeof id !== 'string' && this.error('=> Please use String "id" !');return this.idSet.delete(id);}
-	static getRandomId(){
-		for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
-		return temp;
-	}
 	/**
 	 * 
 	 * @template T
@@ -704,8 +696,7 @@ var RealTarget = class RealTarget extends RealNode{
 		});
 		Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
 		if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
-		if(fix) temp.fix();
-		return temp;
+		return fix ? temp.fix() : temp;
 	}
 	get isElement(){return this.proto.isElement;}
 	get transform(){return this.proto.transform;}
@@ -724,16 +715,30 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {...RealNode} [relativeRNs] 
 	 */
 	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
-		super(config,tryRealNode,...relativeRNs);
+		super(config,tryRealNode);
 		/**@type {AntiTarget} */this.proto;
 		this.self = self;
 		this.key = key;
 		this.transform = transform;
 		(tryRealNode ? this : this.proto).value = initValue;
+		this.relate(...relativeRNs);
 		this.addClassName(this.constructor.name);
 	}
 };
 var RealElement = class RealElement extends RealTarget{
+	/**@type {Set<String>} */
+	static idSet = new Set;
+	static findId(id){return this.idSet.has(id);}
+	static deleteId(id){typeof id !== 'string' && console.error('=> Please use String "id" !');return this.idSet.delete(id);}
+	static getRandomId(){
+		for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
+		return temp;
+	}
+	static addId(id,strict = true){
+		if(id) typeof id !== 'string' ? this.error('=> Please use String "id" !') :
+		this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
+		this.idSet.add(id);
+	}
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
 	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
@@ -793,11 +798,6 @@ var RealElement = class RealElement extends RealTarget{
 	static makeElement(tagName,config,cssConfig){
 		tagName instanceof HTMLElement || (tagName = document.createElement(tagName));
 		return Object.assign(Object.assign(tagName,config).style,cssConfig),tagName;
-	}
-	static addId(id,strict = true){
-		if(id) typeof id !== 'string' ? this.error('=> Please use String "id" !') :
-		this.idSet.has(id) ? strict && this.error('=> Please use another "id" !') :
-		this.idSet.add(id);
 	}
 	/**
 	 * @param {...(HTMLElement | {self: HTMLElement})}

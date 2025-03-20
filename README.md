@@ -48,6 +48,10 @@
 
 - 对象响应式类[**`RealGroup`**](#RealGroup)
 
+- 对象属性响应式类[**`RealTarget`**](#RealTarget)
+
+- 元素属性响应式类[**`RealElement`**](#RealElement)
+
 ## **`RealWorld`**
 
 这是一个事件循环类，基于`setInterval()`函数实现。对该类的一个实例而言，每过一段固定时间将会调用二级实例方法`_mainFn()`。
@@ -272,6 +276,186 @@
 
 	接收一个参数`filterFn`，必须为`Function`类型，根据筛选出的键返回一个`null`为原型的含对应键值对的对象。
 
+## **`RealTarget`**
 
+> 继承[**`RealNode`**](#RealNode)
+
+这是一个键值单向绑定的响应式类，用于尽可能减少对某个对象的单个属性的赋值操作以提高性能。对该类的一个实例而言，可以存储一个值、绑定一个属性名和一个固定对象，当变更存储的值之后，会执行2级实例属性`transform`（`Function`类型）将存储的值经过函数变换后赋值给绑定的对象的相应属性并产生响应。
+
+从语义上说，`RealTarget`类主要针对对象，`RealElement`类主要针对`HTML`元素。然而实际上，两者在实例属性和实例方法上没有任何区别，仅在静态属性和静态方法上有明显差异。
+
+在实际开发中，`RealTarget`类常用于非浏览器环境中。
+
+### **构造函数** `new RealTarget({self,key,transform,initValue},config,tryRealNode,...relativeRNs)`
+
+`{self,key,transform,initValue}`必须提供一个对象用于解构参数。这个对象的属性必须满足以下要求。
+
+- `self`
+
+	必须是需要绑定的对象，否则直接报错。
+
+- `key`
+
+	应是需要绑定的属性名。
+
+- `transform`（可选）
+
+	应为`Function`类型。用于初始化2级实例属性`transform`。
+
+- `initValue`（可选）
+
+	用于赋值初始化2级实例属性`value`。如果参数`tryRealNode`是真值，则会产生相应（即视作进行了一次存储值变更）。
+
+`config`（可选）应为一个对象，根据`config`的属性决定某些行为。
+
+- `get`（可选）
+
+	对2级实例属性`get`进行赋值。
+
+- `set`（可选）
+
+	对2级实例属性`set`进行赋值。
+
+- `react`（可选）
+
+	对2级实例属性`react`进行赋值。
+
+- `id`（可选）
+
+	初始化1级实例属性`id`时作为`description`。
+
+- `info`（可选）
+
+	对4级实例属性`info`进行赋值。
+
+- `value`（可选）
+
+	对2级实例属性`value`进行赋值。
+
+`tryRealNode`（可选）
+
+不建议使用。若为真值，当变更存储的值时将会尝试对新值中嵌套的`RealNode`实例进行解析。
+
+`...relativeRNs`（可选）
+
+应为`RealNode`类型或`Symbol`类型，但不建议使用。将会调用一级实例方法`relate()`，参数为`...relativeRNs`。
+
+### **1级属性**
+
+- `isElement` 实例属性，`Boolean`类型。
+
+	判断2级实例属性`self`是否为`HTML`元素。
+
+### **2级属性**
+
+- `self` 实例属性，对象类型。
+
+	当对其进行赋值时，如果赋的值不是对象，会直接报错。
+
+- `key` 实例属性，任何类型。
+
+	建议只赋值为`String`类型，`Number`类型或`Symbol`类型。
+
+- `transform` 实例属性，`Function`类型。
+
+	应接收一个参数并返回一个值。
+
+### **一级方法**
+
+- `fix()` 实例方法，返回实例自身。
+
+	调用该方法时，会接收存储的值以执行2级实例属性`transform`（`Function`类型）进行函数变换并将返回值赋值到绑定对象的对应属性上，是一个同步过程。
+
+- `clearClassName()` 实例方法，返回`Boolean`类型。
+
+	如果绑定的对象是一个`HTML`元素，则会清空其类名并返回`true`，否则反之。
+
+- `addClassName()` 实例方法，返回`Boolean`类型。
+
+	如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`的`add()`方法且接收所有参数并返回`true`，否则反之。
+
+- `toggleClassName()` 实例方法，返回`Boolean`类型。
+
+	应接收一个参数`className`，`className`应为`String`类型。如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`的`toggle()`方法且接收参数`className`，执行之后其返回值将被返回（`Boolean`类型），否则返回`false`。
+
+- `removeClassName()` 实例方法，返回`Boolean`类型。
+
+	如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`的`remove()`方法且接收所有参数并返回`true`，否则反之。
+
+- `getIndexWithin()` 实例方法，返回`Number`类型。
+
+	返回值是绑定的`HTML`元素在其父元素中的`HTML`元素排列索引。原理是通过绑定的对象的`previousElementSibling`属性的真假值判断，所以正常情况下，即使绑定的对象不是`HTML`元素也不会报错。
+
+- `removeClassName()` 实例方法，返回`Boolean`类型。
+
+	如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`的`remove()`方法且接收所有参数并返回`true`，否则反之。
+
+- `applyCSS()` 实例方法，返回`Boolean`类型。
+
+	如果绑定的对象不是`HTML`元素，则会直接报错。
+
+	接收两个参数`selfSelector`、`classNameOrRuleObjObj`，其中`selfSelector`必须为`String`类型，`classNameOrRuleObjObj`应为一个类名（`String`类型）或一个对象。
+
+	`selfSelector`和`classNameOrRuleObjObj`（对象类型）的属性名是都被视作CSS选择器，按照一定规律进行【绑定的`HTML`元素的`id`属性 + 参数`selfSelector` + 参数`classNameOrRuleObjObj`的属性名】的字符串拼接，如果绑定的`HTML`元素没有`id`属性，则会自动进行随机`id`属性注册。`classNameOrRuleObjObj`（对象类型）的每一个属性都必须是符合CSS标准的字符串键值对对象。如果`classNameOrRuleObjObj`为`String`类型，则会对当前注册过的类名进行检索并自动获取所需对象。
+
+	底层原理是`CSSStyleSheet.insertRule()`方法。
+
+- `clone()` 实例方法，返回`RealTarget`类型。
+
+	接收三个参数`keepValue`（可选）、`fix`（可选）、`deepCopyRelativeRNs`（可选），其中所有参数应为`Boolean`类型。
+
+	返回的`RealTarget`对象拥有相同的绑定对象、绑定属性名和相同引用的6级实例属性`relativeRNs`，参数`keepValue`决定是否拥有相同的存储值，参数`fix`决定在返回时是否调用一级实例方法`fix()`，参数`deepCopyRelativeRNs`决定是否对6级实例属性`relativeRNs`进行深复制。
+
+- `searchByObj()` 静态方法，返回包含`RealTarget`对象的`Array`对象。
+
+	接收一个参数`element`，应为对象，搜索并返回所有绑定对象为参数`element`的`RealTarget`对象组成的`Array`对象。
+
+## **`RealElement`**
+
+> 继承[**`RealTarget`**](#RealTarget)继承[**`RealNode`**](#RealNode)
+
+这是一个键值单向绑定的响应式类，用于尽可能减少对某个`HTML`元素的单个属性的赋值操作以提高性能。
+
+从语义上说，`RealTarget`类主要针对对象，`RealElement`类主要针对`HTML`元素。然而实际上，两者在实例属性和实例方法上没有任何区别，仅在静态属性和静态方法上有明显差异。
+
+在实际开发中，`RealElement`类常用于浏览器环境中。
+
+### **构造函数** 
+
+### **1级属性**
+
+- `` 
+
+	
+
+### **一级方法**
+
+- `` 
+
+	
 
 敬请期待后续更新
+
+<!-- 
+
+## **`$`**
+
+> 继承[**`$`**](#$)
+
+这是$。对该类的一个实例而言，会产生响应。
+
+### **构造函数** 
+
+### **1级属性**
+
+- `` 
+
+
+
+### **一级方法**
+
+- `` 
+
+	
+
+ -->
