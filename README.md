@@ -250,7 +250,7 @@
 
 ## **RealGroup类**
 
-> 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealNode`**](#RealNode类)类
 
 这是针对对象的响应式类，是`RealNode`类的子类。对该类的一个实例而言，可以代理一个对象，并在代理变更对象的键值对时会产生响应。
 
@@ -306,7 +306,7 @@
 
 ## **RealTarget类**
 
-> 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealNode`**](#RealNode类)类
 
 这是一个键值单向绑定的响应式类，用于尽可能减少对某个对象的单个属性的赋值操作以提高性能。对该类的一个实例而言，可以存储一个值、绑定一个属性名和一个固定对象，当变更存储的值之后，会执行2级实例属性`transform`（`Function`类型）将存储的值经过函数变换后赋值给绑定的对象的相应属性并产生响应。
 
@@ -440,7 +440,7 @@
 
 ## **RealElement类**
 
-> 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是一个键值单向绑定的响应式类，用于尽可能减少对某个`HTML`元素的单个属性的赋值操作以提高性能。
 
@@ -450,7 +450,7 @@
 
 ### **构造函数** `new RealElement({self, key, transform, initValue}, config, tryRealNode, ...relativeRNs)`
 
-> 详见[**`RealTarget`构造函数**](#构造函数-new-realtargetself-key-transform-initvalue-config-tryrealnode-relativerns)
+> 详见[**`RealTarget`**](#构造函数-new-realtargetself-key-transform-initvalue-config-tryrealnode-relativerns)构造函数
 
 ### **4级属性**
 
@@ -634,7 +634,7 @@
 
 ## **RealCanvas类**
 
-> 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -746,7 +746,7 @@
 
 ## **RealLoader类**
 
-> 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -802,7 +802,7 @@
 
 ## **RealSelect类**
 
-> 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -832,7 +832,7 @@
 
 ## **RealComtag类**
 
-> 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -856,7 +856,7 @@
 
 ## **RealDivList类**
 
-> 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -900,7 +900,7 @@
 
 ## **RealImgList类**
 
-> 继承[**`RealDivList`类**](#RealDivList类) 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealDivList`**](#RealDivList类)类 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
@@ -914,7 +914,7 @@
 
 ## **RealDivQueue类**
 
-> 继承[**`RealDivList`类**](#RealDivList类) 继承[**`RealElement`类**](#RealElement类) 继承[**`RealTarget`类**](#RealTarget类) 继承[**`RealNode`类**](#RealNode类)
+> 继承[**`RealDivList`**](#RealDivList类)类 继承[**`RealElement`**](#RealElement类)类 继承[**`RealTarget`**](#RealTarget类)类 继承[**`RealNode`**](#RealNode类)类
 
 这是
 
