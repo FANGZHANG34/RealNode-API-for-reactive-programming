@@ -450,7 +450,7 @@
 
 ### **构造函数** `new RealElement({self, key, transform, initValue}, config, tryRealNode, ...relativeRNs)`
 
-> 详见[**`RealTarget`**](#构造函数-new-realtargetselfkeytransforminitvalueconfigtryrealnoderelativerns)
+> 详见[**`RealTarget`构造函数**](#构造函数-new-realtargetself-key-transform-initvalue-config-tryrealnode-relativerns)
 
 ### **4级属性**
 
