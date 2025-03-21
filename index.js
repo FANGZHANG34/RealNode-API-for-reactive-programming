@@ -755,16 +755,16 @@ var RealElement = class RealElement extends RealTarget{
 		if(!onkeyboardController) return;
 		var i,temp;
 		switch(e.key){
-			case RealElement.keyboardController.previous: i = -1;break;
-			case RealElement.keyboardController.next: i = 1;break;
-			case RealElement.keyboardController.enter: (temp = RealTarget.searchByObj(onkeyboardController)[0]) instanceof RealDivList ?
+			case RealElement.keyboardController?.previous: i = -1;break;
+			case RealElement.keyboardController?.next: i = 1;break;
+			case RealElement.keyboardController?.enter: (temp = RealTarget.searchByObj(onkeyboardController)[0]) instanceof RealDivList ?
 			temp.proto.list.length ?
 			(onkeyboardController.classList.remove('onkeyboardControl'),(temp = temp.proto.list[0]).classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click() :
 			(temp = onkeyboardController.querySelector('.keyboardController')) ?
 			(onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
 			(temp = onkeyboardController).click();break;
-			case RealElement.keyboardController.back:{
+			case RealElement.keyboardController?.back:{
 				temp = onkeyboardController;
 				while(temp = temp.parentElement) if(temp.classList.contains('keyboardController')) break;
 				temp ? (onkeyboardController.classList.remove('onkeyboardControl'),temp.classList.add('onkeyboardControl')) :
@@ -1003,11 +1003,11 @@ var RealElement = class RealElement extends RealTarget{
 				'':{'overflow':'hidden'},
 			})('.centerCenter',{
 				'':{
-					'text-align':'center',
-					'align-items':'center',
-					'align-content':'center',
-					'vertical-align':'middle',
-					'justify-content': 'center',
+					'text-align':'justify',// 文本左右对齐方式
+					'align-items':'center',// 子元素自垂直对齐
+					'align-content':'center',// 元素左右对齐方式
+					'vertical-align':'baseline',// 元素相对文字对齐
+					'justify-content':'center',// 子元素水平对齐
 				},
 			})('.autoFull',{
 				'':{'width':'100vmax','height':'100vmin'},
@@ -1015,8 +1015,8 @@ var RealElement = class RealElement extends RealTarget{
 				'': {
 					// 'align-self':'center',
 					'left':'50%',
-					'transform':'translate(-50%,-50%)',
 					'top':'50%',
+					'transform':'translate(-50%,-50%)',
 				},
 			})));
 		};
@@ -1419,7 +1419,9 @@ var RealCanvas = class RealCanvas extends RealElement{
 		this.proto.ctx = this.proto.self.getContext('2d');
 	}
 };
-var RealLoader = class RealLoader extends RealElement{
+var RealLoader =
+/** @template {Boolean} T */
+class RealLoader extends RealElement{
 	/**@typedef {AntiTarget & {onerror: null | (error: Error)=>void,onloadend: null | (n: Number)=>void}} AntiLoader */
 	static proto = class AntiLoader extends RealTarget.proto{
 		/**@type {null | (error: Error)=>void} */
@@ -1474,7 +1476,7 @@ var RealLoader = class RealLoader extends RealElement{
 			temp.notify(true);
 			break;
 		}
-	}),{writable: false,enumerable: false,configurable: false}));
+	})),{writable: false,enumerable: false,configurable: false});
 	static getArrayBufferFrom(data){return Promise.resolve(
 		data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
 		data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
@@ -1516,12 +1518,13 @@ var RealLoader = class RealLoader extends RealElement{
 				if('upload' === realLoader.type) return realLoader.temp.click(),[];
 				const data = await realLoader.dataGetter();
 				return Promise.resolve(
-					typeof data === 'string' ? new Blob(data) : data instanceof Blob ? data :
+					typeof data === 'string' ? new Blob([data]) : data instanceof Blob ? data :
 					RealLoader.getArrayBufferFrom(data).then(toBlob)
 				).then(temp.bind(realLoader)).catch(e=>[e]);
-			}catch(e){this.error(e.stack ?? e);}}
+			}catch(e){return [e];}}
 		})()
 	);
+	load(){return RealLoader.load(this);}
 	protoSet(value){this.self[this.key] = value;}
 	/**@returns {FileList} */
 	get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
@@ -1538,8 +1541,15 @@ var RealLoader = class RealLoader extends RealElement{
 	}
 	/**@type {()=>*} */
 	dataGetter;
-	/**@type {Promise<Buffer | String>} */
-	data;
+	// /**@type {Promise<Buffer | String>} */
+	// data;
+	/**
+	 * 
+	 * @param {T} isDownload 
+	 * @param {String} fileName 
+	 * @param {()=>*} dataGetter 
+	 * @param {{innerHTML?: String;onerror?: (e: ErrorEvent)=>void;onloadend?: (e: Event)=>void;}} param3 
+	 */
 	constructor(isDownload,fileName,dataGetter,{innerHTML,onerror,onloadend} = {}){
 		super({self: document.createElement('div'),key: 'innerHTML'});
 		/**@type {AntiLoader} */
@@ -1552,6 +1562,7 @@ var RealLoader = class RealLoader extends RealElement{
 		this.type = isDownload ? 'download' : 'upload';
 		this.temp = document.createElement(isDownload ? 'a' : 'input');
 		Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
+		Reflect.defineProperty(this,'temp',RealLoader._configDescriptor);
 		isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
 	}
 };
@@ -1750,7 +1761,7 @@ var RealDivList = class RealDivList extends RealElement{
 	static createList(length = 0,tagName,id,selfAssign){
 		const temp = [];
 		while(length --> 0) temp.push(document.createElement(tagName));
-		return new RealDivList(id,true,temp,true,selfAssign);
+		return new RealDivList(id,true,temp,RealDivList.tryRealNode,selfAssign);
 	}
 	/**
 	 * 
