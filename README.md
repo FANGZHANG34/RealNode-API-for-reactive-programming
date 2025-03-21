@@ -70,7 +70,7 @@
 
 - 块元素排列类[**`RealDivQueue`**](#RealDivQueue类)
 
-- 函数：创建块元素选择类[**`createRealDivSelect()`**](#createRealDivSelect函数)
+- 函数：创建块元素选择类[**`createRealDivSelect()`**](#createrealdivsearch函数)
 
 - 函数：创建块元素搜索类[**`createRealDivSearch()`**](#createRealDivSearch函数)
 
@@ -510,7 +510,7 @@
 
 	
 
-## **RealStory**对象
+## **RealStory对象**
 
 这是
 
@@ -574,7 +574,7 @@
 
 	
 
-## **RealPromise**对象
+## **RealPromise对象**
 
 这是
 
@@ -938,13 +938,13 @@
 
 	
 
-## **createRealDivSelect**函数
+## **createRealDivSelect()函数**
 
 这是
 
 ``
 
-## **createRealDivSearch**函数
+## **createRealDivSearch()函数**
 
 这是
 
