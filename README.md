@@ -416,13 +416,13 @@
 
 - `removeClassName()` 实例方法，返回`Boolean`类型。
 
-	如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`的`remove()`方法且接收所有参数并返回`true`，否则反之。
+	如果绑定的对象是一个`HTML`元素，则会执行该`HTML`元素的`classList`属性的`remove()`方法且接收所有参数并返回`true`，否则反之。
 
 - `applyCSS()` 实例方法，返回`Boolean`类型。
 
 	如果绑定的对象不是`HTML`元素，则会直接报错。
 
-	接收两个参数`selfSelector`、`classNameOrRuleObjObj`，其中`selfSelector`必须为`String`类型，`classNameOrRuleObjObj`应为一个类名（`String`类型）或一个对象。
+	接收两个参数`selfSelector`、`classNameOrRuleObjObj`，其中参数`selfSelector`必须为`String`类型，参数`classNameOrRuleObjObj`应为一个类名（`String`类型）或一个对象。
 
 	`selfSelector`和`classNameOrRuleObjObj`（对象类型）的属性名都会被视作CSS选择器，按照一定规律进行【绑定的`HTML`元素的`id`属性 + 参数`selfSelector` + 参数`classNameOrRuleObjObj`的属性名】的字符串拼接，如果绑定的`HTML`元素没有`id`属性，则会自动进行随机`id`属性注册。`classNameOrRuleObjObj`（对象类型）的每一个属性都必须是符合CSS标准的字符串键值对对象。如果`classNameOrRuleObjObj`为`String`类型，则会对当前注册过的类名进行检索并自动获取所需对象。
 
@@ -456,7 +456,7 @@
 
 - `keyboardController` 静态属性，应是包含`previous`、`next`、`enter`、`back`等4个属性的对象。
 
-	其用途详见二级静态方法`applyKeyboardController()`。
+	该对象的这4个属性应该是键盘按键的字符串，其用途详见三级静态方法`applyKeyboardController()`。
 
 ### **一级方法**
 
@@ -480,15 +480,25 @@
 
 	等价于执行并返回`new RealElement({self: document.createElement('img'), key: 'src'})`。
 
-- `makeElement()` 静态方法
+- `makeElement()` 静态方法，返回一个`HTML`元素。
 
-	
+	接收三个参数`tagName`、`config`、`cssConfig`，其中参数`tagName`应是一个`HTML`标签字符串，或一个`HTML`元素（即为返回的`HTML`元素），参数`config`应是描述返回的`HTML`元素的属性的键值对对象，参数`config`应是描述返回的`HTML`元素的CSS样式属性的键值对对象。
 
-- `getDomByString()` 静态方法
+- `getDomByString()` 静态方法，返回一个`HTML`元素或`null`。
 
-	
+	接收一个参数`innerHTML`，应为`String`类型，返回第一个被解析出来的`HTML`元素。
 
-- `addCSSRules()` 静态方法
+- `addCSSRules()` 静态方法，返回该静态方法自身。
+
+	接收两个参数`prefix`和`ruleObjObj`，其中参数`prefix`必须为`String`类型或`String`实例组成的`Array`类型，参数`ruleObjObj`应为一个对象。
+
+	`prefix`（或`prefix`数组的元素）和`ruleObjObj`（对象类型）的属性名的拼接都会被视作CSS选择器，按照一定规律进行【参数`prefix` + 参数`classNameOrRuleObjObj`的属性名】的字符串拼接，`ruleObjObj`（对象类型）的每一个属性都必须是符合CSS标准的字符串键值对对象。如果`prefix`正好是一个类名的选择器`.${className}`，那么将会对该类名及其对应对象进行注册。
+
+	底层原理是`CSSStyleSheet.insertRule()`方法。
+
+### **二级方法**
+
+- `addEventListenerBySelectors()` 静态方法
 
 	
 
@@ -496,17 +506,13 @@
 
 	
 
-### **二级方法**
+### **三级方法**
 
 - `applyKeyboardController()` 静态方法
 
 	
 
 - `cancelKeyboardController()` 静态方法
-
-	
-
-- `addEventListenerBySelectors()` 静态方法
 
 	
 
@@ -665,10 +671,6 @@
 	
 
 - `height` 实例属性
-
-	
-
-- `self` 实例属性
 
 	
 

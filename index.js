@@ -476,12 +476,19 @@ class RealGroup extends RealNode{
 	/**@type {Map<{},RealGroup>} */
 	static groupMap = new Map;
 	static _ = ()=>true;
-	static createDeepGroup(obj){var i;
-		if(Object(obj) !== obj) return obj;
+	/**
+	 * 
+	 * @template T
+	 * @param {T} obj 
+	 * @param {Boolean} [strict] 
+	 * @returns {RealGroup<T> | any}
+	 */
+	static createDeepGroup = function createDeepGroup(obj,strict){var i;
+		if(Object(obj) !== obj) return strict ? obj : new RealGroup;
 		const proto = Reflect.getPrototypeOf(obj);
-		if(proto && proto !== Object.prototype) return obj;
+		if(proto && proto !== Object.prototype) return strict ? obj : new RealGroup({self: obj});
 		const temp = Object.create(null),keyArray = Reflect.ownKeys(obj),length = keyArray.length;
-		for(i = 0;i < length;i++) temp[keyArray[i]] = RealGroup.createDeepGroup(obj[keyArray[i]]);
+		for(i = 0;i < length;i++) temp[keyArray[i]] = createDeepGroup(obj[keyArray[i]],true);
 		return new RealGroup({self: temp});
 	}
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
@@ -564,12 +571,12 @@ class RealGroup extends RealNode{
 	/**@type {()=>T} */
 	get proxy(){return this.proto.value;}
 	get set(){return this.realSet;}
-	set set(set){this.log('Invalid set "set" !');}
+	set set(set){this.log,('Invalid set "set" !');}
 	/**@type {(keyOrkeyObj?: String | Symbol | {})=> *} */
 	get get(){return this.protoGet;}
-	set get(get){this.log('Invalid set "get" !');}
+	set get(get){this.log,('Invalid set "get" !');}
 	get react(){return this.protoReact;}
-	set react(react){this.log('Invalid set "react" !');}
+	set react(react){this.log,('Invalid set "react" !');}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
