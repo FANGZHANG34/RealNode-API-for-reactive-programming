@@ -22,7 +22,7 @@ Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	const
 	nodeRequire = require,
 	prevent = function(){},
-	HTMLElement = globalThis.HTMLElement ?? prevent,
+	Element = globalThis.Element ?? prevent,
 	clearInterval = globalThis.clearInterval ?? prevent,
 	setInterval = globalThis.setInterval ?? prevent,
 	performance = globalThis.performance ?? Date,
@@ -476,14 +476,22 @@ class RealGroup extends RealNode{
 	/**@type {Map<{},RealGroup>} */
 	static groupMap = new Map;
 	static _ = ()=>true;
+	static createDeepGroup(obj){var i;
+		if(Object(obj) !== obj) return obj;
+		const proto = Reflect.getPrototypeOf(obj);
+		if(proto && proto !== Object.prototype) return obj;
+		const temp = Object.create(null),keyArray = Reflect.ownKeys(obj),length = keyArray.length;
+		for(i = 0;i < length;i++) temp[keyArray[i]] = RealGroup.createDeepGroup(obj[keyArray[i]]);
+		return new RealGroup({self: temp});
+	}
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
 	/**
 	 * 
 	 * @param {Boolean} [notify] 
 	 * @param {Boolean} [noSelf] 
-	 * @returns {Boolean}
+	 * @returns {Boolean | Error}
 	 */
-	realSet(value,notify = true,noSelf = true){
+	realSet(value,notify,noSelf){
 		try{return this.protoSet(value) && (notify && this.notify(noSelf),true);}
 		catch(e){return console.error(e),e;}
 	}
@@ -583,9 +591,9 @@ class RealGroup extends RealNode{
 	}
 };
 var RealTarget = class RealTarget extends RealNode{
-	/**@typedef {AntiNode & {self: HTMLElement | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
+	/**@typedef {AntiNode & {self: Element | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
 	static proto = class AntiTarget extends RealNode.proto{
-		/**@type {HTMLElement | {}} */
+		/**@type {Element | {}} */
 		self;
 		/**@type {Boolean} */
 		isElement;
@@ -658,11 +666,11 @@ var RealTarget = class RealTarget extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {keyof HTMLElementTagNameMap} selfSelector 
+	 * @param {keyof ElementTagNameMap} selfSelector 
 	 * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
 	 */
 	applyCSS(selfSelector,classNameOrRuleObjObj){
-		if(!(this.self instanceof HTMLElement)) this.error('I am not RealElement !');
+		if(!(this.self instanceof Element)) this.error('I am not RealElement !');
 		const strReg = /^[A-Za-z]/;
 		var temp = selfSelector;
 		if(typeof selfSelector !== 'string'){
@@ -683,7 +691,7 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {Boolean} [deepCopyRelativeRNs] 
 	 */
 	clone(keepValue,fix,deepCopyRelativeRNs){
-		const self = this.self instanceof HTMLElement ? this.self.cloneNode() :
+		const self = this.self instanceof Element ? this.self.cloneNode() :
 		Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
 		const param0 = {self,key: this.key,transform: this.transform};
 		if(keepValue) param0.initValue = this.proto.value;
@@ -704,12 +712,12 @@ var RealTarget = class RealTarget extends RealNode{
 	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
 	get self(){return this.proto.self;}
 	set self(self){
-		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
+		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof Element :
 		this.error('=> "self" must be Object !');
 	}
 	/**
 	 * 
-	 * @param {{self: HTMLElement,key,transform?: (value)=>*,initValue?: *}} param0 
+	 * @param {{self: Element,key,transform?: (value)=>*,initValue?: *}} param0 
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {...RealNode} [relativeRNs] 
@@ -726,11 +734,11 @@ var RealTarget = class RealTarget extends RealNode{
 	}
 };
 var RealElement = class RealElement extends RealTarget{
-	/**@type {HTMLElement} */
+	/**@type {Element} */
 	get self(){return this.proto.self;}
 	set self(self){
-		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof HTMLElement :
-		this.error('=> "self" must be HTMLElement !');
+		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof Element :
+		this.error('=> "self" must be Element !');
 	}
 	/**@type {Set<String>} */
 	static idSet = new Set;
@@ -747,10 +755,10 @@ var RealElement = class RealElement extends RealTarget{
 	}
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
-	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
+	/**@type {{[type: String]:Map<keyof ElementTagNameMap,EventListener[]>}} */
 	static selectorEventListeners = {};
 	static keyboardController = (browserMode && addEventListener('keydown',e=>{
-		/**@type {?HTMLElement} */
+		/**@type {?Element} */
 		const onkeyboardController = document.querySelector('.onkeyboardControl') ?? document.querySelector('.keyboardController');
 		if(!onkeyboardController) return;
 		var i,temp;
@@ -784,9 +792,9 @@ var RealElement = class RealElement extends RealTarget{
 		enter:'ArrowRight',
 		back: 'ArrowLeft'
 	});
-	/**@method @type {(innerHTML: String)=>HTMLElement | null}*/
+	/**@method @type {(innerHTML: String)=>Element | null}*/
 	static getDomByString = (template=>innerHTML=>{
-		template.innerHTML = innerHTML;
+		template.innerHTML = String(innerHTML);
 		return template.content.firstElementChild;
 	})(browserMode ? document.createElement('template') : {content: {}});
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
@@ -795,29 +803,29 @@ var RealElement = class RealElement extends RealTarget{
 	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent',initValue},{id});}
 	static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
 	/**
-	 * @template {HTMLElement} T
-	 * @param {keyof HTMLElementTagNameMap | T} tagName 
-	 * @param {{this: T | HTMLElement;[attr: String]: String}} [config] 
+	 * @template {Element} T
+	 * @param {keyof ElementTagNameMap | T} tagName 
+	 * @param {{this: T | Element;[attr: String]: String}} [config] 
 	 * @param {{this: CSSStyleDeclaration;[attr: String]: String}} [cssConfig] 
 	 * @returns {T}
 	 */
 	static makeElement(tagName,config,cssConfig){
-		tagName instanceof HTMLElement || (tagName = document.createElement(tagName));
+		tagName instanceof Element || (tagName = document.createElement(tagName));
 		return Object.assign(Object.assign(tagName,config).style,cssConfig),tagName;
 	}
 	/**
-	 * @param {...(HTMLElement | {self: HTMLElement})}
+	 * @param {...(Element | {self: Element})}
 	 */
 	static applyKeyboardController(){
-		for(const ele of arguments) ele instanceof HTMLElement ? ele.classList.add('keyboardController') :
-		ele?.self instanceof HTMLElement && ele.self.classList.add('keyboardController');
+		for(const ele of arguments) ele instanceof Element ? ele.classList.add('keyboardController') :
+		ele?.self instanceof Element && ele.self.classList.add('keyboardController');
 	}
 	/**
-	 * @param {...(HTMLElement | {self: HTMLElement})}
+	 * @param {...(Element | {self: Element})}
 	 */
 	static cancelKeyboardController(){
-		for(const ele of arguments) ele instanceof HTMLElement ? ele.classList.remove('keyboardController') :
-		ele?.self instanceof HTMLElement && ele.self.classList.remove('keyboardController');
+		for(const ele of arguments) ele instanceof Element ? ele.classList.remove('keyboardController') :
+		ele?.self instanceof Element && ele.self.classList.remove('keyboardController');
 	}
 	/**@method */
 	static addEventListenerBySelectors = (()=>{
@@ -825,15 +833,15 @@ var RealElement = class RealElement extends RealTarget{
 		 * 
 		 * @param {Event} e 
 		 * @param {((event: Event)=>void)[]} listenerArray 
-		 * @param {keyof HTMLElementTagNameMap} selectors 
+		 * @param {keyof ElementTagNameMap} selectors 
 		 */
 		function temp(e,listenerArray,selectors){if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
 			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e.stack);}
 		}}
 		/**
 		 * 
-		 * @param {keyof HTMLElementTagNameMap} selectors 
-		 * @param {keyof HTMLElementEventMap} type 
+		 * @param {keyof ElementTagNameMap} selectors 
+		 * @param {keyof ElementEventMap} type 
 		 * @param {(event: Event)=>void} listener 
 		 */
 		return(selectors,type,listener)=>{
@@ -859,7 +867,7 @@ var RealElement = class RealElement extends RealTarget{
 		const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 		const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
 		const getKeys = obj=>Object(obj) === obj ? Object.keys(obj) : [];
-		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Number} */
+		/**@type {(selector: keyof ElementTagNameMap,rulesStr: String)=>Number} */
 		const tempInsertRule = !globalThis.CSSStyleSheet.prototype.insertRule ?
 		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.addRule(selector,rulesStr,-1),myCSS)) :
 		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length),myCSS));
@@ -1117,7 +1125,7 @@ var RealPromise = new(class RealPromise{
 	}
 	get require(){return RealPromise.require;}
 	static require = function(){
-		/**@this {HTMLElement} */
+		/**@this {Element} */
 		function onfinally(){this.remove();}
 		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
 		return browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */function(path){
@@ -1635,7 +1643,7 @@ var RealSelect = class RealSelect extends RealElement{
 			innerHTML.push(`<option value="${String(now.value[1])}" ${now.value[0] === defaultKey ? 'selected' : ''}>${now.value[0]}</option>`);
 		return innerHTML.join('');
 	}
-	/**@returns {HTMLElement[]} */
+	/**@returns {Element[]} */
 	get list(){return this.proto.list;}
 	/**
 	 * 
@@ -1698,13 +1706,13 @@ var RealComtag = class RealComtag extends RealElement{
 	protoTransform(value){
 		if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
 			const list = [];
-			for(const temp of value) list.push(temp instanceof HTMLElement ? temp : document.createElement(String(temp)));
+			for(const temp of value) list.push(temp instanceof Element ? temp : document.createElement(String(temp)));
 			return list;
 		}
 	}
 	/**
 	 * 
-	 * @param {(HTMLElement | String)[]} value 
+	 * @param {(Element | String)[]} value 
 	 */
 	protoSet(value){
 		if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
@@ -1724,7 +1732,7 @@ var RealComtag = class RealComtag extends RealElement{
 	 * 
 	 * @param {String} id 
 	 * @param {Boolean} tryHTML 
-	 * @param {(String | HTMLElement)[]} optionList 
+	 * @param {(String | Element)[]} optionList 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 	 */
@@ -1742,11 +1750,11 @@ var RealComtag = class RealComtag extends RealElement{
 	}
 };
 var RealDivList = class RealDivList extends RealElement{
-	/**@typedef {AntiTarget & {list: HTMLElement[],childrenList: HTMLElement[][]}} AntiList */
+	/**@typedef {AntiTarget & {list: Element[],childrenList: Element[][]}} AntiList */
 	static proto = class AntiList extends RealTarget.proto{
 		/**@type {HTMLDivElement[]} */
 		list = [];
-		/**@type {HTMLElement[][]} */
+		/**@type {Element[][]} */
 		childrenList = [];
 	}
 	/**@type {Map<String,[Boolean,*[],Boolean,((this: RealDivList)=>void) | null]>} */
@@ -1777,7 +1785,7 @@ var RealDivList = class RealDivList extends RealElement{
 				while(position.length > 1) value = value[position.pop()];
 				tempValue === value[position[0]] || (value[position[0]] = tempValue);
 				if(value === this.proto.value) (position[1] = this.proto.list[position[0]]).innerHTML = '';
-				tempValue instanceof HTMLElement ? position[1].appendChild(tempValue) :
+				tempValue instanceof Element ? position[1].appendChild(tempValue) :
 				position[1][this.tryHTML ? 'innerHTML' : 'textContent'] = tempValue;
 			}
 		}
@@ -1810,12 +1818,12 @@ var RealDivList = class RealDivList extends RealElement{
 	}
 	/**
 	 * 
-	 * @returns {HTMLElement[]}
+	 * @returns {Element[]}
 	 */
 	protoGet(){return this.proto.list;}
 	/**
 	 * 
-	 * @param {(HTMLElement | String)[]} value 
+	 * @param {(Element | String)[]} value 
 	 */
 	protoSet(value){return this.proto.value = Array.from(value),true;}
 	/**
@@ -1828,7 +1836,7 @@ var RealDivList = class RealDivList extends RealElement{
 			const iter = value[Symbol.iterator]();
 			while(!(temp = iter.next()).done){
 				list.push(temp.done = document.createElement('div'));
-				temp.value instanceof HTMLElement ? temp.done.appendChild(temp.value) :
+				temp.value instanceof Element ? temp.done.appendChild(temp.value) :
 				temp.done[this.tryHTML ? 'innerHTML' : 'textContent'] = String(temp.value);
 			}
 			return list;
@@ -1838,10 +1846,10 @@ var RealDivList = class RealDivList extends RealElement{
 	 * 
 	 * @param {Boolean} [toRealElement] 
 	 * @param {String} [key] 
-	 * @returns {{[id: String]: HTMLElement} | {[id: String]: RealElement}}}
+	 * @returns {{[id: String]: Element} | {[id: String]: RealElement}}}
 	 */
 	getIdDict(toRealElement,key){
-		/**@type {{[id: String]: HTMLElement} | {[id: String]: RealElement}} */
+		/**@type {{[id: String]: Element} | {[id: String]: RealElement}} */
 		const list = Object.create(null);
 		var i = this.proto.list.length,temp;
 		if(toRealElement) while(i --> 0) (temp = this.proto.childrenList[i]).length > 1 || !temp[0]?.id ||
@@ -1869,13 +1877,13 @@ var RealDivList = class RealDivList extends RealElement{
 		this.self.classList.remove('disappear');
 		return this;
 	}
-	/**@type {HTMLElement[][]} */
+	/**@type {Element[][]} */
 	get childrenList(){return this.proto.childrenList;}
 	/**
 	 * 
 	 * @param {String} id 
 	 * @param {Boolean} tryHTML 
-	 * @param {(HTMLElement | String)[]} optionList 
+	 * @param {(Element | String)[]} optionList 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 	 */
@@ -1938,7 +1946,7 @@ var RealImgList = class RealImgList extends RealDivList{
 	}
 	/**
 	 * 
-	 * @param {(HTMLElement | String)[]} value 
+	 * @param {(Element | String)[]} value 
 	 */
 	protoSet(value){
 		if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
@@ -1959,7 +1967,7 @@ var RealImgList = class RealImgList extends RealDivList{
 	/**
 	 * 
 	 * @param {String} id 
-	 * @param {(HTMLElement | String)[]} srcList 
+	 * @param {(Element | String)[]} srcList 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 	 */
@@ -1971,7 +1979,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		/**@type {Number[]} */
 		queueArray;
 	}
-	/**@type {HTMLElement} */
+	/**@type {Element} */
 	static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
 		'>div': {'transition':'.1s'},
 		'>div:hover': {'transform':'scale(1.1,1)'},
@@ -1988,7 +1996,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		while((target[0] = list0.pop()) === (target[1] = list1.pop())) if(!list0.length) return;
 		const [target0,target1] = target;
 		if(!target0 || !target1) return;
-		/**@type {HTMLElement} */
+		/**@type {Element} */
 		const temp = target0.parentElement;
 		if(temp.classList.contains('RealDivQueue')){
 			for(realDivQueue of RealTarget.searchByObj(temp)) if(realDivQueue instanceof RealDivQueue) break;
@@ -2001,7 +2009,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		}
 	})));
 	getListQueue(){
-		/**@type {HTMLElement[]} */
+		/**@type {Element[]} */
 		const temp = this.queueArray;
 		for(var i = temp.length;i --> 0;) temp[i] = this.proto.list[temp[i]];
 		return temp;
@@ -2016,8 +2024,8 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 	/**
 	 * 
 	 * @param {Number[]} queueArray 
-	 * @param {HTMLElement} [target0] 
-	 * @param {HTMLElement} [target1] 
+	 * @param {Element} [target0] 
+	 * @param {Element} [target1] 
 	 * @returns 
 	 */
 	applyQueue(queueArray,target0,target1){
@@ -2110,19 +2118,13 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 	/**@type {(this: RealDivList,value: *[])=>false} */
 	function tempSet(value){
 		Array.isArray(value) ? this.info.wordList = value : this.error('"value must be Array !');
-		return this.info.inputer.dispatchEvent(new Event('change',changeConfig)),(tempRealDivList ??= this).info.matcher.value = {},false;
+		return this.info.inputer.dispatchEvent(new Event('input',changeConfig)),(tempRealDivList ??= this).info.matcher.value = {},false;
 	}
-	/**@type {(target: HTMLElement)=>void} */
+	/**@type {(target: Element)=>void} */
 	function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
 		tempRealDivList.info.matcher.value = {},tempRealDivList.react?.(),tempRealDivList.notify(true)
 	);}
 	addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
-	addEventListener('keyup',e=>{
-		var REList = RealTarget.searchByObj(document.activeElement?.parentElement?.parentElement),temp;
-		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
-		if(!temp) return;
-		(1 === e.key.length || 'Backspace' === e.key || 'Delete' === e.key) && temp.info.inputer.dispatchEvent(new Event('change',changeConfig));
-	});
 	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
 		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
@@ -2131,9 +2133,9 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		temp.info.inputer.value = temp.info.matcher.value[0];
 		tempRealDivList = temp;
 		tempRealDivList.react?.(),tempRealDivList.notify(true);
-		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('change',changeConfig));
+		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('input',changeConfig));
 	});
-	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','change',e=>{
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','input',e=>{
 		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
@@ -2142,7 +2144,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
 	});
 	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',e=>{
-		e.target.dispatchEvent(new Event('change',changeConfig));
+		e.target.dispatchEvent(new Event('input',changeConfig));
 	});
 	/**@type {(this: RealDivList)=>void} */
 	return function(placeholder){
