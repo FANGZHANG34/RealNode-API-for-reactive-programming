@@ -304,6 +304,10 @@
 
 	此方法仅在找回原对象引用时使用。
 
+- `createDeepGroup()` 静态方法，返回`RealGroup`类型。
+
+	接收一个参数`obj`，最好是对象。
+
 ## **RealTarget类**
 
 > 继承[**`RealNode`**](#RealNode类)类
@@ -498,139 +502,198 @@
 
 ### **二级方法**
 
-- `addEventListenerBySelectors()` 静态方法
+- `addEventListenerBySelectors()` 静态方法，返回`undefined`。
 
+	接收三个参数`selectors`、`type`、`listener`，其中`selectors`，相当于`document.querySelectorAll( selectors ).forEach( element => element.addEventListener(type, listener) )`，但是有两个特点：
 	
-
-- `defaultInit()` 静态方法
-
+	1. 所有事件都委托到`document`对象，所以不能侦听到没有冒泡的事件，例如正常的`'change'`事件；
 	
+	2. 对于一个元素，只要能够被选择器`selectors`选择到，就有可能触发侦听器`listener`。
+
+- `defaultInit()` 静态方法，返回`Promise`类型。
+
+	能够添加一系列样式，之后生成新的`Promise`实例，覆盖`RealWorld`类的2级静态属性`onload`并返回之。
 
 ### **三级方法**
 
-- `applyKeyboardController()` 静态方法
+- `applyKeyboardController()` 静态方法，返回`undefined`。
 
-	
+	接收若干参数，都应为`HTML`元素或`RealElement`类型。将会对`HTML`元素或`RealElement`实例的2级属性`self`添加一个类名`'keyboardController'`。
 
-- `cancelKeyboardController()` 静态方法
+	一个`'keydown'`类型的事件侦听器已被设置，它的作用是：如果按下的按键的字符串与4级静态属性`keyboardController`的四个属性之一完全相同，那么将会执行对应的以下操作：
 
-	
+	- `previous`属性：选中当前元素在其父元素的子元素节点中的前一个元素节点。
+
+	- `next`属性：选中当前元素在其父元素的子元素节点中的前一个元素节点。
+
+	- `enter`属性：选中当前元素的后代元素节点中的第一个含类名`'keyboardController'`的元素，如果不存在，则触发当前元素的`'click'`事件。
+
+	- `back`属性：选中当前元素的前代元素节点中的第一个含类名`'keyboardController'`的元素，如果不存在，则选中当前元素。
+
+- `cancelKeyboardController()` 静态方法，返回`undefined`。
+
+	接收若干参数，都应为`HTML`元素或`RealElement`类型。将会对`HTML`元素或`RealElement`实例的2级属性`self`移除一个类名`'keyboardController'`。
 
 ## **RealStory对象**
 
-这是
+这是一个自动运行的流程编辑器对象。`RealStory`对象对于你而言，你可以调用`then()`方法将一个函数设置为宏任务中的一个微任务，也可以调用`newPage()`方法创建`RealStory`对象的一个子级流程编辑器对象，其类型与`RealStory`对象是同一个类型，这意味着你也能够在该子级流程编辑器对象调用`then()`方法，甚至可以继续调用`newPage()`方法创建孙级流程编辑器对象。
+
+假设`RealStory`对象是一个称“方明正”的人，其长子称“方明正之子 - 0”，“方明正之子 - 0”的长子称“方明正之孙 - 0 - 0”，每个人的心愿即为调用`then()`方法设置的微任务。此时参考以下结构：
+
+| 我辈 | 子辈 | 孙辈 |
+| :----: | :----: | :----: |
+| “方明正” | “方明正之子 - 0” | “方明正之孙 - 0 - 0” |
+|  | - | “方明正之孙 - 0 - 1” |
+| - | “方明正之子 - 1” | “方明正之孙 - 1 - 0” |
+|  | - | “方明正之孙 - 1 - 1” |
+
+那么这7个人的心愿的满足顺序为：
+
+1. “方明正”
+
+2. “方明正之子 - 0”
+
+3. “方明正之孙 - 0 - 0”
+
+4. “方明正之孙 - 0 - 1”
+
+5. “方明正之子 - 1”
+
+6. “方明正之孙 - 1 - 0”
+
+7. “方明正之孙 - 1 - 1”
 
 ### **1级属性**
 
-- `index` 属性
+- `index` 属性，`Number`类型。
 
-	
+	这是当前流程编辑器对象在其父级流程编辑器对象的子级中的次序，以`0`为第一位，若当前流程编辑器对象为`RealStory`对象，则次序为`-1`。
 
-- `StoryPromise` 属性
+- `StoryPromise` 属性，匿名类。
 
-	
+	这是一个匿名类，进行构造或直接调用都会返回一个对象。该类等价于`Promise.withResolvers()`方法。
 
-### **2级属性**
+### **4级属性**
 
-- `info` 属性
+- `info` 属性，类型不限。
 
-	
+	看似没用，其实还是有一点点用的，吧。
 
 ### **6级属性**
 
-- `ofStory` 属性
+- `ofStory` 属性，应是流程编辑器对象。
 
-	
+	一般是当前流程编辑器对象的父级流程编辑器对象。
 
-- `pages` 属性
+- `pages` 属性，应是包含流程编辑器对象的`Array`实例。
 
-	
+	一般是当前流程编辑器对象的子级流程编辑器对象组成的`Array`实例。
 
-- `fnList` 属性
+- `fnList` 属性，应是包含函数的`Array`实例。
 
-	
-
-### **一级方法**
-
-- `newPage()` 方法
-
-	
-
-- `newPrivatePage()` 方法
-
-	
-
-- `then()` 方法
-
-	
-
-- `getNextPage()` 方法
-
-	
-
-- `getPreviousPage()` 方法
-
-	
-
-- `newPromiseObj()` 方法
-
-	
-
-- `launch()` 方法
-
-	
-
-## **RealPromise对象**
-
-这是
-
-### **1级属性**
-
-- `length` 属性
-
-	
-
-### **2级属性**
-
-- `list` 属性
-
-	
-
-- `self` 属性
-
-	
+	该属性中的每个元素应该都是通过调用当前流程编辑器对象的一级方法`then()`添加的函数。
 
 ### **一级方法**
 
-- `newOne()` 方法
+- `newPage()` 方法，返回流程编辑器对象。
 
-	
+	返回的是当前流程编辑器对象的一个新的子级流程编辑器对象。
 
-- `catch()` 方法
+- `then()` 方法，返回当前流程编辑器对象自身。
 
-	
+	接收一个参数`fn`，应是`Function`类型。参数`fn`会被追加到当前流程编辑器对象的6级属性`fnList`中。
 
-- `finally()` 方法
+- `getNextPage()` 方法，返回流程编辑器对象或`undefined`。
 
-	
+	关于返回的流程编辑器对象，其父级与当前流程编辑器对象的父级相同，但次序靠后一位。
 
-- `then()` 方法
+- `getPreviousPage()` 方法，返回流程编辑器对象或`undefined`。
 
-	
+	关于返回的流程编辑器对象，其父级与当前流程编辑器对象的父级相同，但次序靠前一位。
 
-- `tryHandler()` 方法
+- `newPromiseObj()` 方法，返回1级属性`StoryPromise`构造的新实例。
 
-	
+	源代码：
+	```
+	const temp = new StoryPromise;
+	return this.then(()=>temp.promise),temp;
+	```
 
-- `require()` 方法
+- `launch()` 方法，返回`Promise`类型。
 
-	
+	这是异步方法。在调用该方法到返回值兑现期间，特定函数将按一定规律被执行。（其运作机制详见[**`RealStory`**](#RealStory对象)对象介绍）
+
+	`RealStory`对象不需要手动调用`launch()`方法，因为其内部已经设置了定时器自动触发，所以虽然`launch()`方法是基于`Promise`类的微任务队列实现，但是其执行时机却是在宏任务时间。
 
 ### **二级方法**
 
-- `_push()` 方法
+- `newPrivatePage()` 方法，返回`Promise`类型。
 
+	接收一个参数`fn`，必须是`Function`类型。参数`fn`能够接收当前流程编辑器对象的一个新的子级流程编辑器对象作为其第一个参数。
+
+## **RealPromise对象**
+
+这是一个异步流程对象，基于`Promise`类的微任务队列实现，但原型链上并没有`Promise`类的原型。
+
+你可以把`RealPromise`对象当作一个`Promise`实例一样调用`then()`、`catch()`、`finally()`等方法，但不同之处在于：
+
+1. 这些方法的返回值都是`RealPromise`对象自身；
+
+2. `then()`方法会把兑现值追加记录到2级属性`list`（`Array`类型）之中。
+
+### **1级属性**
+
+- `length` 属性，`Number`类型。
+
+	获取当前2级属性`list`的长度。
+
+### **2级属性**
+
+- `list` 属性，`Array`类型。
+
+	里面记录了`RealPromise`对象当前已执行了的微任务的兑现值。
+
+- `self` 属性，`Promise`类型。
+
+	这是当前微任务。
+
+### **一级方法**
+
+- `newOne()` 方法，返回类型与`RealPromise`对象相同的新对象实例。
+
+	如果你需要更多的`RealPromise`对象，可以使用这个方法。
+
+- `catch()` 方法，返回`RealPromise`对象自身。
+
+	接收一个参数`onrejected`，应为`Function`类型。等价于在返回前执行代码`this.self = this.self.catch(onrejected)`。
+
+- `finally()` 方法，返回`RealPromise`对象自身。
+
+	接收一个参数`onfinally`，应为`Function`类型。等价于在返回前执行代码`this.self = this.self.finally(onfinally)`。
+
+- `then()` 方法，返回`RealPromise`对象自身。
+
+	接收两个参数`onfulfilled`和`onrejected`，都应为`Function`类型。等价于在返回前执行代码`this.self = this.self.then(onfulfilled, onrejected)`。
+
+- `tryHandler()` 方法，返回`Promise`类型。
+
+	这是异步方法，接收接收两个参数`handler`和`onerror`（可选），都应为`Function`类型。
+
+- `require()` 方法，返回`Promise`类型。
+
+	接收一个参数`path`，应为`String`类型。
 	
+	- 如果存在NodeJS环境，则返回值等价于代码`import(path).then(temp=>temp.default)`；
+
+	- 如果存在浏览器环境，则采用`<script:src=path>`标签将参数`path`视为JS代码文件路径动态执行，如果执行成功，返回值就会在代码加载完后兑现；
+
+	- 如果以上两种环境均不存在，返回值将会以一个错误拒绝。
+
+### **二级方法**
+
+- `_push()` 方法，返回接收的第一个参数。
+
+	等价于执行代码`return v === this.list[this.list.length - 1] || this.list.push(v),v`。
 
 # 以下类和函数仅在浏览器环境中有效！！！
 

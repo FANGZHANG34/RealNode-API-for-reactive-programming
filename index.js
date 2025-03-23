@@ -842,9 +842,9 @@ var RealElement = class RealElement extends RealTarget{
 		 * @param {((event: Event)=>void)[]} listenerArray 
 		 * @param {keyof ElementTagNameMap} selectors 
 		 */
-		function temp(e,listenerArray,selectors){if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
+		function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
 			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e.stack);}
-		}}
+		}}catch(e){console.error(e);}}
 		/**
 		 * 
 		 * @param {keyof ElementTagNameMap} selectors 
@@ -1038,6 +1038,7 @@ var RealElement = class RealElement extends RealTarget{
 	})();
 };
 var RealStory = function(){
+	var isBusy = false;
 	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
 	function StoryPromise(){
 		if(!new.target) return new StoryPromise;
@@ -1045,7 +1046,7 @@ var RealStory = function(){
 		this.resolve = null;
 		/**@type {(reason?)=>void} */
 		this.reject = null;
-		this.self = new Promise(executor.bind(this));
+		this.promise = new Promise(executor.bind(this));
 	}
 	class RealStory{
 		newPage(){return new RealStory(this);}
@@ -1067,16 +1068,17 @@ var RealStory = function(){
 		}
 		newPromiseObj(){
 			const temp = new StoryPromise;
-			return this.then(()=>temp.self),temp;
+			return this.then(()=>temp.promise),temp;
 		}
 		async launch(){
 			var i = 0,temp = this;
 			while((temp = temp.ofStory) instanceof RealStory) i++;
+			if(!i) isBusy = true;
 			while(this.pages.length || this.fnList.length){
 				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
 				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
 				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
-			}
+			}isBusy = false;
 		}
 		get StoryPromise(){return StoryPromise;}
 		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
@@ -1089,9 +1091,8 @@ var RealStory = function(){
 		info;
 		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
 	}
-	var isBusy = false;
 	RealStory.prototype.constructor = null;
-	return (RealStory=>(setInterval(()=>isBusy || (isBusy = true,RealStory.launch().then(()=>isBusy = false)),50),RealStory))(new RealStory);
+	return (RealStory=>(setInterval(()=>isBusy || RealStory.launch(),50),RealStory))(new RealStory);
 }();
 var RealPromise = new(class RealPromise{
 	newOne(){return new RealPromise;}
@@ -1135,14 +1136,16 @@ var RealPromise = new(class RealPromise{
 		/**@this {Element} */
 		function onfinally(){this.remove();}
 		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
-		return browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */function(path){
-			var temp,script;
+		return nodeMode ? /**@this {RealPromise} */
+		function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
+		browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
+		function(path){var temp,script;
 			path = String(path).replaceAll('\\','/');
 			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
 			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
 				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
-			),this._push(temp.self.finally(onfinally.bind(script)))));
-		} : /**@this {RealPromise} */function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));};
+			),this._push(temp.promise.finally(onfinally.bind(script)))));
+		} : function(){return Promise.reject(new Error('Mode error !'));};
 	}();
 	get length(){return this.list.length;}
 	list = [];
@@ -1158,7 +1161,7 @@ var RealPromise = new(class RealPromise{
 		this.self = !arguments.length ? RealWorld.onload :
 		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
 	}
-})();RealPromise.self
+})();
 
 if(browserMode){
 
