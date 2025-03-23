@@ -100,18 +100,6 @@
 
 	会在实例慎用方法`_mainFn()`被调用且实例常用属性`ifFn`被执行并返回真值时执行，执行后会被立即清除。
 
-### **慎用属性（只读）**
-
-- `fnList` 实例属性，`Array`类型。
-
-	会在实例慎用方法`_mainFn()`调用时执行`fnList.pop()`并执行其返回值。
-
-### **慎用属性**
-
-- `onload` 静态属性，应为`Promise`类型。
-
-	浏览器环境下网页文档准备就绪时兑现。
-
 ### **常用方法**
 
 - `destroy()` 实例方法，返回`undefined`。
@@ -129,6 +117,18 @@
 - `onceIf()` 静态方法，返回`Promise`类型。
 
 	接收一个参数`ifFn`，必须为`Function`类型。当`ifFn`被执行并返回真值时，`onceIf()`方法返回的承诺将会被兑现。
+
+### **慎用属性（只读）**
+
+- `fnList` 实例属性，`Array`类型。
+
+	会在实例慎用方法`_mainFn()`调用时执行`fnList.pop()`并执行其返回值。
+
+### **慎用属性**
+
+- `onload` 静态属性，应为`Promise`类型。
+
+	浏览器环境下网页文档准备就绪时兑现。
 
 ### **慎用方法**
 
@@ -200,14 +200,6 @@
 
 	读取值为`Boolean`类型，默认是`true`。若写入真值，将能够接收到其他实例的广播通知，否则反之且无法被静态常用方法`search()`查询。
 
-### **慎用属性**
-
-- `eventLoop` 静态属性，必须是`RealWorld`实例。
-
-### **隐藏属性**
-
-- `relativeRNs` 实例属性，必须是`Array`实例，且每个元素都必须为`Symbol`类型，即`RealNode`实例的常用实例属性（只读）`id`。
-
 ### **常用方法**
 
 - `notify()` 实例方法，返回`undefined`。
@@ -232,6 +224,10 @@
 
 	接收一个参数`fn`，应为`Function`类型，在生成的一个宏任务中执行后兑现返回值。
 
+### **慎用属性**
+
+- `eventLoop` 静态属性，必须是`RealWorld`实例。
+
 ### **慎用方法**
 
 - `realSet()` 实例方法，返回`Boolean`类型。
@@ -241,6 +237,10 @@
 - `time()` 静态方法，返回`Promise`类型。
 
 	接收一个参数`promise`，若为`Function`类型则执行，若为`Promise`类型则等待兑现，最终返回值将兑现`{time: Number, value: any | Error}`。
+
+### **隐藏属性**
+
+- `relativeRNs` 实例属性，必须是`Array`实例，且每个元素都必须为`Symbol`类型，即`RealNode`实例的常用实例属性（只读）`id`。
 
 ## **RealGroup类**
 
@@ -272,12 +272,6 @@
 
 - `react` 实例属性，返回实例隐藏方法`protoReact()`。
 
-### **慎用属性（只读）**
-
-- `listenerMap` 实例属性，`Map`类型。
-
-	键为`String`类型或`Function`类型，值为`Array`类型，所有元素为`Function`类型。
-
 ### **常用方法**
 
 - `keys()` 实例方法，返回`Array`实例，每个元素为`String`类型或`Symbol`类型。
@@ -287,6 +281,12 @@
 - `addSetterListener()` 实例方法，返回`undefined`。
 
 	接收两个参数`ifKeyOrFn`和`listener`，`ifKeyOrFn`必须为`String`类型或返回`Boolean`类型的`Function`类型，`listener`必须为`Function`类型。
+
+### **慎用属性（只读）**
+
+- `listenerMap` 实例属性，`Map`类型。
+
+	键为`String`类型或`Function`类型，值为`Array`类型，所有元素为`Function`类型。
 
 - `getByFilter()` 实例方法，返回一个`null`为原型的含对应键值对的对象。
 
@@ -450,12 +450,6 @@
 
 > 详见[**`RealTarget`**](#构造函数-new-realtargetself-key-transform-initvalue-config-tryrealnode-relativerns)构造函数
 
-### **慎用属性**
-
-- `keyboardController` 静态属性，应是包含`previous`、`next`、`enter`、`back`等4个属性的对象。
-
-	该对象的这4个属性应该是键盘按键的字符串，其用途详见静态隐藏方法`applyKeyboardController()`。
-
 ### **常用方法**
 
 - `createImg()` 静态方法，返回`RealElement`类型。
@@ -493,6 +487,12 @@
 	`prefix`（或`prefix`数组的元素）和`ruleObjObj`（对象类型）的属性名的拼接都会被视作CSS选择器，按照一定规律进行【参数`prefix` + 参数`classNameOrRuleObjObj`的属性名】的字符串拼接，`ruleObjObj`（对象类型）的每一个属性都必须是符合CSS标准的字符串键值对对象。如果`prefix`正好是一个类名的选择器`.${className}`，那么将会对该类名及其对应对象进行注册。
 
 	底层原理是`CSSStyleSheet.insertRule()`方法。
+
+### **慎用属性**
+
+- `keyboardController` 静态属性，应是包含`previous`、`next`、`enter`、`back`等4个属性的对象。
+
+	该对象的这4个属性应该是键盘按键的字符串，其用途详见静态隐藏方法`applyKeyboardController()`。
 
 ### **慎用方法**
 
@@ -567,26 +567,6 @@
 
 	这是一个匿名类，进行构造或直接调用都会返回一个对象。该类等价于`Promise.withResolvers()`方法。
 
-### **慎用属性**
-
-- `info` 属性，类型不限。
-
-	看似没用，其实还是有一点点用的，吧。
-
-### **隐藏属性**
-
-- `ofStory` 属性，应是流程编辑器对象。
-
-	一般是当前流程编辑器对象的父级流程编辑器对象。
-
-- `pages` 属性，应是包含流程编辑器对象的`Array`实例。
-
-	一般是当前流程编辑器对象的子级流程编辑器对象组成的`Array`实例。
-
-- `fnList` 属性，应是包含函数的`Array`实例。
-
-	该属性中的每个元素应该都是通过调用当前流程编辑器对象的常用方法`then()`添加的函数。
-
 ### **常用方法**
 
 - `newPage()` 方法，返回流程编辑器对象。
@@ -619,11 +599,31 @@
 
 	`RealStory`对象不需要手动调用`launch()`方法，因为其内部已经设置了定时器自动触发，所以虽然`launch()`方法是基于`Promise`类的微任务队列实现，但是其执行时机却是在宏任务时间。
 
+### **慎用属性**
+
+- `info` 属性，类型不限。
+
+	看似没用，其实还是有一点点用的，吧。
+
 ### **慎用方法**
 
 - `newPrivatePage()` 方法，返回`Promise`类型。
 
 	接收一个参数`fn`，必须是`Function`类型。参数`fn`能够接收当前流程编辑器对象的一个新的子级流程编辑器对象作为其第一个参数。
+
+### **隐藏属性**
+
+- `ofStory` 属性，应是流程编辑器对象。
+
+	一般是当前流程编辑器对象的父级流程编辑器对象。
+
+- `pages` 属性，应是包含流程编辑器对象的`Array`实例。
+
+	一般是当前流程编辑器对象的子级流程编辑器对象组成的`Array`实例。
+
+- `fnList` 属性，应是包含函数的`Array`实例。
+
+	该属性中的每个元素应该都是通过调用当前流程编辑器对象的常用方法`then()`添加的函数。
 
 ## **RealPromise对象**
 
