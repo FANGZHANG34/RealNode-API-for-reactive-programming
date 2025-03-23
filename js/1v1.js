@@ -3,7 +3,7 @@
 const mode = 0;
 switch(mode){
 	/**
-	 * 原生JS 31行
+	 * 原生JS 7行
 	 * RealStory
 	 * RealElement
 	 * RealDivList
@@ -38,10 +38,10 @@ switch(mode){
 			)
 		},4);
 
-		return temp.self;
+		return temp.promise;
 	})()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 	/**
-	 * 使用RealGroup 37行
+	 * 使用RealGroup 12行
 	 * RealStory
 	 * RealGroup
 	 * RealElement
@@ -82,10 +82,10 @@ switch(mode){
 		});
 		competition.react();
 
-		return temp.self;
+		return temp.promise;
 	})()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 	/**
-	 * 使用RealNode和RealNode.eventLoop 39行
+	 * 使用RealNode和RealNode.eventLoop 16行
 	 * RealStory
 	 * RealNode
 	 * RealElement
@@ -128,10 +128,10 @@ switch(mode){
 		});
 		document.body.appendChild(mainEle.self);
 
-		return temp.self;
+		return temp.promise;
 	})()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 	/**
-	 * 使用RealNode 42行
+	 * 使用RealNode 16行
 	 * RealStory
 	 * RealNode
 	 * RealElement
@@ -177,7 +177,7 @@ switch(mode){
 		});
 		document.body.appendChild(mainEle.self);
 
-		return temp.self;
+		return temp.promise;
 	})()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 	// case 3: RealElement.defaultInit().then(()=>RealNode.time((()=>{
 	// 	const temp = RealStory.newPage().newPromiseObj();
@@ -219,7 +219,7 @@ switch(mode){
 	// 	});
 	// 	document.body.appendChild(mainEle.self);
 
-	// 	return temp.self;
+	// 	return temp.promise;
 	// })()).then(result=>console.log(result.value,'in ',result.time,'ms')));break;
 }
 RealWorld.onload.then(()=>(RealPromise.require('./try.js'),RealPromise.require('./try.js')));
