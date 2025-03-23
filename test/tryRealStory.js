@@ -1,10 +1,10 @@
-// "use strict";
-// import process from "process";
-// try{
-// 	const temp = ({default: exports})=>exports;
-// 	var require = require ?? (path=>import(String(path)).then(temp));
-// }catch(e){console.error(e);}
-// const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = await require('../index.js');
+"use strict";
+import process from "process";
+try{
+	const temp = ({default: exports})=>exports;
+	var require = require ?? (path=>import(String(path)).then(temp));
+}catch(e){console.error(e);}
+const {RealWorld,RealNode,RealElement,RealGroup,RealStory} = await require('../index.js');
 
 RealStory.newPrivatePage(async page=>console.log(await page.then(()=>new RealElement({self:{}}))));
 RealNode.time((()=>{
