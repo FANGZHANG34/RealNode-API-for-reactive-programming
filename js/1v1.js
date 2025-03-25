@@ -95,9 +95,9 @@ switch(mode){
 		const temp = RealStory.newPage().newPromiseObj();
 
 		const
-		teacher = new RealNode({id: 'Ms. White',value: 'pending...'}),
-		boy = new RealNode({id: 'Mike',value: 0}),
-		girl = new RealNode({id: 'Mary',value: 0})
+		teacher = new RealNode({id: 'Ms. White',initValue: 'pending...'}),
+		boy = new RealNode({id: 'Mike',initValue: 0}),
+		girl = new RealNode({id: 'Mary',initValue: 0})
 		;
 		const mainEle = new RealDivList('mainEle',false,[boy,girl,teacher],true);
 		const competition = RealNode.eventLoop;
@@ -142,8 +142,8 @@ switch(mode){
 
 		const
 		teacher = new RealNode({id: 'Ms. White'}),
-		boy = new RealNode({id: 'Mike',value: 0}),
-		girl = new RealNode({id: 'Mary',value: 0})
+		boy = new RealNode({id: 'Mike',initValue: 0}),
+		girl = new RealNode({id: 'Mary',initValue: 0})
 		;
 		girl.relate(teacher);
 		boy.relate(teacher);
@@ -184,8 +184,8 @@ switch(mode){
 
 	// 	const
 	// 	teacher = new RealNode({id: 'Ms. White'}),
-	// 	boy = new RealNode({id: 'Mike',value: 0}),
-	// 	girl = new RealNode({id: 'Mary',value: 0})
+	// 	boy = new RealNode({id: 'Mike',initValue: 0}),
+	// 	girl = new RealNode({id: 'Mary',initValue: 0})
 	// 	;
 	// 	girl.relate(teacher);
 	// 	boy.relate(teacher);

@@ -98,7 +98,7 @@ var RealWorld = (()=>{
 	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;};
 	/**## 生成RealElement实例 */
 	RealWorld.prototype.getRealElement = function(){
-		return new RealElement({self: this.self,key: 'innerHTML',initValue: this.self.innerHTML},{id: this.self.id});
+		return new RealElement({self: this.self,key: 'innerHTML'},{id: this.self.id,initValue: this.self.innerHTML});
 	};
 	/**## 变更时间间隔 */
 	RealWorld.prototype.setTimeSep = function(timeSep){
@@ -190,6 +190,14 @@ var RealNode = class RealNode{
 	static check(realNode){for(const temp of this._sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
 	/**
 	 * 
+	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
+	 */
+	static createHidden(config){
+		const temp = new RealNode(Object(config));
+		return temp.display = false,temp;
+	}
+	/**
+	 * 
 	 * @param {()=>*} fn 
 	 * @param {Boolean} keepNow 
 	 * @returns {Promise}
@@ -198,6 +206,29 @@ var RealNode = class RealNode{
 		const temp = new Promise(r=>this.eventLoop.then(()=>r(fn.apply(thisArg,argArray))));
 		return keepNow || (this.now = temp.finally()),temp;
 	}
+	/**
+	 * 
+	 * @param {()=>*} get 
+	 */
+	static protoCreate(get,...argArray){
+		const temp = new RealNode({get});
+		temp.proto.value = argArray;
+		return temp;
+	}
+	/**@method @type {((...args)=>RealNode)} */
+	static createNumber = this.protoCreate.bind(null,function(temp = 0){
+		if(!Array.isArray(this.proto.value)) return +(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
+		else for(const i of this.proto.value) temp +=+(i instanceof RealNode ? i.value : i);
+		return temp;
+	});
+	/**@method @type {((...args)=>RealNode)} */
+	static createString = this.protoCreate.bind(null,function(){
+		if(Array.isArray(this.proto.value)){
+			const temp = this.proto.value.concat();
+			for(var i = temp.length;i --> 0;) if(temp[i] instanceof RealNode) temp[i] = temp[i].value;
+			return temp.join('');
+		}else return String(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
+	});
 	/**@method @type {(promise: (()=>*) & Promise)=>Promise<{value: * & Error,time: Number}>} */
 	static time = (temp=>promise=>{try{
 		const t0 = performance.now();
@@ -232,31 +263,8 @@ var RealNode = class RealNode{
 		if(this instanceof RealNode) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
 	}}
-	/**
-	 * 
-	 * @param {()=>*} get 
-	 */
-	static protoCreate(get,...argArray){
-		const temp = new RealNode({get});
-		temp.proto.value = argArray;
-		return temp;
-	}
-	/**@method @type {((...args)=>RealNode)} */
-	static createString = this.protoCreate.bind(null,function(){
-		if(Array.isArray(this.proto.value)){
-			const temp = this.proto.value.concat();
-			for(var i = temp.length;i --> 0;) if(temp[i] instanceof RealNode) temp[i] = temp[i].value;
-			return temp.join('');
-		}else return String(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
-	});
-	/**@method @type {((...args)=>RealNode)} */
-	static createNumber = this.protoCreate.bind(null,function(temp = 0){
-		if(!Array.isArray(this.proto.value)) return +(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
-		else for(const i of this.proto.value) temp +=+(i instanceof RealNode ? i.value : i);
-		return temp;
-	});
 	protoGet(){return this.proto.value;}
-	log(...message){console.log(this+' :',...message);}
+	log(...message){console.log(this+':',...message);}
 	done(){return RealNode.justNow(this.protoDone,this);}
 	// done(keepNow){return RealNode.afterNow(this.protoDone,keepNow,this);}
 	/**
@@ -296,7 +304,7 @@ var RealNode = class RealNode{
 	notify(noSelf,thisArg,count){
 		// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
 		for(const id of this.relativeRNs) Promise.resolve(RealNode.search(id)).
-		then(realNode=>((noSelf && this === realNode) || (realNode?.react?.(),realNode?.notify?.())));
+		then(realNode=>((noSelf && this === realNode) || !realNode?.react || (realNode.react(),realNode?.notify?.())));
 	}
 	/**
 	 * 
@@ -307,12 +315,12 @@ var RealNode = class RealNode{
 	 */
 	realSet(value,react,notify,noSelf){
 		var temp;
-		const oldValue = this.proto.value;
+		// const oldValue = this.proto.value;
 		try{return (this.proto.set.call(
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		) ?? oldValue !== this.proto.value) && (react && this.react?.(),notify && this.notify(noSelf),true);}
+		) ?? true) && (react && this.react?.(),notify && this.notify(noSelf),true);}
 		catch(e){return console.error(e),e;}
 	}
 	/**
@@ -431,11 +439,11 @@ var RealNode = class RealNode{
 	notifyArray = [];
 	/**
 	 * 
-	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
+	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 	 * @param {...(Symbol | RealNode)} [relativeRNs] 
 	 */
 	constructor(config,tryRealNode = RealNode.tryRealNode,...relativeRNs){
-		const {get,set,react,id,info} = config = Object(config);
+		const {get,set,react,id,info,initValue} = config = Object(config);
 		/**@type {AntiNode} */
 		this.proto = new this.constructor.proto;
 		this.proto.id = Symbol(String(id ?? info?.id ?? ''));
@@ -447,6 +455,7 @@ var RealNode = class RealNode{
 		this.set = set;
 		this.react = react;
 		this.relate(...relativeRNs);
+		this.proto.value = initValue;
 		this.tryRealNode = tryRealNode;
 		if('value' in config) this.value = config.value;
 	}
@@ -457,9 +466,14 @@ class RealGroup extends RealNode{
 	static tempProxy = class AntiGroup extends Function{
 		static arr = [];
 		apply(){return this.self;}
-		['get'](target,key){return this.realGroup.get(key);}
+		ownKeys(){return Reflect.ownKeys(this);}
+		has(target,key){return Reflect.has(this,key);}
 		construct(){return this.realGroup.getByFilter();}
+		isExtensible(){return Reflect.isExtensible(this);}
+		['get'](target,key){return this.realGroup.get(key);}
+		preventExtensions(){return Reflect.preventExtensions(this);}
 		deleteProperty(target,key){return Reflect.deleteProperty(this.self,key);}
+		setPrototypeOf(target,prototype){return Reflect.setPrototypeOf(this,prototype);}
 		['set'](target,key,value){return this.realGroup.set(Object.create(null,{[key]:{value}}));}
 		defineProperty(target,key,attributes){return Reflect.defineProperty(this.self,key,attributes);}
 		/**
@@ -665,11 +679,12 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {Boolean} noSelf 
 	 * @returns {Boolean}
 	 */
-	realSet(value,react,notify,noSelf){
-		var temp;
-		try{return (this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
-			this.proto.set.call(this,this._dealWithPositionsOfRNs(temp,value)) : this.proto.set.call(this,value)
-		) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
+	realSet(value,react,notify,noSelf){var temp;
+		try{return (this.proto.set.call(
+			this,
+			this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
+			this._dealWithPositionsOfRNs(temp,value) : value
+		) ?? true) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
 	}
 	/**
 	 * 
@@ -701,13 +716,13 @@ var RealTarget = class RealTarget extends RealNode{
 		const self = this.self instanceof Element ? this.self.cloneNode() :
 		Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
 		const param0 = {self,key: this.key,transform: this.transform};
-		if(keepValue) param0.initValue = this.proto.value;
 		const temp = new RealTarget(param0,{
 			get: this.proto.get,
 			set: this.proto.set,
 			react: this.proto.react,
 			id: this.id.description+'-clone',
 			info: this.info,
+			initValue: keepValue ? this.proto.value : void 0,
 		});
 		Reflect.setPrototypeOf(temp,Reflect.getPrototypeOf(this));
 		if(null == deepCopyRelativeRNs) temp.relativeRNs = deepCopyRelativeRNs ? this.relativeRNs : this.relativeRNs.concat();
@@ -724,18 +739,18 @@ var RealTarget = class RealTarget extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {{self: Element,key,transform?: (value)=>*,initValue?: *}} param0 
-	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?}} [config] 
+	 * @param {{self: Element,key,transform?: (value)=>*}} param0 
+	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {...RealNode} [relativeRNs] 
 	 */
-	constructor({self,key,transform,initValue},config,tryRealNode,...relativeRNs){
+	constructor({self,key,transform},config,tryRealNode,...relativeRNs){
 		super(config,tryRealNode);
 		/**@type {AntiTarget} */this.proto;
 		this.self = self;
 		this.key = key;
 		this.transform = transform;
-		(tryRealNode ? this : this.proto).value = initValue;
+		tryRealNode && this.realSet(config.initValue);
 		this.relate(...relativeRNs);
 		this.addClassName(this.constructor.name);
 	}
@@ -807,7 +822,7 @@ var RealElement = class RealElement extends RealTarget{
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 	static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
-	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent',initValue},{id});}
+	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
 	static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
 	/**
 	 * @template {Element} T
@@ -1252,7 +1267,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		)).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(console.error(e),e));
+		) ?? true).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(console.error(e),e));
 	}
 	multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
 		var i = -1,temp = bgSrc ?? srcArray[0] ?? false;
@@ -1543,7 +1558,7 @@ class RealLoader extends RealElement{
 		})()
 	);
 	load(){return RealLoader.load(this);}
-	protoSet(value){this.self[this.key] = value;}
+	protoSet(value){return this.self[this.key] = String(value),false;}
 	/**@returns {FileList} */
 	get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
 	get onerror(){return this.proto.onerror;}
@@ -1575,7 +1590,7 @@ class RealLoader extends RealElement{
 		this.onerror = onerror;
 		this.onloadend = onloadend;
 		this.dataGetter = dataGetter;
-		this.value = String(innerHTML);
+		this.value = innerHTML;
 		isDownload = Boolean(isDownload);
 		this.type = isDownload ? 'download' : 'upload';
 		this.temp = document.createElement(isDownload ? 'a' : 'input');
@@ -1671,10 +1686,8 @@ var RealSelect = class RealSelect extends RealElement{
 		RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
 		RealElement.addId(id,!self);
 		super({
-			self: self || RealElement.makeElement('select',{id,multiple,onchange}),
-			key: 'innerHTML',
-			initValue: Object.assign({},optionConfig)
-		},{id},tryRealNode);
+			key: 'innerHTML',self: self || RealElement.makeElement('select',{id,multiple,onchange})
+		},{id,initValue: Object.assign({},optionConfig)},tryRealNode);
 		/**@type {AntiSelect} */this.proto;
 		this.defaultKey = defaultKey ?? '_';
 		this.defaultValue = defaultValue ?? '';
@@ -1749,10 +1762,9 @@ var RealComtag = class RealComtag extends RealElement{
 	constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
 		RealElement.addId(id,!self);
-		super({
-			self: self || RealElement.makeElement('div',{id}),
-			initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
-		},{id},tryRealNode);
+		super({self: self || RealElement.makeElement('div',{id})},{
+			id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
+		},tryRealNode);
 		/**@type {AntiList} */
 		this.proto;
 		this.tryHTML = tryHTML;
@@ -1900,10 +1912,9 @@ var RealDivList = class RealDivList extends RealElement{
 	constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
 		const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
 		RealElement.addId(id,!self);
-		super({
-			self: self || RealElement.makeElement('div',{id}),
-			initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
-		},{id},tryRealNode);
+		super({self: self || RealElement.makeElement('div',{id})},{
+			id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
+		},tryRealNode);
 		/**@type {AntiList} */this.proto;
 		this.tryHTML = tryHTML;
 		Object.assign(this.fix().self,selfAssign);
