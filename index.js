@@ -192,10 +192,7 @@ var RealNode = class RealNode{
 	 * 
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 	 */
-	static createHidden(config){
-		const temp = new RealNode(Object(config));
-		return temp.display = false,temp;
-	}
+	static createHidden = function(temp){return function(config){return new RealNode(Object({},config,temp));};}({display: false});
 	/**
 	 * 
 	 * @param {()=>*} fn 
@@ -439,23 +436,23 @@ var RealNode = class RealNode{
 	notifyArray = [];
 	/**
 	 * 
-	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
+	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?,display?}} [config] 
 	 * @param {...(Symbol | RealNode)} [relativeRNs] 
 	 */
 	constructor(config,tryRealNode = RealNode.tryRealNode,...relativeRNs){
-		const {get,set,react,id,info,initValue} = config = Object(config);
+		config = Object(config);
 		/**@type {AntiNode} */
 		this.proto = new this.constructor.proto;
-		this.proto.id = Symbol(String(id ?? info?.id ?? ''));
+		this.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
 		Reflect.defineProperty(this,'notifyArray',{enumerable: false});
 		Reflect.defineProperty(this,'proto',{enumerable: false,writable: false});
-		this.display = true;
-		this.info = info;
-		this.get = get;
-		this.set = set;
-		this.react = react;
+		this.display = config.display ?? true;
+		this.info = config.info;
+		this.get = config.get;
+		this.set = config.set;
+		this.react = config.react;
 		this.relate(...relativeRNs);
-		this.proto.value = initValue;
+		this.proto.value = config.initValue;
 		this.tryRealNode = tryRealNode;
 		if('value' in config) this.value = config.value;
 	}
@@ -494,15 +491,18 @@ class RealGroup extends RealNode{
 	 * 
 	 * @template T
 	 * @param {T} obj 
+	 * @param {String} [id] 
+	 * @param {Boolean} [tryRealNode] 
 	 * @param {Boolean} [strict] 
 	 * @returns {RealGroup<T> | any}
 	 */
-	static createDeepGroup = function createDeepGroup(obj,strict){var i;
-		if(Object(obj) !== obj) return strict ? obj : new RealGroup;
+	static createDeepGroup = function createDeepGroup(obj,id = '',tryRealNode,strict){var i;
+		if(Object(obj) !== obj) return strict ? tryRealNode ? RealNode.createHidden({id,initValue: obj}) : obj : new RealGroup;
 		const proto = Reflect.getPrototypeOf(obj);
-		if(proto && proto !== Object.prototype) return strict ? obj : new RealGroup({self: obj});
+		if(proto && proto !== Object.prototype) return strict ? tryRealNode ?
+		RealNode.createHidden({id,initValue: obj}) : obj : new RealGroup({self: obj});
 		const temp = Object.create(null),keyArray = Reflect.ownKeys(obj),length = keyArray.length;
-		for(i = 0;i < length;i++) temp[keyArray[i]] = createDeepGroup(obj[keyArray[i]],true);
+		for(i = 0;i < length;i++) temp[keyArray[i]] = createDeepGroup(obj[keyArray[i]],keyArray[i],tryRealNode,true);
 		return new RealGroup({self: temp});
 	}
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
@@ -2056,7 +2056,8 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		var i = length;
 		while(i --> 0) queueArray[i] ??= i,queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
 		i = [previousQueue.indexOf(this.proto.list.indexOf(target0)),previousQueue.indexOf(this.proto.list.indexOf(target1))];
-		if(i[0] !== -1 && i[1] !== -1) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) : target1.insertAdjacentElement('beforebegin',target0);
+		if(i[0] !== -1 && i[1] !== -1) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) :
+		target1.insertAdjacentElement('beforebegin',target0);
 		else{
 			this.self.classList.add('disappear');
 			this.self.innerHTML = '',i = 0;
@@ -2095,7 +2096,10 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	}
 	/**@type {(this: RealDivList,value: {})=>false} */
 	function tempSet(value){
-		for(const key of (this.info.optionList = [],this.proto.value = Object.keys(value = Object(value)).sort().sort((a,b)=>a - b))) this.info.optionList.push(value[key]);
+		for(const key of (
+			this.info.optionList = [],
+			this.proto.value = Object.keys(value = Object(value)).sort().sort((a,b)=>a - b)
+		)) this.info.optionList.push(value[key]);
 		return this.fix().value,false;
 	}
 	/**@type {(RS: RealDivList)=>Boolean} */
