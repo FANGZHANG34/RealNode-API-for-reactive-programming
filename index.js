@@ -47,11 +47,11 @@ var RealWorld = (()=>{
 		/**@type {Boolean} */
 		this.paused = false;
 		/**@type {?()=>*} */
-		this.intervalFn = this.info;
+		this.intervalFn = void 0;
 		/**@type {?()=>*} */
-		this.ifFn = this.info;
+		this.ifFn = void 0;
 		/**@type {?()=>*} */
-		this.soFn = this.info;
+		this.soFn = void 0;
 		Reflect.defineProperty(this,'_id',tempConfig);
 		Reflect.defineProperty(this,'fnList',tempConfig);
 		Reflect.defineProperty(this,'timeSep',tempConfig);
@@ -245,7 +245,8 @@ var RealNode = class RealNode{
 	 * @this {RealNode}
 	 * @param {RealNode} realNode 
 	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+	static _react(realNode,react = true,notify = true,noSelf = true){try{
+		var value;
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse();
@@ -310,16 +311,14 @@ var RealNode = class RealNode{
 	 * @param {Boolean} noSelf 
 	 * @returns {Boolean}
 	 */
-	realSet(value,react,notify,noSelf){
+	realSet(value,react,notify,noSelf){try{
 		var temp;
-		// const oldValue = this.proto.value;
-		try{return (this.proto.set.call(
+		return (this.proto.set.call(
 			this,
 			this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		) ?? true) && (react && this.react?.(),notify && this.notify(noSelf),true);}
-		catch(e){return console.error(e),e;}
-	}
+		) ?? true) && (react && this.react?.(),notify && this.notify(noSelf),true);
+	}catch(e){return console.error(e),e;}}
 	/**
 	 * 
 	 * @param {RealNode} realNode 
@@ -496,7 +495,8 @@ class RealGroup extends RealNode{
 	 * @param {Boolean} [strict] 
 	 * @returns {RealGroup<T> | any}
 	 */
-	static createDeepGroup = function createDeepGroup(obj,id = '',tryRealNode,strict){var i;
+	static createDeepGroup = function createDeepGroup(obj,id = '',tryRealNode,strict){
+		var i;
 		if(Object(obj) !== obj) return strict ? tryRealNode ? RealNode.createHidden({id,initValue: obj}) : obj : new RealGroup;
 		const proto = Reflect.getPrototypeOf(obj);
 		if(proto && proto !== Object.prototype) return strict ? tryRealNode ?
@@ -512,10 +512,9 @@ class RealGroup extends RealNode{
 	 * @param {Boolean} [noSelf] 
 	 * @returns {Boolean | Error}
 	 */
-	realSet(value,notify,noSelf){
-		try{return this.protoSet(value) && (notify && this.notify(noSelf),true);}
-		catch(e){return console.error(e),e;}
-	}
+	realSet(value,notify,noSelf){try{
+		return this.protoSet(value) && (notify && this.notify(noSelf),true);
+	}catch(e){return console.error(e),e;}}
 	/**
 	 * 
 	 * @param {String | Symbol | null | undefined | (keyArray: (String | Symbol)[])=>Boolean} ifKeyOrFn 
@@ -638,7 +637,8 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @this {RealTarget}
 	 * @param {RealNode} realNode 
 	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+	static _react(realNode,react = true,notify = true,noSelf = true){try{
+		var value;
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse();
@@ -679,13 +679,14 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {Boolean} noSelf 
 	 * @returns {Boolean}
 	 */
-	realSet(value,react,notify,noSelf){var temp;
-		try{return (this.proto.set.call(
+	realSet(value,react,notify,noSelf){try{
+		var temp;
+		return (this.proto.set.call(
 			this,
 			this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 			this._dealWithPositionsOfRNs(temp,value) : value
-		) ?? true) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true)}catch(e){return console.error(e),e;};
-	}
+		) ?? true) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true);
+	}catch(e){return console.error(e),e;};}
 	/**
 	 * 
 	 * @param {keyof ElementTagNameMap} selfSelector 
@@ -1115,12 +1116,12 @@ var RealPromise = new(class RealPromise{
 	 * 
 	 * @param {(reason)=>*} [onrejected] 
 	 */
-	catch(onrejected){return this.self = this.self.catch(onrejected),this;}
+	catch(onrejected){return this.self = Promise.resolve(this.self).catch(onrejected),this;}
 	/**
 	 * 
 	 * @param {()=>void} [onfinally] 
 	 */
-	finally(onfinally){return this.self = this.self.finally(onfinally),this;}
+	finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
 	/**
 	 * @template T
 	 * @param {T} v 
@@ -1133,7 +1134,7 @@ var RealPromise = new(class RealPromise{
 	 * @param {(value)=>U} [onfulfilled] 
 	 * @param {(reason)=>V} [onrejected] 
 	 */
-	then(onfulfilled,onrejected){return this.self = this.self.then(onfulfilled,onrejected).then(this._push),this;}
+	then(onfulfilled,onrejected){return this.self = Promise.resolve(this.self).then(onfulfilled,onrejected).then(this._push),this;}
 	/**
 	 * 
 	 * @template T
@@ -1154,7 +1155,8 @@ var RealPromise = new(class RealPromise{
 		return nodeMode ? /**@this {RealPromise} */
 		function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
 		browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
-		function(path){var temp,script;
+		function(path){
+			var temp,script;
 			path = String(path).replaceAll('\\','/');
 			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
 			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
@@ -1229,19 +1231,19 @@ var RealCanvas = class RealCanvas extends RealElement{
 	})();
 	protoTransform(){}
 	protoGet(){return this.loaded.then(()=>this.proto.value);}
-	clearAsync(){return this.loaded = this.loaded.then(()=>this.clear());}
+	clearAsync(){return this.loaded = Promise.resolve(this.loaded).then(()=>this.clear());}
 	fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
-	testSrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
+	testSrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
 	clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
 	clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
 	rejectSrc(src,error){return src && console.error(
 		error instanceof Error ? error : (RealCanvas.noCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !')
 	),false;}
 	protoSet(src){
-		return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).
+		return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).
 		then(img=>(this.proto.img = img,this.proto.value = src,true),this.rejectSrc.bind(this,src));
 	}
-	resizeBySrc(src){return this.loaded = this.loaded.then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
+	resizeBySrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
 		if(this.self.width !== img.naturalWidth) this.width = img.naturalWidth;
 		if(this.self.height !== img.naturalHeight) this.height = img.naturalHeight;
 	});}
@@ -1272,13 +1274,13 @@ var RealCanvas = class RealCanvas extends RealElement{
 	multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
 		var i = -1,temp = bgSrc ?? srcArray[0] ?? false;
 		resize && temp && this.resizeBySrc(temp);
-		this.loaded = this.loaded.then(()=>this.clearTemp());
+		this.loaded = Promise.resolve(this.loaded).then(()=>this.clearTemp());
 		if(Array.isArray(bgSrc)){for(temp = bgSrc.length;temp >++ i;) this.temp = bgSrc[i];}
 		else bgSrc && typeof bgSrc === 'string' && (this.temp = bgSrc);
 		if(srcArray.length > 1 && autoOpacity){
 			for(i = srcArray.length,temp = 0;i --> 0;) this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
 		}else for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];
-		return this.loaded = this.loaded.then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
+		return this.loaded = Promise.resolve(this.loaded).then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
 	}
 	/**
 	 * 
@@ -1317,7 +1319,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 		if(typeof x !== 'number') x = 0;if(typeof y !== 'number') y = 0;
 		failed ||= !Number.isFinite(x + y);
 		if(failed) return Promise.reject(new Error('"x": '+String(x)+' or "y": '+String(y)+' must be legal number !'));
-		return this.loaded = this.loaded.then(()=>{
+		return this.loaded = Promise.resolve(this.loaded).then(()=>{
 			const self = this.proto.self,temp = this.proto.temp;
 			var i = 0,j;
 			radiusX = Math.abs(relative ? radiusX * this.width / 2 : radiusX);
@@ -1415,20 +1417,20 @@ var RealCanvas = class RealCanvas extends RealElement{
 	get self(){return this.proto.self;}
 	set self(self){if(self instanceof HTMLCanvasElement) this.proto.ctx = (this.proto.self = self).getContext('2d');}
 	get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
-	set clearBeforeDraw(clearBeforeDraw){this.loaded = this.loaded.then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
+	set clearBeforeDraw(clearBeforeDraw){this.loaded = Promise.resolve(this.loaded).then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
 	get temp(){return this.proto.temp.canvas;}
 	set temp(src){return this.proto.set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),this.rejectSrc.bind(this,src));}
 	get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
 	/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 	set opacity(opacityConfig){
 		Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
-		this.loaded = this.loaded.then(()=>opacityConfig[0]).
+		this.loaded = Promise.resolve(this.loaded).then(()=>opacityConfig[0]).
 		then(value=>{this.proto.ctx.globalAlpha = value * (opacityConfig[1] ?? 1);});
 	}
 	/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 	set tempOpacity(opacityConfig){
 		Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
-		this.loaded = this.loaded.then(()=>opacityConfig[0]).
+		this.loaded = Promise.resolve(this.loaded).then(()=>opacityConfig[0]).
 		then(value=>{this.proto.temp.globalAlpha = value * (opacityConfig[1] ?? 1);});
 	}
 	loaded = RealNode.now;
@@ -1610,7 +1612,8 @@ var RealSelect = class RealSelect extends RealElement{
 	 * @this {RealSelect}
 	 * @param {RealNode} realNode 
 	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value,i;try{
+	static _react(realNode,react = true,notify = true,noSelf = true){try{
+		var value,i;
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse(),tempValue = realNode.value;
@@ -1798,7 +1801,8 @@ var RealDivList = class RealDivList extends RealElement{
 	 * @this {RealDivList}
 	 * @param {RealNode} realNode 
 	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+	static _react(realNode,react = true,notify = true,noSelf = true){try{
+		var value;
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse().concat(),tempValue = realNode.value;
@@ -1926,7 +1930,8 @@ var RealImgList = class RealImgList extends RealDivList{
 	 * @this {RealImgList}
 	 * @param {RealNode} realNode 
 	 */
-	static _react(realNode,react = true,notify = true,noSelf = true){var value;try{
+	static _react(realNode,react = true,notify = true,noSelf = true){try{
+		var value;
 		const temp = this._getPositionsOfChildRN(realNode);
 		while(temp.length){
 			const position = temp.pop().reverse(),tempValue = realNode.value;
@@ -2085,7 +2090,7 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	'>div': {'background-color':'#333','transform':'scale(0.8,1)'},
 	'>div:hover': {'transform':'scale(0.9,1)'},
 	'>.selected': {'background-color':'#555','transform':'scale(1)','font-weight':'bolder'},
-},(()=>{
+},function(){
 	const changeConfig = {bubbles: true,cancelable: false};
 	/**@type {(this: RealDivList)=>*[]} */
 	function tempGet(){
@@ -2127,7 +2132,7 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 		if(typeof onchange === 'function') this.self.onchange = onchange.bind(this);
 		this.value = optionConfig;
 	};
-})()));
+}()));
 /**
  * 
  * @param {String} [placeholder] 
