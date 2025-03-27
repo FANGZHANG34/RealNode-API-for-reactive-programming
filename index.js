@@ -192,7 +192,7 @@ var RealNode = class RealNode{
 	 * 
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 	 */
-	static createHidden = function(temp){return function(config){return new RealNode(Object({},config,temp));};}({display: false});
+	static createHidden = function(temp){return function(config){return new RealNode(Object.assign({},config,temp));};}({display: false});
 	/**
 	 * 
 	 * @param {()=>*} fn 
