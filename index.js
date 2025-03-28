@@ -689,7 +689,7 @@ var RealTarget = class RealTarget extends RealNode{
 	}catch(e){return console.error(e),e;};}
 	/**
 	 * 
-	 * @param {keyof ElementTagNameMap} selfSelector 
+	 * @param {keyof HTMLElementTagNameMap} selfSelector 
 	 * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
 	 */
 	applyCSS(selfSelector,classNameOrRuleObjObj){
@@ -778,7 +778,7 @@ var RealElement = class RealElement extends RealTarget{
 	}
 	/**@type {Map<String,{[selector: String]: {}}>} */
 	static myStyle = new Map;
-	/**@type {{[type: String]:Map<keyof ElementTagNameMap,EventListener[]>}} */
+	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
 	static selectorEventListeners = {};
 	static keyboardController = (browserMode && addEventListener('keydown',e=>{
 		/**@type {?Element} */
@@ -815,19 +815,23 @@ var RealElement = class RealElement extends RealTarget{
 		enter:'ArrowRight',
 		back: 'ArrowLeft'
 	});
-	/**@method @type {(innerHTML: String)=>Element | null}*/
-	static getDomByString = (template=>innerHTML=>{
-		template.innerHTML = String(innerHTML);
-		return template.content.firstElementChild;
-	})(browserMode ? document.createElement('template') : {content: {}});
+	/**@method */
+	static makeElementByString = function(){
+		/**@type {HTMLTemplateElement} */
+		const template = browserMode ? document.createElement('template') : {content: {}};
+		return Object.assign(function makeElementByString(){
+			template.innerHTML = String(innerHTML); return template.content.firstElementChild;
+		},{_clear(){template.innerHTML = ''; return template.content;}});
+	}();
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 	static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
 	static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
 	static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
 	/**
+	 * 
 	 * @template {Element} T
-	 * @param {keyof ElementTagNameMap | T} tagName 
+	 * @param {keyof HTMLElementTagNameMap | T} tagName 
 	 * @param {{this: T | Element;[attr: String]: String}} [config] 
 	 * @param {{this: CSSStyleDeclaration;[attr: String]: String}} [cssConfig] 
 	 * @returns {T}
@@ -856,14 +860,14 @@ var RealElement = class RealElement extends RealTarget{
 		 * 
 		 * @param {Event} e 
 		 * @param {((event: Event)=>void)[]} listenerArray 
-		 * @param {keyof ElementTagNameMap} selectors 
+		 * @param {keyof HTMLElementTagNameMap} selectors 
 		 */
 		function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
 			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e.stack);}
 		}}catch(e){console.error(e);}}
 		/**
 		 * 
-		 * @param {keyof ElementTagNameMap} selectors 
+		 * @param {keyof HTMLElementTagNameMap} selectors 
 		 * @param {keyof ElementEventMap} type 
 		 * @param {(event: Event)=>void} listener 
 		 */
@@ -890,7 +894,7 @@ var RealElement = class RealElement extends RealTarget{
 		const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 		const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
 		const getKeys = obj=>Object(obj) === obj ? Object.keys(obj) : [];
-		/**@type {(selector: keyof ElementTagNameMap,rulesStr: String)=>Number} */
+		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Number} */
 		const tempInsertRule = !globalThis.CSSStyleSheet.prototype.insertRule ?
 		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.addRule(selector,rulesStr,-1),myCSS)) :
 		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length),myCSS));
@@ -1723,9 +1727,12 @@ var RealComtag = class RealComtag extends RealElement{
 		return config[3].apply(temp,argArray),temp.addClassName(className),temp;
 	}
 	fix(){
+		var temp = this.transform(this.proto.value),l = temp.length,i = 0;
+		const elementList = RealElement.makeElementByString._clear();
 		this.self.classList.add('disappear');
 		this.self.innerHTML = '';
-		for(const temp of this.transform(this.proto.value)) this.self.appendChild(temp);
+		while(i < l) elementList.appendChild(temp[i++]);
+		this.self.appendChild(elementList);
 		this.self.classList.remove('disappear');
 		return this;
 	}
@@ -1899,7 +1906,9 @@ var RealDivList = class RealDivList extends RealElement{
 		this.self.innerHTML = '';
 		/**@type {HTMLDivElement[]} list */
 		const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
-		while(i < list.length){childrenList.push(Array.from(this.self.appendChild(list[i++]).children));}
+		const elementList = RealElement.makeElementByString._clear();
+		while(i < list.length){childrenList.push(Array.from(elementList.appendChild(list[i++]).children));}
+		this.self.appendChild(elementList);
 		this.self.classList.remove('disappear');
 		return this;
 	}
@@ -2044,7 +2053,9 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		var i = 0;
 		/**@type {HTMLDivElement[]} list */
 		const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
-		while(i < list.length) childrenList.push(Array.from(this.self.appendChild(list[i++]).children));
+		const elementList = RealElement.makeElementByString._clear();
+		while(i < list.length) childrenList.push(Array.from(elementList.appendChild(list[i++]).children));
+		this.self.appendChild(elementList);
 		return this.applyQueue([]);
 	}
 	/**
@@ -2066,7 +2077,9 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		else{
 			this.self.classList.add('disappear');
 			this.self.innerHTML = '',i = 0;
-			while(i < length) this.self.appendChild(list[queueArray[i++]]);
+			const elementList = RealElement.makeElementByString._clear();
+			while(i < length) elementList.appendChild(list[queueArray[i++]]);
+			this.self.appendChild(elementList);
 			this.self.scrollTo({top,left,behavior: 'instant'});
 			this.self.classList.remove('disappear');
 		}
