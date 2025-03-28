@@ -17,8 +17,8 @@ Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
 	while(start < end) yield this[start++];
 });
-	/**##   */
-	/**# 搜索## */
+/**##   */
+/**# 搜索## */
 	const
 	nodeRequire = require,
 	prevent = function(){},
