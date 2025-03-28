@@ -3,7 +3,7 @@
 // @name         real-node
 // @namespace    http://tampermonkey.net/
 // @version      2024-12-14
-// @description  try to take over the world! But you should look at the end of this script before beginning.
+// @description  Try to take over the world after watching the end of this script!
 // @author       FANGZHANG34
 // @match        https://*/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
