@@ -9,7 +9,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant        none
 // ==/UserScript==
-try{const temp = ({default: exports})=>exports;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
+try{const temp = exports=>exports.default;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
 var require,exports = exports ?? {};
 Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
@@ -816,7 +816,7 @@ var RealElement = class RealElement extends RealTarget{
 			temp = onkeyboardController,key = i ? 'nextElementSibling' : 'previousElementSibling';
 			onkeyboardController.classList.remove('onkeyboardControl');
 			while(temp = temp[key]) if(getComputedStyle(temp).display !== 'none') break;
-			temp || onkeyboardController.parentElement.children[(i - 1)>>1];
+			(temp || (temp = onkeyboardController.parentElement[i ? 'firstElementChild' : 'lastElementChild'])).classList.add('onkeyboardControl');
 		}
 		temp && temp.animate({'opacity':[1,0,1]},{duration: 500});
 	}),{
