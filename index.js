@@ -190,7 +190,7 @@ var RealNode = class RealNode{
 	static check(realNode){for(const temp of this._sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
 	/**
 	 * 
-	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
+	 * @type {(config: {get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?})=>RealNode}
 	 */
 	static createHidden = function(temp){return function(config){return new RealNode(Object.assign({},config,temp));};}({display: false});
 	/**
@@ -337,7 +337,7 @@ var RealNode = class RealNode{
 	 */
 	protoNotify(noSelf,thisArg,count = 0){
 		!thisArg ? thisArg = this : count++;
-		(thisArg.notifyArray[count] ??= []).push(new Promise(r=>{
+		(thisArg.notifyArray[count] || (thisArg.notifyArray[count] = [])).push(new Promise(r=>{
 			for(var id of this.relativeRNs){
 				!(noSelf && id === this.id) && (id = RealNode.search(id)) && (id.react?.(),id.notify(noSelf,thisArg,count));
 			}
@@ -523,7 +523,7 @@ class RealGroup extends RealNode{
 	addSetterListener(ifKeyOrFn,listener){
 		if(!listener) return;
 		if(typeof listener !== 'function') this.error('"listener" must be function !');
-		ifKeyOrFn ??= RealGroup._;
+		ifKeyOrFn || (ifKeyOrFn = RealGroup._);
 		var temp;
 		Array.isArray(temp = this.listenerMap.get(ifKeyOrFn)) || this.listenerMap.set(ifKeyOrFn,temp = []);
 		temp.push(listener);
@@ -540,6 +540,13 @@ class RealGroup extends RealNode{
 				for(l = listenerArray.length,i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
 			}
 		}
+	}
+	tryRealNodeSetter(){
+		const self = this.proxy(),keys = Reflect.ownKeys(self);
+		var i = keys.length;
+		while(i --> 0) Reflect.has(Reflect.getOwnPropertyDescriptor(self,keys[i]),'get') || self[keys[i]] instanceof RealNode ||
+		(self[keys[i]] = RealNode.createHidden({initValue: self[keys[i]]}));
+		return this;
 	}
 	/**
 	 * 
@@ -584,12 +591,12 @@ class RealGroup extends RealNode{
 	/**@type {()=>T} */
 	get proxy(){return this.proto.value;}
 	get set(){return this.realSet;}
-	set set(set){this.log,('Invalid set "set" !');}
+	set set(set){/**tthis.log('Invalid set "set" !'); */}
 	/**@type {(keyOrkeyObj?: String | Symbol | {})=> *} */
 	get get(){return this.protoGet;}
-	set get(get){this.log,('Invalid set "get" !');}
+	set get(get){/**this.log('Invalid set "get" !'); */}
 	get react(){return this.protoReact;}
-	set react(react){this.log,('Invalid set "react" !');}
+	set react(react){/**this.log('Invalid set "react" !'); */}
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
@@ -697,10 +704,11 @@ var RealTarget = class RealTarget extends RealNode{
 		const strReg = /^[A-Za-z]/;
 		var temp = selfSelector;
 		if(typeof selfSelector !== 'string'){
-			while(temp = temp?.parentElement) if(temp === this.self){selfSelector = ' #'+(selfSelector.id ||= RealElement.getRandomId());break;}
-			temp || this.error('"selfSelector" must be String or my descendant !');
+			while(temp = temp?.parentElement) if(temp === this.self) break;
+			temp ? selfSelector = ' #'+(selfSelector.id || (selfSelector.id = RealElement.getRandomId())) :
+			this.error('"selfSelector" must be String or my descendant !');
 		}
-		const id = this.self.id ||= RealElement.getRandomId();
+		const id = this.self.id || (this.self.id = RealElement.getRandomId());
 		typeof classNameOrRuleObjObj === 'string' ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
 		classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
 		return !classNameOrRuleObjObj ? false : (RealElement.addCSSRules(
@@ -781,10 +789,11 @@ var RealElement = class RealElement extends RealTarget{
 	/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
 	static selectorEventListeners = {};
 	static keyboardController = (browserMode && addEventListener('keydown',e=>{
+		if(/^(TEXTAREA)|(SELECT)|(INPUT)$/.test(document.activeElement?.tagName)) return;
 		/**@type {?Element} */
 		const onkeyboardController = document.querySelector('.onkeyboardControl') ?? document.querySelector('.keyboardController');
 		if(!onkeyboardController) return;
-		var i,temp;
+		var i,temp,key;
 		switch(e.key){
 			case RealElement.keyboardController?.previous: i = -1;break;
 			case RealElement.keyboardController?.next: i = 1;break;
@@ -803,11 +812,12 @@ var RealElement = class RealElement extends RealTarget{
 				break;
 			}
 		}
-		i && (
-			temp = Array.from(onkeyboardController.parentElement.children),
-			onkeyboardController.classList.remove('onkeyboardControl'),
-			(temp = temp[(temp.indexOf(onkeyboardController) + temp.length + i) % temp.length]).classList.add('onkeyboardControl')
-		);
+		if(i++){
+			temp = onkeyboardController,key = i ? 'nextElementSibling' : 'previousElementSibling';
+			onkeyboardController.classList.remove('onkeyboardControl');
+			while(temp = temp[key]) if(getComputedStyle(temp).display !== 'none') break;
+			temp || onkeyboardController.parentElement.children[(i - 1)>>1];
+		}
 		temp && temp.animate({'opacity':[1,0,1]},{duration: 500});
 	}),{
 		previous: 'ArrowUp',
@@ -841,6 +851,7 @@ var RealElement = class RealElement extends RealTarget{
 		return Object.assign(Object.assign(tagName,config).style,cssConfig),tagName;
 	}
 	/**
+	 * 
 	 * @param {...(Element | {self: Element})}
 	 */
 	static applyKeyboardController(){
@@ -848,6 +859,7 @@ var RealElement = class RealElement extends RealTarget{
 		ele?.self instanceof Element && ele.self.classList.add('keyboardController');
 	}
 	/**
+	 * 
 	 * @param {...(Element | {self: Element})}
 	 */
 	static cancelKeyboardController(){
@@ -1127,6 +1139,7 @@ var RealPromise = new(class RealPromise{
 	 */
 	finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
 	/**
+	 * 
 	 * @template T
 	 * @param {T} v 
 	 */
@@ -1163,7 +1176,7 @@ var RealPromise = new(class RealPromise{
 			var temp,script;
 			path = String(path).replaceAll('\\','/');
 			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
-			return(pathSet[path] ??= (temp = RealStory.StoryPromise(),document.head.appendChild(
+			return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
 				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
 			),this._push(temp.promise.finally(onfinally.bind(script)))));
 		} : function(){return Promise.reject(new Error('Mode error !'));};
@@ -1318,10 +1331,10 @@ var RealCanvas = class RealCanvas extends RealElement{
 		var failed = false;
 		typeof radiusX === 'number' ? typeof radiusY === 'number' || (radiusY = radiusX) :
 		typeof radiusY === 'number' ? radiusX = radiusY : failed = true;
-		failed ||= !Number.isFinite(radiusX + radiusY);
+		failed || (failed = !Number.isFinite(radiusX + radiusY));
 		if(failed) return Promise.reject(new Error('"radiusX": '+String(radiusX)+' or "radiusY": '+String(radiusY)+' must be legal number !'));
 		if(typeof x !== 'number') x = 0;if(typeof y !== 'number') y = 0;
-		failed ||= !Number.isFinite(x + y);
+		failed || (failed = !Number.isFinite(x + y));
 		if(failed) return Promise.reject(new Error('"x": '+String(x)+' or "y": '+String(y)+' must be legal number !'));
 		return this.loaded = Promise.resolve(this.loaded).then(()=>{
 			const self = this.proto.self,temp = this.proto.temp;
@@ -1729,11 +1742,9 @@ var RealComtag = class RealComtag extends RealElement{
 	fix(){
 		var temp = this.transform(this.proto.value),l = temp.length,i = 0;
 		const elementList = RealElement.makeElementByString._clear();
-		this.self.classList.add('disappear');
-		this.self.innerHTML = '';
 		while(i < l) elementList.appendChild(temp[i++]);
+		this.self.innerHTML = '';
 		this.self.appendChild(elementList);
-		this.self.classList.remove('disappear');
 		return this;
 	}
 	protoTransform(value){
@@ -1902,14 +1913,12 @@ var RealDivList = class RealDivList extends RealElement{
 	}
 	fix(){
 		var i = 0;
-		this.self.classList.add('disappear');
-		this.self.innerHTML = '';
 		/**@type {HTMLDivElement[]} list */
 		const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
 		const elementList = RealElement.makeElementByString._clear();
 		while(i < list.length){childrenList.push(Array.from(elementList.appendChild(list[i++]).children));}
+		this.self.innerHTML = '';
 		this.self.appendChild(elementList);
-		this.self.classList.remove('disappear');
 		return this;
 	}
 	/**@type {Element[][]} */
@@ -2053,9 +2062,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		var i = 0;
 		/**@type {HTMLDivElement[]} list */
 		const list = this.proto.list = this.transform(this.proto.value),childrenList = this.proto.childrenList = [];
-		const elementList = RealElement.makeElementByString._clear();
-		while(i < list.length) childrenList.push(Array.from(elementList.appendChild(list[i++]).children));
-		this.self.appendChild(elementList);
+		while(i < list.length) childrenList.push(Array.from(list[i++].children));
 		return this.applyQueue([]);
 	}
 	/**
@@ -2070,15 +2077,16 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 		const temp = Array.isArray(queueArray);queueArray = temp ? queueArray.slice(0,this.proto.list.length) : previousQueue;
 		const list = this.proto.list.concat(),length = list.length,top = this.self.scrollTop,left = this.self.scrollLeft;
 		var i = length;
-		while(i --> 0) queueArray[i] ??= i,queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
+		while(i --> 0) queueArray[i] == null && (queueArray[i] = i),queueArray.indexOf(i) === -1 && this.error('Illegal "queueArray" !');
 		i = [previousQueue.indexOf(this.proto.list.indexOf(target0)),previousQueue.indexOf(this.proto.list.indexOf(target1))];
 		if(i[0] !== -1 && i[1] !== -1) i[0] < i[1] ? target1.insertAdjacentElement('afterend',target0) :
 		target1.insertAdjacentElement('beforebegin',target0);
 		else{
-			this.self.classList.add('disappear');
-			this.self.innerHTML = '',i = 0;
+			i = 0;
 			const elementList = RealElement.makeElementByString._clear();
 			while(i < length) elementList.appendChild(list[queueArray[i++]]);
+			this.self.classList.add('disappear');
+			this.self.innerHTML = '';
 			this.self.appendChild(elementList);
 			this.self.scrollTo({top,left,behavior: 'instant'});
 			this.self.classList.remove('disappear');
@@ -2161,7 +2169,8 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 	/**@type {(this: RealDivList,value: *[])=>false} */
 	function tempSet(value){
 		Array.isArray(value) ? this.info.wordList = value : this.error('"value must be Array !');
-		return this.info.inputer.dispatchEvent(new Event('input',changeConfig)),(tempRealDivList ??= this).info.matcher.value = {},false;
+		return this.info.inputer.dispatchEvent(new Event('input',changeConfig)),
+		(tempRealDivList || (tempRealDivList = this)).info.matcher.value = {},false;
 	}
 	/**@type {(target: Element)=>void} */
 	function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
