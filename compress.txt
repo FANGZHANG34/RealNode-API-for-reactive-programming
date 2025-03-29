@@ -1,1 +1,0 @@
-uglifyjs index.js -c -m --source-map "url='real-node.min.js.map'" -o real-node.min.js
