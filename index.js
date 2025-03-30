@@ -226,12 +226,19 @@ var RealNode = class RealNode{
 			return temp.join('');
 		}else return String(this.proto.value instanceof RealNode ? this.proto.value.value : this.proto.value);
 	});
-	/**@method @type {(promise: (()=>*) & Promise)=>Promise<{value: * & Error,time: Number}>} */
-	static time = (temp=>promise=>{try{
-		const t0 = performance.now();
-		return Promise.resolve(typeof promise === 'function' ? promise() : promise).
-		then(temp,temp).then(value=>({value,time: performance.now() - t0}));
-	}catch(e){return Promise.resolve({value: e,time: performance.now() - t0});}})(e=>e);
+	/**
+	 * 
+	 * @param {(()=>*) & Promise} promise 
+	 * @param {(time: Number,error: Error | null,value)=>void} callback 
+	 * @returns {Promise<{error: Error | null,time: Number,value: * | null}>}
+	 */
+	static async time(promise,callback){
+		const t0 = performance.now(),result = {time: null,error: null,value: null,};
+		try{result.value = await(typeof promise === 'function' ? promise() : promise);}catch(e){console.error(result.error = e);}
+		result.time = performance.now() - t0;
+		if(typeof callback === 'function') try{callback(result.time,result.error,result.value);}catch(e){console.error(e);}
+		return result;
+	}
 	/**@method */
 	static copyObj = function copyObj(obj){
 		if(Object(obj) === obj){
@@ -239,7 +246,7 @@ var RealNode = class RealNode{
 			for(const i of Object.keys(obj)){95 === i.charCodeAt(0) || (newObj[i] = copyObj(obj[i]));}
 			return newObj;
 		}else return new.target ? Object(obj) : obj;
-	}
+	};
 	/**
 	 * 
 	 * @this {RealNode}
@@ -261,6 +268,7 @@ var RealNode = class RealNode{
 		if(this instanceof RealNode) throw e;
 		this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
 	}}
+	protoReact(){}
 	protoGet(){return this.proto.value;}
 	log(...message){console.log(this+':',...message);}
 	done(){return RealNode.justNow(this.protoDone,this);}
@@ -420,7 +428,7 @@ var RealNode = class RealNode{
 	set get(get){this.proto.get = typeof get === 'function' ? get : this.protoGet;}
 	/**@type {()=>void} */
 	get react(){return this.proto.react;}
-	set react(react){this.proto.react = typeof react === 'function' ? react : null;}
+	set react(react){this.proto.react = typeof react === 'function' ? react : react ? this.protoReact : null;}
 	get display(){return RealNode._sys.has(this.id);}
 	set display(display){display ? RealNode._sys.set(this.id,this) : RealNode._sys.delete(this.id);}
 	get tryRealNode(){return this.proto.tryRealNode;}
@@ -885,32 +893,36 @@ var RealElement = class RealElement extends RealTarget{
 		 */
 		return(selectors,type,listener)=>{
 			!selectors || '*' === selectors ? addEventListener(type,listener) : (
-				!RealElement.selectorEventListeners[type] && (
-					RealElement.selectorEventListeners[type] = new Map,
-					addEventListener(type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors)))
-				),
+				!RealElement.selectorEventListeners[type] && (RealElement.selectorEventListeners[type] = new Map,addEventListener(
+					type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors))
+				)),
 				RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
 				RealElement.selectorEventListeners[type].set(selectors,[listener])
 			);
 		}
 	})();
-	/**@typedef {(prefix: String,ruleObjObj: {[selector: String]: {[styleName: String]: String}})=>addCSSRules} addCSSRules */
-	/**@method @type {addCSSRules} */
-	static addCSSRules = (()=>{
-		if(!browserMode) return ()=>{};
-		const myCSS = RealWorld.onload.then(()=>(
+	/**@method */
+	static addCSSRules = function(){
+		if(!browserMode){const addCSSRules = ()=>addCSSRules; return addCSSRules._css = RealWorld.onload,addCSSRules;}
+		var myCSS = RealWorld.onload.then(function(){
 			document.getElementsByTagName("head")[0].
-			appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode("")),
-			document.styleSheets[document.styleSheets.length - 1]
-		));
+			appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
+			myCSS = document.styleSheets[document.styleSheets.length - 1];
+		});
 		const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 		const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
 		const getKeys = obj=>Object(obj) === obj ? Object.keys(obj) : [];
-		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Number} */
-		const tempInsertRule = !globalThis.CSSStyleSheet.prototype.insertRule ?
-		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.addRule(selector,rulesStr,-1),myCSS)) :
-		(selector,rulesStr)=>myCSS.then(myCSS=>(myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length),myCSS));
-		return function addCSSRules(prefix,ruleObjObj){
+		/**@type {(selector: keyof HTMLElementTagNameMap,rulesStr: String)=>Promise<Number>} */
+		var insertRule = !globalThis.CSSStyleSheet.prototype.insertRule ? (selector,rulesStr)=>myCSS.addRule(selector,rulesStr,-1) :
+		(selector,rulesStr)=>myCSS.insertRule(selector+"{\n"+rulesStr+"}",myCSS.cssRules.length);
+		var tempInsertRule = (selector,rulesStr)=>myCSS instanceof Promise ?
+		myCSS.then(()=>(tempInsertRule = insertRule)(selector,rulesStr)) : (tempInsertRule = insertRule)(selector,rulesStr);
+		/**
+		 * 
+		 * @param {String} prefix 
+		 * @param {{[selector: String]: {[styleName: String]: String}}} ruleObjObj 
+		 */
+		function addCSSRules(prefix,ruleObjObj){try{
 			if(Array.isArray(prefix)){
 				let i = prefix.length
 				while(i --> 0) typeof prefix[i] === 'string' && addCSSRules(prefix[i],ruleObjObj);
@@ -923,14 +935,14 @@ var RealElement = class RealElement extends RealTarget{
 			}
 			const cssName = testReg.exec(prefix)?.[1];
 			cssName && RealElement.myStyle.set(cssName,Object.assign({},RealElement.myStyle.get(cssName),ruleObjObj));
-			return addCSSRules;
-		};
-	})();
+		}catch(e){console.error(e);}return addCSSRules;};
+		return addCSSRules._css = myCSS,addCSSRules;
+	}();
 	static defaultInit = (()=>{
 		var onload = false;
 		return ()=>{
 			return onload ? RealWorld.onload : RealWorld.onload = (onload = true,RealWorld.onload.
-			then(()=>void RealElement.addCSSRules('',{
+			then(()=>RealNode.time(()=>void RealElement.addCSSRules('',{
 				'*':{
 					'margin':'0',
 					'padding':'0',
@@ -1065,7 +1077,7 @@ var RealElement = class RealElement extends RealTarget{
 					'top':'50%',
 					'transform':'translate(-50%,-50%)',
 				},
-			})));
+			})._css.finally(),time=>console.log('Init defaultCSS in',time,'ms'))));
 		};
 	})();
 };
@@ -1196,6 +1208,7 @@ var RealPromise = new(class RealPromise{
 		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
 	}
 })();
+RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>console.log('Set up in',time,'ms')));
 
 if(browserMode){
 
@@ -2213,7 +2226,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 
 }
 var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
-	console.log(performance.now() - t0,'ms');
+	console.log('Sync in',performance.now() - t0,'ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
