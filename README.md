@@ -36,37 +36,160 @@
 
 # 各种类/对象/函数的使用指南
 
-- 事件循环类[**`RealWorld`**](#RealWorld类)
+> [**导入代码库**](#导入代码库)
 
-- 响应式类[**`RealNode`**](#RealNode类)
+> [**设计和使用思路**](#设计和使用思路)
 
-- 对象响应式类[**`RealGroup`**](#RealGroup类)
+1. 事件循环类[**`RealWorld`**](#RealWorld类)
 
-- 对象属性响应式类[**`RealTarget`**](#RealTarget类)
+2. 响应式类[**`RealNode`**](#RealNode类)
 
-- 元素属性响应式类[**`RealElement`**](#RealElement类)
+3. 对象响应式类[**`RealGroup`**](#RealGroup类)
 
-- 自动流程对象[**`RealStory`**](#RealStory对象)
+4. 对象属性响应式类[**`RealTarget`**](#RealTarget类)
 
-- 异步流程对象[**`RealPromise`**](#RealPromise对象)
+5. 元素属性响应式类[**`RealElement`**](#RealElement类)
 
-- 异步画布元素类[**`RealCanvas`**](#RealCanvas类)
+6. 自动流程对象[**`RealStory`**](#RealStory对象)
 
-- 文件交互元素类[**`RealLoader`**](#RealLoader类)
+7. 异步流程对象[**`RealPromise`**](#RealPromise对象)
 
-- select元素拓展类[**`RealSelect`**](#RealSelect类)
+> 以下类和函数仅在浏览器环境中有效！！！
 
-- 组合元素类[**`RealComtag`**](#RealComtag类)
+8. 异步画布元素类[**`RealCanvas`**](#RealCanvas类)
 
-- 块元素列表类[**`RealDivList`**](#RealDivList类)
+9. 文件交互元素类[**`RealLoader`**](#RealLoader类)
 
-- 图片元素列表类[**`RealImgList`**](#RealImgList类)
+10. select元素拓展类[**`RealSelect`**](#RealSelect类)
 
-- 块元素排列类[**`RealDivQueue`**](#RealDivQueue类)
+11. 组合元素类[**`RealComtag`**](#RealComtag类)
 
-- 函数：创建块元素选择类[**`createRealDivSelect()`**](#createrealdivsearch函数)
+12. 块元素列表类[**`RealDivList`**](#RealDivList类)
 
-- 函数：创建块元素搜索类[**`createRealDivSearch()`**](#createRealDivSearch函数)
+13. 图片元素列表类[**`RealImgList`**](#RealImgList类)
+
+14. 块元素排列类[**`RealDivQueue`**](#RealDivQueue类)
+
+15. 函数：创建块元素选择类[**`createRealDivSelect()`**](#createrealdivsearch函数)
+
+16. 函数：创建块元素搜索类[**`createRealDivSearch()`**](#createRealDivSearch函数)
+
+## 导入代码库
+
+- CJS标准：npm安装后使用`require`函数即可。
+
+- ESM标准：找到代码库目录下的index.js文件，用文本编辑器打开，找到代码为`// export default`的那一行，取消其注释后即可用`import`关键字导入。
+
+## 设计和使用思路
+
+> 我们假设如下场景，并用代码逐个转译：
+
+你是副部级干部沙瑞金。
+
+```
+var 我 = new RealNode({id: '沙瑞金',value: '副部'});
+```
+
+你是中管干部，所以如果没有中央批准的话，你就不能有任何调动。
+
+```
+var 中央批准 = new RealNode({id: '中央批准',value: false});	// 方便演示，简化判断流程
+function 进行调动(value){
+	if(中央批准.value) return this.protoSet(value);
+	this.log('你无权对我进行调动。');
+	return false;
+}
+我.set = 进行调动;
+```
+
+中央信任你的才干，交给你反腐的使命。你升任汉东省省委书记，级别为正部级。
+
+```
+中央批准.value = true;	// 中央批准通过
+我.value = '正部';	// 升任正部级
+中央批准.set(false);	// 重置中央批准
+```
+
+目前汉东省省委常委的结构大概是这样的。
+
+```
+var 汉东省省委常委 = {
+	'省委书记': '沙瑞金',
+	'省委副书记': '高育良',
+	'京州市委书记': '李达康',
+};
+```
+
+你很清楚，省委常委都是中管干部，你也无权对其进行调动。
+
+```
+汉东省省委常委 = new RealGroup({self: 汉东省省委常委, id: '汉东省省委常委'});
+中央批准.value = true;	// 之前任命的，现在为了演示就暂时通过一下
+汉东省省委常委.set({
+	'省委书记': new RealNode({id: '省委书记',initValue: '沙瑞金', set: 进行调动}),
+	'省委副书记': new RealNode({id: '省委副书记',initValue: '高育良', set: 进行调动}),
+	'京州市委书记': new RealNode({id: '京州市委书记',initValue: '李达康', set: 进行调动}),
+});
+中央批准.set(false);	// 重置中央批准
+```
+
+你空降汉东省，使得国内外开始时刻注意汉东省省委常委的调动情况。
+
+```
+汉东省省委常委.addSetterListener(null,()=>console.log('汉东省省委常委发生了调动！！！'));
+```
+
+从北京调来的侯亮平同志查出了省委副书记高育良的违法乱纪事实，但无权进行查处。
+
+```
+汉东省省委常委.省委副书记 = '';	// 控制台输出日志 [object RealNode]{ 省委副书记 } : '你无权对我进行调动。'
+```
+
+你认为省委副书记高育良的影响巨大，需要耐心处理，但没想到社会各界都十分关注高育良的动向。
+
+```
+汉东省省委常委.addSetterListener('省委副书记',()=>{
+	var 汉东省省委常委现状 = 汉东省省委常委.get();	// 相当于{'省委书记': '沙瑞金','省委副书记': '高育良','京州市委书记': '李达康',}
+	var 汉东省省委常委现状 = 汉东省省委常委.value;	// 另一种等价的获取方法
+	for(var 职务 in 汉东省省委常委现状) if(汉东省省委常委现状[职务] === '高育良') return console.log('高育良现任职',职务);
+	console.log('高育良落马了！！！');
+});
+```
+
+高育良也预料到有落马的一天。
+
+```
+汉东省省委常委.proxy();	// 返回 
+					// {
+					// 	'省委书记': [object RealNode]{ 省委书记 },
+					// 	'省委副书记': [object RealNode]{ 省委副书记 },
+					// 	'京州市委书记': [object RealNode]{ 京州市委书记 },
+					// }
+汉东省省委常委.proxy().省委副书记.react = function(){this.log('悔不当初啊。');};
+```
+
+你知道，一旦高育良被双规，汉东省官场将会发生巨大动荡。
+
+```
+汉东省省委常委.relate(我);	// 一旦汉东省省委常委发生调动，我会立刻收到通知并进行通知转发
+我.react = function(){
+	var 汉东省省委常委现状 = 汉东省省委常委.get();	// 相当于{'省委书记': '沙瑞金','省委副书记': '高育良','京州市委书记': '李达康',}
+	var 汉东省省委常委现状 = 汉东省省委常委.value;	// 另一种等价的获取方法
+	for(var 职务 in 汉东省省委常委现状) if(汉东省省委常委现状[职务] === '高育良') return this.log('高育良悬崖勒马。');
+	this.log('汉东省官场不稳了。');
+};	// 收到通知后，我会对形势变化做出反应判断
+```
+
+随着事态的不可控，中央批准双规高育良。
+
+```
+中央批准.value = true;	// 中央批准通过
+汉东省省委常委.proxy.省委副书记 = '';	// 双规高育良，控制台输出日志 [object RealNode]{ 省委副书记 } : '悔不当初啊。'
+									// 控制台输出日志 '高育良落马了！！！'
+// 汉东省省委常委.set({省委副书记: ''},true,true); //上一行代码的另一种写法
+中央批准.set(false);	// 重置中央批准
+	// 控制台输出日志 [object RealNode]{ 沙瑞金 } : '汉东省官场不稳了。'
+```
 
 ## **RealWorld类**
 
@@ -168,6 +291,10 @@
 
 	对实例常用属性`value`进行赋值。
 
+- `initValue`（可选）
+
+	对实例常用属性`value`进行初始化。
+
 `tryRealNode`（可选）
 
 不建议使用。若为真值，当变更存储的值时将会尝试对新值中嵌套的`RealNode`实例进行解析。
@@ -201,6 +328,10 @@
 	读取值为`Boolean`类型，默认是`true`。若写入真值，将能够接收到其他实例的广播通知，否则反之且无法被静态常用方法`search()`查询。
 
 ### **常用方法**
+
+- `log()` 实例方法，返回`undefined`。
+
+	接收若干参数`message`。源代码：`console.log(this+' :',...message)`。
 
 - `notify()` 实例方法，返回`undefined`。
 
@@ -312,9 +443,9 @@
 
 在实际开发中，`RealTarget`类常用于非浏览器环境中。
 
-### **构造函数** `new RealTarget({self, key, transform, initValue}, config, tryRealNode, ...relativeRNs)`
+### **构造函数** `new RealTarget({self, key, transform}, config, tryRealNode, ...relativeRNs)`
 
-`{self, key, transform, initValue}`必须提供一个对象用于解构参数。这个对象的属性必须满足以下要求。
+`{self, key, transform}`必须提供一个对象用于解构参数。这个对象的属性必须满足以下要求。
 
 - `self`
 
@@ -327,10 +458,6 @@
 - `transform`（可选）
 
 	应为`Function`类型。用于初始化实例常用属性`transform`。
-
-- `initValue`（可选）
-
-	用于赋值初始化实例常用属性`value`。如果参数`tryRealNode`是真值，则会产生相应（即视作进行了一次存储值变更）。
 
 `config`（可选）应为一个对象，根据`config`的属性决定某些行为。
 
@@ -446,9 +573,9 @@
 
 在实际开发中，`RealElement`类常用于浏览器环境中。
 
-### **构造函数** `new RealElement({self, key, transform, initValue}, config, tryRealNode, ...relativeRNs)`
+### **构造函数** `new RealElement({self, key, transform}, config, tryRealNode, ...relativeRNs)`
 
-> 详见[**`RealTarget`**](#构造函数-new-realtargetself-key-transform-initvalue-config-tryrealnode-relativerns)构造函数
+> 详见[**`RealTarget`**](#构造函数-new-realtargetself-key-transform-config-tryrealnode-relativerns)构造函数
 
 ### **常用方法**
 
@@ -466,7 +593,7 @@
 
 - `createDiv()` 静态方法，返回`RealElement`类型。
 
-	接收两个参数`id`和`initValue`。等价于执行并返回` new RealElement({self: document.createElement('div'), key: 'textContent', initValue}, {id})`。
+	接收两个参数`id`和`initValue`。等价于执行并返回` new RealElement({self: document.createElement('div'), key: 'textContent'}, {id, initValue})`。
 
 - `createTextarea()` 静态方法，返回`RealElement`类型。
 
