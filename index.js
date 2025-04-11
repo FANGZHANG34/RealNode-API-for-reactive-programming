@@ -1151,7 +1151,7 @@ var RealStory = function(){
 	RealStory.prototype.constructor = null;
 	return (RealStory=>(setInterval(()=>isBusy || RealStory.launch(),50),RealStory))(new RealStory);
 }();
-var RealPromise;RealPromise = new(
+var RealPromise = new(
 	/**@template T */
 	class RealPromise{
 		/**
@@ -2263,8 +2263,7 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 	};
 })()));
 
-}
-	console.log('Sync in',performance.now() - t0,'ms');
+}console.log('Sync in',performance.now() - t0,'ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
