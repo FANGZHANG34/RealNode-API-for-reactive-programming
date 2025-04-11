@@ -8,7 +8,6 @@ var GM = GM.then(temp=>class GM{
 	static temp = temp;
 	constructor(mode){
 		const temp = GM.temp;
-		console.log(temp);
 		switch(mode){
 			/**
 			 * 原生JS 7行

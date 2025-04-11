@@ -901,7 +901,7 @@ var RealElement = class RealElement extends RealTarget{
 		/**
 		 * 
 		 * @param {keyof HTMLElementTagNameMap} selectors 
-		 * @param {keyof ElementEventMap} type 
+		 * @param {keyof HTMLElementEventMap} type 
 		 * @param {(event: Event)=>void} listener 
 		 */
 		return(selectors,type,listener)=>{
@@ -2158,7 +2158,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
  */
 var createRealDivSelect = (optionConfig,multiple,onchange)=>RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);
 RealWorld.onload = RealWorld.onload.
-then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
+finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	'': {'background':'linear-gradient(135deg,#fff,#000)'},
 	'>div': {'background-color':'#333','transform':'scale(0.8,1)'},
 	'>div:hover': {'transform':'scale(0.9,1)'},
@@ -2212,7 +2212,7 @@ then(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
  */
 var createRealDivSearch = placeholder=>RealDivList.createByClassName('realDivSearch',placeholder);
 RealWorld.onload = RealWorld.onload.
-then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
+finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
 	/**@type {RealDivList} */
 	var tempRealDivList;
 	const changeConfig = {bubbles: true,cancelable: false},now = Promise.resolve();
@@ -2262,6 +2262,36 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 		this.set = tempSet;
 	};
 })()));
+/**
+ * 
+ * @param {String | RealNode | ()=>String} [titleGetter] 
+ */
+var createRealDivSeries = titleGetter=>RealDivList.createByClassName('realDivSeries',titleGetter);
+RealWorld.onload = RealWorld.onload.
+finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
+	'.hidden>div:nth-child(n + 2)': {'display':'none'},
+	'>div:nth-child(1)': {'font-size':'bolder'},
+},function(){
+	RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
+		/**@type {RealElement[]} */
+		var REList = RealElement.searchByObj(e.target?.parentElement),temp;
+		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSeries')) break;
+		temp && temp.toggleClassName('hidden');
+	});
+	/**@type {(this: RealDivList,titleGetter: String | RealNode | ()=>String)=>(getTransform.fn | getTransform.realNode | getTransform.str)} */
+	function getTransform(titleGetter){return getTransform[
+		typeof titleGetter === 'function' ? 'fn' : titleGetter instanceof RealNode ? 'realNode' : 'str'
+	].bind(this,titleGetter);}
+	const temp = [];
+	/**@type {(this: RealDivList,titleGetter: ()=>String,value: String[])=>HTMLDivElement[]} */
+	getTransform.fn = function(titleGetter,value){return this.protoTransform(temp.concat(titleGetter(),value));}
+	/**@type {(this: RealDivList,titleGetter: String,value: String[])=>HTMLDivElement[]} */
+	getTransform.str = function(titleGetter,value){return this.protoTransform(temp.concat(String(titleGetter),value));}
+	/**@type {(this: RealDivList,titleGetter: RealNode,value: String[])=>HTMLDivElement[]} */
+	getTransform.realNode = function(titleGetter,value){return this.protoTransform(temp.concat(String(titleGetter.value),value));}
+	/**@type {(this: RealDivList,titleGetter: String | RealNode | ()=>String)=>void} */
+	return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
+}()));
 
 }console.log('Sync in',performance.now() - t0,'ms');
 }
