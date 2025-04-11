@@ -11,7 +11,9 @@
 // ==/UserScript==
 try{const temp = exports=>exports.default;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
-var require,exports = exports ?? {};
+var exports,require;
+/**@type {{}} */
+exports = exports ?? {};
 Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
 	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
 	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
@@ -61,7 +63,10 @@ var RealWorld = (()=>{
 		Reflect.defineProperty(this,'fnList',tempConfig);
 		Reflect.defineProperty(this,'timeSep',tempConfig);
 	}
-	/**## onload 环境准备好时兑现的承诺 */
+	/**
+	 * ## onload 环境准备好时兑现的承诺
+	 * @type {Promise<void>}
+	 */
 	RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
 	/**
@@ -297,7 +302,7 @@ var RealNode = class RealNode{
 	}
 	[Symbol.toPrimitive](hint){try{
 		return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';
-	}catch(e){return NaN;}}
+	}catch{return NaN;}}
 	/**
 	 * 
 	 * @returns {Promise[][]}
@@ -586,7 +591,7 @@ class RealGroup extends RealNode{
 		for(const key of keyArray) obj[key] instanceof RealNode ? (self[key] = obj[key],temp.push(key)) :
 		self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
 		obj[key] !== self[key] && (self[key] = obj[key],temp.push(key));
-		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e.stack);}
+		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e?.stack);}
 		return Boolean(temp.length);
 	}
 	/**
@@ -891,7 +896,7 @@ var RealElement = class RealElement extends RealTarget{
 		 * @param {keyof HTMLElementTagNameMap} selectors 
 		 */
 		function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
-			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e.stack);}
+			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e?.stack);}
 		}}catch(e){console.error(e);}}
 		/**
 		 * 
@@ -1146,76 +1151,83 @@ var RealStory = function(){
 	RealStory.prototype.constructor = null;
 	return (RealStory=>(setInterval(()=>isBusy || RealStory.launch(),50),RealStory))(new RealStory);
 }();
-var RealPromise = new(class RealPromise{
-	newOne(){return new RealPromise;}
-	/**
-	 * 
-	 * @param {(reason)=>*} [onrejected] 
-	 */
-	catch(onrejected){return this.self = Promise.resolve(this.self).catch(onrejected),this;}
-	/**
-	 * 
-	 * @param {()=>void} [onfinally] 
-	 */
-	finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
-	/**
-	 * 
-	 * @template T
-	 * @param {T} v 
-	 */
-	_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
-	/**
-	 * 
-	 * @template U
-	 * @template V
-	 * @param {(value)=>U} [onfulfilled] 
-	 * @param {(reason)=>V} [onrejected] 
-	 */
-	then(onfulfilled,onrejected){return this.self = Promise.resolve(this.self).then(onfulfilled,onrejected).then(this._push),this;}
-	/**
-	 * 
-	 * @template T
-	 * @param {(v)=>T} handler 
-	 * @param {(error: Error)=>void} [onerror] 
-	 */
-	async tryHandler(handler,onerror){
-		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
-		try{await this.self;}catch(e){console.error(this.length,e);}
-		var i = this.length;
-		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
+var RealPromise;RealPromise = new(
+	/**@template T */
+	class RealPromise{
+		/**
+		 * 
+		 * @template T
+		 * @param {Promise<T> | T} promise 
+		 */
+		newOne(promise){return new RealPromise(promise);}
+		/**
+		 * 
+		 * @param {(reason)=>*} [onrejected] 
+		 */
+		catch(onrejected){return this.self = Promise.resolve(this.self).catch(onrejected),this;}
+		/**
+		 * 
+		 * @param {()=>void} [onfinally] 
+		 */
+		finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
+		/**
+		 * 
+		 * @template U
+		 * @param {U} v 
+		 */
+		_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
+		/**
+		 * 
+		 * @template U
+		 * @template V
+		 * @param {(value: T)=>U} [onfulfilled] 
+		 * @param {(reason)=>V} [onrejected] 
+		 * @returns {RealPromise<U>}
+		 */
+		then(onfulfilled,onrejected){return this.self = Promise.resolve(this.self).then(onfulfilled,onrejected).then(this._push),this;}
+		/**
+		 * 
+		 * @template U
+		 * @param {(v)=>U} handler 
+		 * @param {(error: Error)=>void} [onerror] 
+		 */
+		async tryHandler(handler,onerror){
+			if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
+			try{await this.self;}catch(e){console.error(this.length,e);}
+			var i = this.length;
+			while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
+		}
+		get require(){return RealPromise.require;}
+		static require = function(){
+			/**@this {Element} */
+			function onfinally(){this.remove();}
+			const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
+			return nodeMode ? /**@this {RealPromise} */
+			function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
+			browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
+			function(path){
+				var temp,script;
+				path = String(path).replaceAll('\\','/');
+				if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
+				return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
+					script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
+				),this._push(temp.promise.finally(onfinally.bind(script)))));
+			} : function(){return Promise.reject(new Error('Mode error !'));};
+		}();
+		get length(){return this.list.length;}
+		list = [];
+		/**
+		 * 
+		 * @param {Promise<T> | T} promise 
+		 */
+		constructor(promise){
+			Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
+			Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
+			/**@type {Promise<T>} */
+			this.self = Promise.resolve(promise).then(this._push);
+		}
 	}
-	get require(){return RealPromise.require;}
-	static require = function(){
-		/**@this {Element} */
-		function onfinally(){this.remove();}
-		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
-		return nodeMode ? /**@this {RealPromise} */
-		function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
-		browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
-		function(path){
-			var temp,script;
-			path = String(path).replaceAll('\\','/');
-			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
-			return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
-				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
-			),this._push(temp.promise.finally(onfinally.bind(script)))));
-		} : function(){return Promise.reject(new Error('Mode error !'));};
-	}();
-	get length(){return this.list.length;}
-	list = [];
-	/**
-	 * 
-	 * @template T
-	 * @param {T | Promise<T> | (resolve: (value: T)=>void,reject: (reason?)=>void)=>void} executor 
-	 */
-	constructor(executor){
-		Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
-		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
-		/**@type {Promise<T>} */
-		this.self = !arguments.length ? RealWorld.onload :
-		(typeof executor === 'function' ? new Promise(executor) : Promise.resolve(executor)).then(this._push);
-	}
-})();
+)(RealWorld.onload);
 RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>console.log('Set up in',time,'ms')));
 
 if(browserMode){
@@ -2252,13 +2264,12 @@ then(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-chi
 })()));
 
 }
-var RealCanvas,RealLoader,RealDivList,RealImgList,RealSelect,RealComtag,RealDivQueue,createRealDivSelect,createRealDivSearch;
 	console.log('Sync in',performance.now() - t0,'ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
 /**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
-Object.assign(exports,{
+exports = Object.assign(exports,{
 	RealStory,RealPromise,// 2
 	RealWorld,RealNode,RealGroup,RealTarget,RealElement,// 5
 	createRealDivSelect,createRealDivSearch,// 2
