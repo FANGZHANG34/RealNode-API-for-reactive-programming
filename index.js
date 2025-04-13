@@ -29,10 +29,10 @@ exports = exports ?? {};
 	/**## browserMode 是否存在nodejs环境 */
 	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
 	;
-	globalThis.Number.prototype.toFloat = function(tail = 7){
+	globalThis.Number.prototype.toFloat = function(tail){
 		var temp,float,int;
 		return Number.isFinite(Number(this)) ? (
-			tail = tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
+			tail = typeof tail !== 'number' ? 7 : tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
 			temp = tail<<2,{0: int,1: float = ''} = this.toString(2).split('.'),
 			BigInt('0b'+int).toString()+'_+'+'0x'+BigInt('0b'+float.slice(0,temp).padEnd(temp,'0')).toString(16).padStart(tail,'0')
 		) : 'NaN';
