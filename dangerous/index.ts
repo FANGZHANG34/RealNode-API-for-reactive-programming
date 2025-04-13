@@ -2601,7 +2601,7 @@ RealWorld.onload = RealWorld.onload.finally(() => {
 				clickHandler
 			);
 		};
-    })()
+	})()
   );
 });
 
