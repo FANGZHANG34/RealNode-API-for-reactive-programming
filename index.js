@@ -16,12 +16,12 @@ exports = exports ?? {};
 /**##   */
 /**# 搜索## */
 	const
-	Element = globalThis.Element ?? prevent,
-	clearInterval = globalThis.clearInterval ?? prevent,
-	setInterval = globalThis.setInterval ?? prevent,
-	performance = globalThis.performance ?? Date,
 	nodeRequire = require,
 	prevent = function(){},
+	Element = globalThis.Element ?? prevent,
+	performance = globalThis.performance ?? Date,
+	setInterval = globalThis.setInterval ?? prevent,
+	clearInterval = globalThis.clearInterval ?? prevent,
 	t0 = performance.now(),
 	tempConfig = {writable: false,enumerable: false},
 	/**## browserMode 是否存在浏览器环境 */
