@@ -181,7 +181,7 @@ var GM = GM.then(temp=>class GM{
 		}
 	}
 });
-GM.tryHandler(protoGM=>RealNode.time(()=>(GM = new protoGM,GM.temp.promise)).then(result=>console.log(result.value,'in ',result.time,'ms')));
+GM.tryHandler(protoGM=>RealNode.time(()=>(GM = new protoGM,GM.temp.promise)).then(result=>console.log(result.value,'in '+result.time.toFloat()+' ms')));
 
 
 // switch(mode){
