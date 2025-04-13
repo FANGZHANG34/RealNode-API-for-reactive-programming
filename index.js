@@ -9,60 +9,64 @@
 // @icon			https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant			none
 // ==/UserScript==
-try{const temp = exports=>exports.default;require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
+try{const temp = exports=>exports.default;var require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
-var exports,require;
-/**@type {{}} */
+var exports;
 exports = exports ?? {};
-Reflect.set(globalThis.Array.prototype,'iterLog',function*(start,end){
-	if(typeof start === 'symbol' || !Number.isFinite(+start)) start = 0;
-	if(typeof start === 'symbol' || !Number.isFinite(+end)) end = this.length;
-	while(start < end) yield this[start++];
-});
 /**##   */
 /**# 搜索## */
 	const
-	nodeRequire = require,
-	prevent = function(){},
 	Element = globalThis.Element ?? prevent,
 	clearInterval = globalThis.clearInterval ?? prevent,
 	setInterval = globalThis.setInterval ?? prevent,
 	performance = globalThis.performance ?? Date,
+	nodeRequire = require,
+	prevent = function(){},
 	t0 = performance.now(),
+	tempConfig = {writable: false,enumerable: false},
 	/**## browserMode 是否存在浏览器环境 */
 	browserMode = 'document' in globalThis,
 	/**## browserMode 是否存在nodejs环境 */
 	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
 	;
+	globalThis.Number.prototype.toFloat = function(tail = 7){
+		var temp,float,int;
+		return Number.isFinite(Number(this)) ? (
+			tail = tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
+			temp = tail<<2,{0: int,1: float = ''} = this.toString(2).split('.'),
+			BigInt('0b'+int).toString()+'_+'+'0x'+BigInt('0b'+float.slice(0,temp).padEnd(temp,'0')).toString(16).padStart(tail,'0')
+		) : 'NaN';
+	};
+	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
 /**# RealWorld 事件循环类 */
-var RealWorld = (()=>{
-	const tempConfig = {writable: false,enumerable: false};
-	/**
-	 * 
-	 * @param {Number} timeSep 
-	 * @param  {...()=>void} fnList 
-	 */
-	function RealWorld(timeSep,...fnList){
-		if(!new.target) return new RealWorld(timeSep,...fnList);
-		this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
-		this._id = setInterval(this._mainFn.bind(this),this.timeSep);
-		/**@type {(()=>*)[]} */
-		this.fnList = fnList;
-		this.info = void 0;
-		/**@type {HTMLDivElement & {}} */
-		this.self = browserMode ? document.createElement('div') : {};
-		/**@type {Boolean} */
-		this.paused = false;
-		/**@type {?()=>*} */
-		this.intervalFn = void 0;
-		/**@type {?()=>*} */
-		this.ifFn = void 0;
-		/**@type {?()=>*} */
-		this.soFn = void 0;
-		Reflect.defineProperty(this,'_id',tempConfig);
-		Reflect.defineProperty(this,'fnList',tempConfig);
-		Reflect.defineProperty(this,'timeSep',tempConfig);
-	}
+var RealWorld;{
+/**
+ * @class
+ * @param {Number} timeSep 
+ * @param {...()=>void} fnList 
+ */
+var RealWorld = function(timeSep,...fnList){
+	if(!new.target) return new RealWorld(timeSep,...fnList);
+	this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
+	this._id = setInterval(this._mainFn.bind(this),this.timeSep);
+	/**@type {(()=>*)[]} */
+	this.fnList = fnList;
+	this.info = void 0;
+	/**@type {HTMLDivElement & {}} */
+	this.self = browserMode ? document.createElement('div') : {};
+	/**@type {Boolean} */
+	this.paused = false;
+	/**@type {?()=>*} */
+	this.intervalFn = void 0;
+	/**@type {?()=>*} */
+	this.ifFn = void 0;
+	/**@type {?()=>*} */
+	this.soFn = void 0;
+	Reflect.defineProperty(this,'_id',tempConfig);
+	Reflect.defineProperty(this,'fnList',tempConfig);
+	Reflect.defineProperty(this,'timeSep',tempConfig);
+};
+	const thisResolve = function(...value){this.resolve(value);};
 	/**
 	 * ## onload 环境准备好时兑现的承诺
 	 * @type {Promise<void>}
@@ -71,37 +75,31 @@ var RealWorld = (()=>{
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
 	/**
 	 * ## onceIf 生成条件检测承诺 
-	 * @param [timeSep]
+	 * @param {()=>Boolean} ifFn
+	 * @param {Number} [timeSep]
 	 */
 	RealWorld.onceIf = function(ifFn,timeSep){
 		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld(timeSep);
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
 	};
-	/**## cb2promise 回调转承诺 */
-	RealWorld.cb2promise = (()=>{
-		function thisResolve(...value){this.resolve(value);}
-		return(
-			/**
-			 * ## cb2promise 回调转承诺
-			 * @param {{thisArg?: *,useFn: (()=>*) | String,callback?: (...value: *[])=>"this.resolve(value)"}} param0 
-			 * @param {...[]} [parameters] 
-			 * @returns {Promise<?[?Error,*]>}
-			 */
-			({thisArg,useFn,callback = thisResolve} = {},...parameters)=>{
-				if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
-				if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
-				return new Promise(resolve=>{
-					const temp = {callback,resolve};
-					try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch(error0){
-						try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch(error1){
-							temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+error0.stack+'\n'+error1.stack)]);
-						}
-					}
-				}).catch(e=>console.error(e.stack));
+	/**
+	 * ## cb2promise 回调转承诺
+	 * @template {String | (callback: Function)} T
+	 * @param {{thisArg: T extends Function ? * : String; useFn: T; callback: typeof thisResolve;}} [param0]
+	 */
+	RealWorld.cb2promise = function({thisArg,useFn,callback = thisResolve} = {},...parameters){
+		if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
+		if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
+		return new Promise(resolve=>{
+			const temp = {callback,resolve};
+			try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch(error0){
+				try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch(error1){
+					temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+error0.stack+'\n'+error1.stack)]);
+				}
 			}
-		);
-	})();
+		}).catch(e=>console.error(e.stack));
+	};
 	/**## destroy 销毁本对象 */
 	RealWorld.prototype.destroy = function(){return clearInterval(this._id);};
 	/**## then 添加函数入执行队列 */
@@ -126,8 +124,7 @@ var RealWorld = (()=>{
 			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
 		}
 	};
-	return RealWorld;
-})();
+}
 var RealNode = class RealNode{
 	/**
 	 * 
@@ -465,7 +462,7 @@ var RealNode = class RealNode{
 		this.proto = new this.constructor.proto;
 		this.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
 		Reflect.defineProperty(this,'notifyArray',{enumerable: false});
-		Reflect.defineProperty(this,'proto',{enumerable: false,writable: false});
+		Reflect.defineProperty(this,'proto',tempConfig);
 		this.display = config.display ?? true;
 		this.info = config.info;
 		this.get = config.get;
@@ -632,16 +629,16 @@ class RealGroup extends RealNode{
 		}
 		super({id,info});
 		if(Object(self) !== self) this.error('"self" not typeof object !');
-		Reflect.defineProperty(this,'listenerMap',{writable: false,enumerable: false});
+		Reflect.defineProperty(this,'listenerMap',tempConfig);
 		const temp = new RealGroup.tempProxy(self,this);
 		this.proto.value = new Proxy(temp,temp);
 		RealGroup.groupMap.set(self,this);
 	}
 };
 var RealTarget = class RealTarget extends RealNode{
-	/**@typedef {AntiNode & {self: Element | {},isElement: Boolean,transform(value)=>*}} AntiTarget */
+	/**@typedef {AntiNode & {self: Element & {},isElement: Boolean,transform(value)=>*}} AntiTarget */
 	static proto = class AntiTarget extends RealNode.proto{
-		/**@type {Element | {}} */
+		/**@type {Element & {}} */
 		self;
 		/**@type {Boolean} */
 		isElement;
@@ -688,16 +685,16 @@ var RealTarget = class RealTarget extends RealNode{
 	 */
 	protoTransform(value){return value;}
 	fix(){return this.self[this.key] = this.transform(this.proto.value),this;}
-	clearClassName(){return this.proto.isElement && (this.self.className = '',true);}
+	clearClassName(){return this.proto.isElement && (this.proto.self.className = '',true);}
 	/**@param {...String} */
-	addClassName(){return this.proto.isElement && (this.self.classList.add(...arguments),true);}
+	addClassName(){return this.proto.isElement && (this.proto.self.classList.add(...arguments),true);}
 	/**@param {String} className */
-	toggleClassName(className){return this.proto.isElement && this.self.classList.toggle(className);}
+	toggleClassName(className){return this.proto.isElement && this.proto.self.classList.toggle(className);}
 	/**@param {...String} */
-	removeClassName(){return this.proto.isElement && (this.self.classList.remove(...arguments),true);}
+	removeClassName(){return this.proto.isElement && (this.proto.self.classList.remove(...arguments),true);}
 	getIndexWithin(){
-		var i = 0,temp;
-		while(temp = this.self.previousElementSibling) i++;
+		var i = 0,temp = this.proto.self;
+		while(temp = temp.previousElementSibling) i++;
 		return i;
 	}
 	/**
@@ -721,15 +718,15 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {String | {[selector: String]: {[styleName: String]: String}}} classNameOrRuleObjObj 
 	 */
 	applyCSS(selfSelector,classNameOrRuleObjObj){
-		if(!(this.self instanceof Element)) this.error('I am not RealElement !');
+		if(!(this.proto.self instanceof Element)) this.error('I am not RealElement !');
 		const strReg = /^[A-Za-z]/;
 		var temp = selfSelector;
 		if(typeof selfSelector !== 'string'){
-			while(temp = temp?.parentElement) if(temp === this.self) break;
+			while(temp = temp?.parentElement) if(temp === this.proto.self) break;
 			temp ? selfSelector = ' #'+(selfSelector.id || (selfSelector.id = RealElement.getRandomId())) :
 			this.error('"selfSelector" must be String or my descendant !');
 		}
-		const id = this.self.id || (this.self.id = RealElement.getRandomId());
+		const id = this.proto.self.id || (this.proto.self.id = RealElement.getRandomId());
 		typeof classNameOrRuleObjObj === 'string' ? classNameOrRuleObjObj = RealElement.myStyle.get(classNameOrRuleObjObj) :
 		classNameOrRuleObjObj = Object(classNameOrRuleObjObj);
 		return !classNameOrRuleObjObj ? false : (RealElement.addCSSRules(
@@ -743,8 +740,8 @@ var RealTarget = class RealTarget extends RealNode{
 	 * @param {Boolean} [deepCopyRelativeRNs] 
 	 */
 	clone(keepValue,fix,deepCopyRelativeRNs){
-		const self = this.self instanceof Element ? this.self.cloneNode() :
-		Object.assign(Object.create(Reflect.getPrototypeOf(this.self)),this.self);
+		const self = this.proto.self instanceof Element ? this.proto.self.cloneNode() :
+		Object.assign(Object.create(Reflect.getPrototypeOf(this.proto.self)),this.proto.self);
 		const param0 = {self,key: this.key,transform: this.transform};
 		const temp = new RealTarget(param0,{
 			get: this.proto.get,
@@ -762,6 +759,7 @@ var RealTarget = class RealTarget extends RealNode{
 	get transform(){return this.proto.transform;}
 	/**@param {(value)=>*} transform */
 	set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
+	/**@type { Element | {}} */
 	get self(){return this.proto.self;}
 	set self(self){
 		Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof Element :
@@ -769,7 +767,7 @@ var RealTarget = class RealTarget extends RealNode{
 	}
 	/**
 	 * 
-	 * @param {{self: Element,key,transform?: (value)=>*}} param0 
+	 * @param {{self: Element | {},key,transform?: (value)=>*}} param0 
 	 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 	 * @param {Boolean} [tryRealNode] 
 	 * @param {...RealNode} [relativeRNs] 
@@ -905,9 +903,14 @@ var RealElement = class RealElement extends RealTarget{
 		 * @param {(event: Event)=>void} listener 
 		 */
 		return(selectors,type,listener)=>{
+			const tempStr = type.replace(type[0],type[0].toUpperCase());
 			!selectors || '*' === selectors ? addEventListener(type,listener) : (
 				!RealElement.selectorEventListeners[type] && (RealElement.selectorEventListeners[type] = new Map,addEventListener(
-					type,e=>RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors))
+					type,e=>{
+						const t0 = performance.now();
+						RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors));
+						console.log(tempStr+'-listeners completed in '+(performance.now() - t0).toFloat()+' ms.');
+					}
 				)),
 				RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
 				RealElement.selectorEventListeners[type].set(selectors,[listener])
@@ -1090,145 +1093,161 @@ var RealElement = class RealElement extends RealTarget{
 					'top':'50%',
 					'transform':'translate(-50%,-50%)',
 				},
-			})._css.finally(),time=>console.log('Init defaultCSS in',time,'ms'))));
+			})._css.finally(),time=>console.log('Init defaultCSS in '+time.toFloat()+' ms'))));
 		};
 	})();
 };
-var RealStory = function(){
-	var isBusy = false;
-	function executor(resolve,reject){this.resolve = resolve,this.reject = reject;}
-	function StoryPromise(){
+{
+	/**
+	 * @typedef {{
+	 * resolve: (value)=>void;
+	 * reject: (reason?)=>void;
+	 * promise: Promise;
+	 * }} StoryPromise 
+	 */
+	/**@this {StoryPromise} */
+	const executor = function(resolve,reject){this.resolve = resolve,this.reject = reject;};
+	/**@type {{()=>StoryPromise; new()=>StoryPromise;}} */
+	const StoryPromise = function(){
 		if(!new.target) return new StoryPromise;
 		/**@type {(value)=>void} */
 		this.resolve = null;
 		/**@type {(reason?)=>void} */
 		this.reject = null;
 		this.promise = new Promise(executor.bind(this));
+	};
+var RealStory = new class RealStory{
+	newPage(){return new RealStory(this);}
+	/**
+	 * 
+	 * @template T
+	 * @param {(page: RealStory)=>T} fn 
+	 * @returns {Promise<T>}
+	 */
+	newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
+	then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
+	getNextPage(){
+		if(!(this.ofStory instanceof RealStory)) return;
+		const temp = this.ofStory.pages;
+		return temp[temp.indexOf(this) + 1];
 	}
-	class RealStory{
-		newPage(){return new RealStory(this);}
-		/**
-		 * 
-		 * @param {(page: RealStory)=>void} fn 
-		 */
-		newPrivatePage(fn){return new Promise(r=>r(fn?.(this.newPage())));}
-		then(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;}
-		getNextPage(){
-			if(!(this.ofStory instanceof RealStory)) return;
-			const temp = this.ofStory.pages;
-			return temp[temp.indexOf(this) + 1];
-		}
-		getPreviousPage(){
-			if(!(this.ofStory instanceof RealStory)) return;
-			const temp = this.ofStory.pages;
-			return temp[temp.indexOf(this) - 1];
-		}
-		newPromiseObj(){
-			const temp = new StoryPromise;
-			return this.then(()=>temp.promise),temp;
-		}
-		async launch(){
-			var i = 0,temp = this;
-			while((temp = temp.ofStory) instanceof RealStory) i++;
-			if(!i) isBusy = true;
-			while(this.pages.length || this.fnList.length){
-				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
-				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
-				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
-			}isBusy = false;
-		}
-		get StoryPromise(){return StoryPromise;}
-		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
-		/**@type {?RealStory} */
-		ofStory;
-		/**@type {RealStory[]} */
-		pages = [];
-		/**@type {(()=>*)[]} */
-		fnList = [];
-		info;
-		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
+	getPreviousPage(){
+		if(!(this.ofStory instanceof RealStory)) return;
+		const temp = this.ofStory.pages;
+		return temp[temp.indexOf(this) - 1];
 	}
-	RealStory.prototype.constructor = null;
-	return (RealStory=>(setInterval(()=>isBusy || RealStory.launch(),50),RealStory))(new RealStory);
-}();
-var RealPromise = new(
-	/**@template T */
-	class RealPromise{
-		/**
-		 * 
-		 * @template T
-		 * @param {Promise<T> | T} promise 
-		 */
-		newOne(promise){return new RealPromise(promise);}
-		/**
-		 * 
-		 * @param {(reason)=>*} [onrejected] 
-		 */
-		catch(onrejected){return this.self = Promise.resolve(this.self).catch(onrejected),this;}
-		/**
-		 * 
-		 * @param {()=>void} [onfinally] 
-		 */
-		finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
-		/**
-		 * 
-		 * @template U
-		 * @param {U} v 
-		 */
-		_push(v){return v === this.list[this.list.length - 1] || this.list.push(v),v;}
-		/**
-		 * 
-		 * @template U
-		 * @template V
-		 * @param {(value: T)=>U} [onfulfilled] 
-		 * @param {(reason)=>V} [onrejected] 
-		 * @returns {RealPromise<U>}
-		 */
-		then(onfulfilled,onrejected){return this.self = Promise.resolve(this.self).then(onfulfilled,onrejected).then(this._push),this;}
-		/**
-		 * 
-		 * @template U
-		 * @param {(v)=>U} handler 
-		 * @param {(error: Error)=>void} [onerror] 
-		 */
-		async tryHandler(handler,onerror){
-			if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
-			try{await this.self;}catch(e){console.error(this.length,e);}
-			var i = this.length;
-			while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
-		}
-		get require(){return RealPromise.require;}
-		static require = function(){
-			/**@this {Element} */
-			function onfinally(){this.remove();}
-			const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
-			return nodeMode ? /**@this {RealPromise} */
-			function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
-			browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
-			function(path){
-				var temp,script;
-				path = String(path).replaceAll('\\','/');
-				if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
-				return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
-					script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
-				),this._push(temp.promise.finally(onfinally.bind(script)))));
-			} : function(){return Promise.reject(new Error('Mode error !'));};
-		}();
-		get length(){return this.list.length;}
-		list = [];
-		/**
-		 * 
-		 * @param {Promise<T> | T} promise 
-		 */
-		constructor(promise){
-			Reflect.defineProperty(this,'list',{enumerable: false,writable: false});
-			Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
-			/**@type {Promise<T>} */
-			this.self = Promise.resolve(promise).then(this._push);
-		}
+	newPromiseObj(){
+		const temp = new StoryPromise;
+		return this.then(()=>temp.promise),temp;
 	}
-)(RealWorld.onload);
-RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>console.log('Set up in',time,'ms')));
+	async launch(){
+		var i = 0,temp = this;
+		while((temp = temp.ofStory) instanceof RealStory) i++;
+		if(!i) isBusy = true;
+		while(this.pages.length || this.fnList.length){
+			while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
+			catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
+			try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+		}
+		if(!i) isBusy = false;
+	}
+	get StoryPromise(){return StoryPromise;}
+	get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
+	/**@type {?RealStory} */
+	ofStory;
+	/**@type {RealStory[]} */
+	pages = [];
+	/**@type {(()=>*)[]} */
+	fnList = [];
+	info;
+	constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
+};
+	let isBusy = false;
+	Reflect.getPrototypeOf(RealStory).constructor = setInterval(()=>isBusy || RealStory.launch(),50);
+}
+var RealPromise = new
+/**@template T */
+class RealPromise{
+	/**
+	 * 
+	 * @template T
+	 * @param {Promise<T> | T} promise 
+	 */
+	newOne(promise){return new RealPromise(promise);}
+	/**
+	 * 
+	 * @param {(reason)=>*} [onrejected] 
+	 */
+	catch(onrejected){return this.self = Promise.resolve(this.self).catch(onrejected),this;}
+	/**
+	 * 
+	 * @param {()=>void} [onfinally] 
+	 */
+	finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
+	/**
+	 * 
+	 * @template U
+	 * @param {U} v 
+	 */
+	_push(v){return this.list.push(v),v;}
+	/**
+	 * @throws 
+	 * @returns {never}
+	 */
+	_throw(e){throw this.list.push(e),e;}
+	/**
+	 * 
+	 * @template U
+	 * @template V
+	 * @param {(value: T)=>U} [onfulfilled] 
+	 * @param {(reason)=>V} [onrejected] 
+	 * @returns {RealPromise<U>}
+	 */
+	then(onfulfilled,onrejected){return this.self = Promise.resolve(this.self).then(onfulfilled,onrejected).then(this._push,this._throw),this;}
+	/**
+	 * 
+	 * @template U
+	 * @param {(v)=>U} handler 
+	 * @param {(error: Error)=>void} [onerror] 
+	 */
+	async tryHandler(handler,onerror){
+		if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
+		try{await this.self;}catch(e){console.error(this.length,e);}
+		var i = this.length;
+		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
+	}
+	get require(){return RealPromise.require;}
+	static require = function(){
+		/**@this {Element} */
+		function onfinally(){this.remove();}
+		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
+		return nodeMode ? /**@this {RealPromise} */
+		function(path){return this instanceof RealPromise && this._push(Promise.resolve(nodeRequire(String(path))));} :
+		browserMode ? /**@type {(path: String)=>Promise<*,Error | ErrorEvent | void>}@this {RealPromise} */
+		function(path){
+			var temp,script;
+			path = String(path).replaceAll('\\','/');
+			if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
+			return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
+				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
+			),this._push(temp.promise.finally(onfinally.bind(script)))));
+		} : function(){return Promise.reject(new Error('Mode error !'));};
+	}();
+	get length(){return this.list.length;}
+	list = [];
+	/**
+	 * 
+	 * @param {Promise<T> | T} promise 
+	 */
+	constructor(promise){
+		Reflect.defineProperty(this,'list',tempConfig);
+		Reflect.defineProperty(this,'_push',{value: this._push.bind(this),enumerable: false,writable: false});
+		Reflect.defineProperty(this,'_throw',{value: this._throw.bind(this),enumerable: false,writable: false});
+		/**@type {Promise<T>} */
+		this.self = Promise.resolve(promise).then(this._push,this._throw);
+	}
+}(RealWorld.onload);
+RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>console.log('Set up in '+time.toFloat()+' ms')));
 
 if(browserMode){
 
@@ -2077,7 +2096,7 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 	}
 	/**@type {Element} */
 	static tempTarget = void(browserMode && (RealWorld.onload.then(()=>RealElement.addCSSRules('.RealDivQueue',{
-		'>div': {'transition':'.1s'},
+		// '>div': {'transition-duration':'.1s'},
 		'>div:hover': {'transform':'scale(1.1,1)'},
 		'>div:active': {'transform':'scale(1.2,1)'},
 	})),addEventListener('mousedown',e=>(RealDivQueue.tempTarget = e.target)),addEventListener('mouseup',e=>{
@@ -2099,12 +2118,13 @@ var RealDivQueue = class RealDivQueue extends RealDivList{
 			queue = realDivQueue.queueArray;
 			queue = (target[0] = queue.indexOf(realDivQueue.proto.list.indexOf(target[0]))) >
 			(target[1] = queue.indexOf(realDivQueue.proto.list.indexOf(target[1]))) ?
-			[...queue.iterLog(0,target[1]),queue[target[0]],...queue.iterLog(target[1],target[0]),...queue.iterLog(target[0] + 1)] :
-			[...queue.iterLog(0,target[0]),...queue.iterLog(target[0] + 1,target[1] + 1),queue[target[0]],...queue.iterLog(target[1] + 1)];
+			queue.slice(0,target[1]).concat(queue[target[0]],queue.slice(target[1],target[0]),queue.slice(target[0] + 1)) :
+			queue.slice(0,target[0]).concat(queue.slice(target[0] + 1,target[1] + 1),queue[target[0]],queue.slice(target[1] + 1));
 			realDivQueue.applyQueue(queue,target0,target1);
 		}
 	})));
 	getListQueue(){
+		/**@type {AntiQueue} */this.proto;
 		/**@type {Element[]} */
 		const temp = this.queueArray;
 		for(var i = temp.length;i --> 0;) temp[i] = this.proto.list[temp[i]];
@@ -2264,13 +2284,13 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 })()));
 /**
  * 
- * @param {String | RealNode | ()=>String} [titleGetter] 
+ * @param {String | RealNode | ()=>String} titleGetter 
  */
 var createRealDivSeries = titleGetter=>RealDivList.createByClassName('realDivSeries',titleGetter);
 RealWorld.onload = RealWorld.onload.
 finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
+	'>div:nth-child(1)': {'font-weight':'bolder'},
 	'.hidden>div:nth-child(n + 2)': {'display':'none'},
-	'>div:nth-child(1)': {'font-size':'bolder'},
 },function(){
 	RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
 		/**@type {RealElement[]} */
@@ -2293,16 +2313,18 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
 }()));
 
-}console.log('Sync in',performance.now() - t0,'ms');
+}console.log('Sync in '+(performance.now() - t0).toFloat()+' ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
 /**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
 exports = Object.assign(exports,{
-	RealStory,RealPromise,// 2
-	RealWorld,RealNode,RealGroup,RealTarget,RealElement,// 5
-	createRealDivSelect,createRealDivSearch,// 2
-	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,// 7
+	RealWorld,
+	RealStory,
+	RealPromise,
+	RealNode,RealGroup,RealTarget,RealElement,	// 5
+	createRealDivSelect,createRealDivSearch,createRealDivSeries,	// 3
+	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,	// 7
 });
 /**## 如果用作油猴脚本，请不要注释掉下面这一行。  */
 // Object.assign(globalThis,exports);
