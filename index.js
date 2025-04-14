@@ -12,7 +12,6 @@
 try{const temp = exports=>exports.default;var require = require ?? (path=>import(String(path)).then(temp));}catch(e){console.error(e);}
 {
 var exports;
-exports = exports ?? {};
 /**##   */
 /**# 搜索## */
 	const
@@ -30,11 +29,11 @@ exports = exports ?? {};
 	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
 	;
 	globalThis.Number.prototype.toFloat = function(tail){
-		var temp,float,int;
+		var int,float;
 		return Number.isFinite(Number(this)) ? (
 			tail = typeof tail !== 'number' ? 7 : tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
-			temp = tail<<2,{0: int,1: float = ''} = this.toString(2).split('.'),
-			BigInt('0b'+int).toString()+'_+'+'0x'+BigInt('0b'+float.slice(0,temp).padEnd(temp,'0')).toString(16).padStart(tail,'0')
+			{0: int,1: float = ''} = this.toString(16).split('.'),
+			BigInt('0x'+int)+'_+'+'0x'+float.slice(0,tail).padEnd(tail,'0')
 		) : 'NaN';
 	};
 	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
@@ -45,7 +44,7 @@ var RealWorld;{
  * @param {Number} timeSep 
  * @param {...()=>void} fnList 
  */
-var RealWorld = function(timeSep,...fnList){
+RealWorld = function(timeSep,...fnList){
 	if(!new.target) return new RealWorld(timeSep,...fnList);
 	this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
 	this._id = setInterval(this._mainFn.bind(this),this.timeSep);
@@ -848,7 +847,7 @@ var RealElement = class RealElement extends RealTarget{
 	static makeElementByString = function(){
 		/**@type {HTMLTemplateElement} */
 		const template = browserMode ? document.createElement('template') : {content: {}};
-		return Object.assign(function makeElementByString(){
+		return Object.assign(function makeElementByString(innerHTML){
 			template.innerHTML = String(innerHTML); return template.content.firstElementChild;
 		},{_clear(){template.innerHTML = ''; return template.content;}});
 	}();
@@ -2313,12 +2312,13 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
 }()));
 
-}console.log('Sync in '+(performance.now() - t0).toFloat()+' ms');
+}else console.log('No DOM !');
+	console.log('Sync in '+(performance.now() - t0).toFloat()+' ms');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default
 /**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
-exports = Object.assign(exports,{
+exports = Object.assign(exports ?? {},{
 	RealWorld,
 	RealStory,
 	RealPromise,
