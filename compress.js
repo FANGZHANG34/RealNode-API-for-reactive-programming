@@ -47,7 +47,7 @@ function minifyIndexJS(mode){
 // @icon			https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant			none
 // ==/UserScript==
-`.concat(temp.code) : temp.code,prevent);
+`.concat(temp.code.replace(/[\n\r].+$/,'')) : temp.code,prevent);
 	fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
 }
 minifyIndexJS('cjs');
