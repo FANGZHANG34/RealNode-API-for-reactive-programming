@@ -23,6 +23,8 @@ var exports;
 	clearInterval = globalThis.clearInterval ?? prevent,
 	t0 = performance.now(),
 	tempConfig = {writable: false,enumerable: false},
+	/**@type {typeof console.log} */
+	log = (console.log.bind(console)),
 	/**## browserMode 是否存在浏览器环境 */
 	browserMode = 'document' in globalThis,
 	/**## browserMode 是否存在nodejs环境 */
@@ -38,13 +40,13 @@ var exports;
 	};
 	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
 /**# RealWorld 事件循环类 */
-var RealWorld;{
+{
 /**
  * @class
  * @param {Number} timeSep 
  * @param {...()=>void} fnList 
  */
-RealWorld = function(timeSep,...fnList){
+var RealWorld = function(timeSep,...fnList){
 	if(!new.target) return new RealWorld(timeSep,...fnList);
 	this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
 	this._id = setInterval(this._mainFn.bind(this),this.timeSep);
@@ -72,8 +74,14 @@ RealWorld = function(timeSep,...fnList){
 	 */
 	RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
+	/**## getPromiseState 异步获取承诺状态 */
+	RealWorld.getPromiseState = function(promise){
+		const temp = Symbol(),tryFn = v=>Number(temp !== v),catchFn = ()=>-1;
+		return function getPromiseState(){return Promise.race([promise,temp]).then(tryFn,catchFn);};
+	}();
 	/**
 	 * ## onceIf 生成条件检测承诺 
+	 * @method
 	 * @param {()=>Boolean} ifFn
 	 * @param {Number} [timeSep]
 	 */
@@ -84,8 +92,8 @@ RealWorld = function(timeSep,...fnList){
 	};
 	/**
 	 * ## cb2promise 回调转承诺
-	 * @template {String | (callback: Function)} T
-	 * @param {{thisArg: T extends Function ? * : String; useFn: T; callback: typeof thisResolve;}} [param0]
+	 * @param {{useFn:(callback: (err?: Error,...value)=>void)=>void; callback: typeof thisResolve;} | {thisArg: {}; useFn:String; callback: typeof thisResolve;}} [param0]
+	 * @returns {Promise<[?Error,...*]}
 	 */
 	RealWorld.cb2promise = function({thisArg,useFn,callback = thisResolve} = {},...parameters){
 		if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
@@ -623,13 +631,12 @@ class RealGroup extends RealNode{
 	 * @param {{self?: T}} param0 
 	 */
 	constructor({id,info,self = Object.create(null)} = {}){
-		if(RealGroup.groupMap.get(self) instanceof RealGroup){
-			return console.log('Please do not new for "self":'+self+' again !'),RealGroup.groupMap.get(self);
-		}
+		var temp;
+		if((temp = RealGroup.groupMap.get(self)) instanceof RealGroup) return console.log('Please do not new for "self":'+self+' again !'),temp;
 		super({id,info});
 		if(Object(self) !== self) this.error('"self" not typeof object !');
 		Reflect.defineProperty(this,'listenerMap',tempConfig);
-		const temp = new RealGroup.tempProxy(self,this);
+		temp = new RealGroup.tempProxy(self,this);
 		this.proto.value = new Proxy(temp,temp);
 		RealGroup.groupMap.set(self,this);
 	}
@@ -646,14 +653,12 @@ var RealTarget = class RealTarget extends RealNode{
 	};
 	/**
 	 * 
-	 * @template T
-	 * @param {T} element 
-	 * @returns {T extends EventTarget ? RealElement[] : T extends {} ? RealTarget[] : RealElement[]}
+	 * @type {{(target: {})=>RealTarget[];(element)=>RealElement[];}}
 	 */
-	static searchByObj(element){
+	static searchByObj = function(element){
 		/**@type {RealTarget[]} */const temp = [];
 		if(Object(element) !== element) return temp;
-		for(const realTarget of this._sys.values()) if(element === realTarget.self) temp.push(realTarget);
+		for(const realTarget of RealTarget._sys.values()) if(element === realTarget.self) temp.push(realTarget);
 		return temp;
 	}
 	/**
@@ -908,7 +913,7 @@ var RealElement = class RealElement extends RealTarget{
 					type,e=>{
 						const t0 = performance.now();
 						RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors));
-						console.log(tempStr+'-listeners completed in '+(performance.now() - t0).toFloat()+' ms.');
+						log(tempStr+'-listeners completed\nin '+(performance.now() - t0).toFloat()+' ms.');
 					}
 				)),
 				RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
@@ -1092,7 +1097,7 @@ var RealElement = class RealElement extends RealTarget{
 					'top':'50%',
 					'transform':'translate(-50%,-50%)',
 				},
-			})._css.finally(),time=>console.log('Init defaultCSS in '+time.toFloat()+' ms'))));
+			})._css.finally(),time=>log('Init defaultCSS\nin '+time.toFloat()+' ms.'))));
 		};
 	})();
 };
@@ -1246,7 +1251,7 @@ class RealPromise{
 		this.self = Promise.resolve(promise).then(this._push,this._throw);
 	}
 }(RealWorld.onload);
-RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>console.log('Set up in '+time.toFloat()+' ms')));
+RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>log('Set up\nin '+time.toFloat()+' ms.')));
 
 if(browserMode){
 
@@ -1338,10 +1343,9 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * 
 	 * @returns {Promise<Blob>}
 	 */
-	toBlob(){try{
-		return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).
-		then(result=>(result[0] instanceof Error ? (console.error(result[0]),new Blob) : result[0]));
-	}catch(e){return console.error(e),Promise.resolve(new Blob);}}
+	toBlob(){try{return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).then(
+		result=>(result[0] instanceof Error ? (console.error(result[0]),new Blob) : result[0])
+	);}catch(e){return console.error(e),Promise.resolve(new Blob);}}
 	/**
 	 * 
 	 * @param {Boolean} react 
@@ -1583,8 +1587,8 @@ class RealLoader extends RealElement{
 			for(const temp = Array(length).fill(0);!('-1' in temp);){
 				j = '';
 				for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
-				console.log(path+j);
-				(await DocumentFs.stat(path+j))[0] || console.log(fileNameList.push(j),j);
+				log(path+j);
+				(await DocumentFs.stat(path+j))[0] || log(fileNameList.push(j),j);
 				for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
 			}
 			return [null,fileNameList];
@@ -2202,7 +2206,6 @@ finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	/**@type {(RS: RealDivList)=>Boolean} */
 	async function tempReact(RS){return RS.react?.(),await RS.notify(),RS.self.dispatchEvent(new Event('change',changeConfig));}
 	RealElement.addEventListenerBySelectors('.realDivSelect>div','click',e=>{
-		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement),i = 0,temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
 		if(!temp) return;
@@ -2231,7 +2234,7 @@ finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
  */
 var createRealDivSearch = placeholder=>RealDivList.createByClassName('realDivSearch',placeholder);
 RealWorld.onload = RealWorld.onload.
-finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
+finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},function(){
 	/**@type {RealDivList} */
 	var tempRealDivList;
 	const changeConfig = {bubbles: true,cancelable: false},now = Promise.resolve();
@@ -2249,7 +2252,6 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 	);}
 	addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
 	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
-		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
@@ -2259,7 +2261,6 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('input',changeConfig));
 	});
 	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','input',e=>{
-		/**@type {RealElement[]} */
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
 		if(!temp) return;
@@ -2280,7 +2281,7 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 		this.get = tempGet;
 		this.set = tempSet;
 	};
-})()));
+}()));
 /**
  * 
  * @param {String | RealNode | ()=>String} titleGetter 
@@ -2292,7 +2293,6 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	'.hidden>div:nth-child(n + 2)': {'display':'none'},
 },function(){
 	RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
-		/**@type {RealElement[]} */
 		var REList = RealElement.searchByObj(e.target?.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSeries')) break;
 		temp && temp.toggleClassName('hidden');
@@ -2312,8 +2312,8 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
 }()));
 
-}else console.log('No DOM !');
-	console.log('Sync in '+(performance.now() - t0).toFloat()+' ms');
+}else log('No DOM !');
+	log('Sync\nin '+(performance.now() - t0).toFloat()+' ms.');
 }
 /**## 如果使用ESM规范，请不要注释掉下面这一行，如果使用CommonJS规范，请注释掉下面这一行。  */
 // export default

@@ -29,7 +29,7 @@ function minifyIndexJS(mode){
 	mode = String(mode);
 	var targetCode,user;
 	switch(mode){
-		default: targetCode = indexJS;break;
+		default: targetCode = indexJS,setTimeout(()=>console.log(temp.code.length / indexJS.length));break;
 		case 'esm': targetCode = indexJS.replace('// export default','export default');break;
 		case 'usr':case 'user': user = true,targetCode = indexJS.
 		replace('// Object.assign(globalThis,exports);','Object.assign(globalThis,exports);');break;
@@ -47,7 +47,7 @@ function minifyIndexJS(mode){
 // @icon			https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant			none
 // ==/UserScript==
-`.concat(temp.code.replace(/[\n\r].+$/,'')) : temp.code,prevent);
+`+temp.code.replace(/[\n\r].+$/,'') : temp.code,prevent);
 	fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
 }
 minifyIndexJS('cjs');
