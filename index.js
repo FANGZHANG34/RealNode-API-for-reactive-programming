@@ -30,7 +30,7 @@ var exports;
 	/**## browserMode 是否存在nodejs环境 */
 	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
 	;
-	globalThis.Number.prototype.toFloat = function(tail){
+	Number.prototype.toFloat = function(tail){
 		var int,float;
 		return Number.isFinite(Number(this)) ? (
 			tail = typeof tail !== 'number' ? 7 : tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
@@ -40,45 +40,46 @@ var exports;
 	};
 	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
 /**# RealWorld 事件循环类 */
-{
-/**
- * @class
- * @param {Number} timeSep 
- * @param {...()=>void} fnList 
- */
-var RealWorld = function(timeSep,...fnList){
-	if(!new.target) return new RealWorld(timeSep,...fnList);
-	this.timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10;
-	this._id = setInterval(this._mainFn.bind(this),this.timeSep);
-	/**@type {(()=>*)[]} */
-	this.fnList = fnList;
-	this.info = void 0;
-	/**@type {HTMLDivElement & {}} */
-	this.self = browserMode ? document.createElement('div') : {};
-	/**@type {Boolean} */
-	this.paused = false;
-	/**@type {?()=>*} */
-	this.intervalFn = void 0;
-	/**@type {?()=>*} */
-	this.ifFn = void 0;
-	/**@type {?()=>*} */
-	this.soFn = void 0;
-	Reflect.defineProperty(this,'_id',tempConfig);
-	Reflect.defineProperty(this,'fnList',tempConfig);
-	Reflect.defineProperty(this,'timeSep',tempConfig);
-};
+var RealWorld = function(){
+	/**
+	 * 
+	 * @param {Number} timeSep 
+	 * @param {...()=>void} fnList 
+	 */
+	function RealWorld(timeSep,...fnList){
+		if(!new.target) return new RealWorld(timeSep,...fnList);
+		this.timeSep = Number.isFinite(timeSep = Number(timeSep)) ? timeSep : 10;
+		this._id = setInterval(this._mainFn.bind(this),this.timeSep);
+		/**@type {(()=>*)[]} */
+		this.fnList = fnList;
+		this.info = undefined;
+		/**@type {HTMLDivElement} */
+		this.self = browserMode ? document.createElement('div') : {};
+		this.paused = false;
+		/**@type {?()=>*} */
+		this.intervalFn = undefined;
+		/**@type {?()=>*} */
+		this.ifFn = undefined;
+		/**@type {?()=>*} */
+		this.soFn = undefined;
+		Reflect.defineProperty(this,'_id',tempConfig);
+		Reflect.defineProperty(this,'fnList',tempConfig);
+		Reflect.defineProperty(this,'timeSep',tempConfig);
+	};
+	const undefined = void 0;
+	/**@this {{resolve(...value)=>void}} */
 	const thisResolve = function(...value){this.resolve(value);};
 	/**
 	 * ## onload 环境准备好时兑现的承诺
 	 * @type {Promise<void>}
 	 */
-	RealWorld.onload = !browserMode ? Promise.resolve() :
-	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)}));
+	return RealWorld.onload = !browserMode ? Promise.resolve() :
+	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)})),
 	/**## getPromiseState 异步获取承诺状态 */
-	RealWorld.getPromiseState = function(promise){
+	RealWorld.getPromiseState = function(){
 		const temp = Symbol(),tryFn = v=>Number(temp !== v),catchFn = ()=>-1;
-		return function getPromiseState(){return Promise.race([promise,temp]).then(tryFn,catchFn);};
-	}();
+		return function getPromiseState(promise){return Promise.race([promise,temp]).then(tryFn,catchFn);};
+	}(),
 	/**
 	 * ## onceIf 生成条件检测承诺 
 	 * @method
@@ -89,39 +90,42 @@ var RealWorld = function(timeSep,...fnList){
 		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld(timeSep);
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
-	};
+	},
+	RealWorld.cb2promise = 
 	/**
 	 * ## cb2promise 回调转承诺
-	 * @param {{useFn:(callback: (err?: Error,...value)=>void)=>void; callback: typeof thisResolve;} | {thisArg: {}; useFn:String; callback: typeof thisResolve;}} [param0]
-	 * @returns {Promise<[?Error,...*]}
+	 * @template T
+	 * @param {{thisArg?: {}; useFn: String | (callback: (err?: Error,...value: T)=>void)=>void; callback: typeof thisResolve;}} param0 
+	 * @param {...any} parameters 
+	 * @returns {Promise<[?Error,...T]>}
 	 */
-	RealWorld.cb2promise = function({thisArg,useFn,callback = thisResolve} = {},...parameters){
+	function({thisArg,useFn,callback = thisResolve} = {},...parameters){
 		if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
 		if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
 		return new Promise(resolve=>{
 			const temp = {callback,resolve};
 			try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch(error0){
 				try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch(error1){
-					temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+error0.stack+'\n'+error1.stack)]);
+					temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+error0?.stack+'\n'+error1?.stack)]);
 				}
 			}
 		}).catch(e=>console.error(e.stack));
-	};
+	},
 	/**## destroy 销毁本对象 */
-	RealWorld.prototype.destroy = function(){return clearInterval(this._id);};
+	RealWorld.prototype.destroy = function(){return clearInterval(this._id);},
 	/**## then 添加函数入执行队列 */
-	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;};
+	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;},
 	/**## 生成RealElement实例 */
 	RealWorld.prototype.getRealElement = function(){
 		return new RealElement({self: this.self,key: 'innerHTML'},{id: this.self.id,initValue: this.self.innerHTML});
-	};
+	},
 	/**## 变更时间间隔 */
 	RealWorld.prototype.setTimeSep = function(timeSep){
 		return (timeSep = Number.isFinite(Number(timeSep)) ? Number(timeSep) : 10) !== this.timeSep && (
 			clearInterval(this._id),Reflect.defineProperty(this,'timeSep',{value: timeSep}),
 			Reflect.defineProperty(this,'_id',{value: setInterval(this._mainFn.bind(this),this.timeSep)})
 		);
-	};
+	},
 	RealWorld.prototype._mainFn = function(){
 		if(this.paused) return;
 		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
@@ -130,8 +134,8 @@ var RealWorld = function(timeSep,...fnList){
 			try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
 			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
 		}
-	};
-}
+	},RealWorld;
+}();
 var RealNode = class RealNode{
 	/**
 	 * 
@@ -653,10 +657,10 @@ var RealTarget = class RealTarget extends RealNode{
 	};
 	/**
 	 * 
-	 * @type {{(target: {})=>RealTarget[];(element)=>RealElement[];}}
+	 * @type {{(element: {})=>RealTarget[];(element)=>RealElement[];}}
 	 */
 	static searchByObj = function(element){
-		/**@type {RealTarget[]} */const temp = [];
+		const temp = [];
 		if(Object(element) !== element) return temp;
 		for(const realTarget of RealTarget._sys.values()) if(element === realTarget.self) temp.push(realTarget);
 		return temp;
