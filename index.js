@@ -30,17 +30,27 @@ var exports;
 	/**## browserMode 是否存在nodejs环境 */
 	nodeMode = Object.prototype.toString.call(globalThis.process) === '[object process]'
 	;
+	// Number.prototype.toFloat = function(tail){
+	// 	var int,float;
+	// 	return Number.isFinite(this.valueOf()) ? (
+	// 		tail = typeof tail !== 'number' ? 7 : tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
+	// 		{0: int,1: float = ''} = this.toString(16).split('.'),
+	// 		BigInt('0x'+int)+'_+'+'0x'+float.slice(0,tail).padEnd(tail,'0')
+	// 	) : 'NaN';
+	// };
 	Number.prototype.toFloat = function(tail){
 		var int,float;
-		return Number.isFinite(Number(this)) ? (
-			tail = typeof tail !== 'number' ? 7 : tail > 14 ? 14 : tail < 0 ? 0 : Math.floor(tail),
-			{0: int,1: float = ''} = this.toString(16).split('.'),
-			BigInt('0x'+int)+'_+'+'0x'+float.slice(0,tail).padEnd(tail,'0')
+		return Number.isFinite(this.valueOf()) ? (
+			tail = typeof tail !== 'number' ? 9 : tail > 18 ? 18 : tail < 0 ? 0 : Math.floor(tail),
+			{0: int,1: float = ''} = this.toString(8).split('.'),
+			BigInt('0o'+int)+'_+'+'0o'+float.slice(0,tail).padEnd(tail,'0')
 		) : 'NaN';
 	};
 	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
 /**# RealWorld 事件循环类 */
-var RealWorld = function(){
+var RealWorld = (()=>{
+	/**@this {{resolve(...value)=>void}} */
+	const thisResolve = function(...value){this.resolve(value);};
 	/**
 	 * 
 	 * @param {Number} timeSep 
@@ -66,9 +76,6 @@ var RealWorld = function(){
 		Reflect.defineProperty(this,'fnList',tempConfig);
 		Reflect.defineProperty(this,'timeSep',tempConfig);
 	};
-	const undefined = void 0;
-	/**@this {{resolve(...value)=>void}} */
-	const thisResolve = function(...value){this.resolve(value);};
 	/**
 	 * ## onload 环境准备好时兑现的承诺
 	 * @type {Promise<void>}
@@ -76,10 +83,10 @@ var RealWorld = function(){
 	return RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)})),
 	/**## getPromiseState 异步获取承诺状态 */
-	RealWorld.getPromiseState = function(){
+	RealWorld.getPromiseState = (()=>{
 		const temp = Symbol(),tryFn = v=>Number(temp !== v),catchFn = ()=>-1;
 		return function getPromiseState(promise){return Promise.race([promise,temp]).then(tryFn,catchFn);};
-	}(),
+	})(),
 	/**
 	 * ## onceIf 生成条件检测承诺 
 	 * @method
@@ -135,7 +142,7 @@ var RealWorld = function(){
 			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
 		}
 	},RealWorld;
-}();
+})();
 var RealNode = class RealNode{
 	/**
 	 * 
@@ -210,7 +217,7 @@ var RealNode = class RealNode{
 	 * 
 	 * @type {(config: {get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?})=>RealNode}
 	 */
-	static createHidden = function(temp){return function(config){return new RealNode(Object.assign({},config,temp));};}({display: false});
+	static createHidden = (temp=>function(config){return new RealNode(Object.assign({},config,temp));})({display: false});
 	/**
 	 * 
 	 * @param {()=>*} fn 
@@ -533,7 +540,7 @@ class RealGroup extends RealNode{
 		const temp = Object.create(null),keyArray = Reflect.ownKeys(obj),length = keyArray.length;
 		for(i = 0;i < length;i++) temp[keyArray[i]] = createDeepGroup(obj[keyArray[i]],keyArray[i],tryRealNode,true);
 		return new RealGroup({self: temp});
-	}
+	};
 	keys(all){return all ? Reflect.ownKeys(this.proxy()) : Object.keys(this.proxy());}
 	/**
 	 * 
@@ -552,7 +559,7 @@ class RealGroup extends RealNode{
 	addSetterListener(ifKeyOrFn,listener){
 		if(!listener) return;
 		if(typeof listener !== 'function') this.error('"listener" must be function !');
-		ifKeyOrFn || (ifKeyOrFn = RealGroup._);
+		ifKeyOrFn ?? (ifKeyOrFn = RealGroup._);
 		var temp;
 		Array.isArray(temp = this.listenerMap.get(ifKeyOrFn)) || this.listenerMap.set(ifKeyOrFn,temp = []);
 		temp.push(listener);
@@ -563,12 +570,11 @@ class RealGroup extends RealNode{
 	 */
 	protoReact(keyArray = RealGroup.tempProxy.arr){
 		Array.isArray(keyArray) || this.error('"keyArray" must be Array !');
-		var i,l;
-		for(const {0: ifKeyOrFn,1: listenerArray} of this.listenerMap){
+		this.listenerMap.forEach((listenerArray,ifKeyOrFn)=>{try{
 			if(typeof ifKeyOrFn === 'function' ? ifKeyOrFn(keyArray) : keyArray.indexOf(ifKeyOrFn) !== -1){
-				for(l = listenerArray.length,i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
+				for(var l = listenerArray.length,i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
 			}
-		}
+		}catch(e){this.log('Wrong with ',ifKeyOrFn);}});
 	}
 	tryRealNodeSetter(){
 		const self = this.proxy(),keys = Reflect.ownKeys(self);
@@ -599,7 +605,11 @@ class RealGroup extends RealNode{
 		for(const key of keyArray) obj[key] instanceof RealNode ? (self[key] = obj[key],temp.push(key)) :
 		self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
 		obj[key] !== self[key] && (self[key] = obj[key],temp.push(key));
-		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e?.stack);}
+		this.listenerMap.get(RealGroup._).forEach(listener=>listener());
+		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e?.stack);}else{
+			const listenerArray = this.listenerMap.get(RealGroup._),l = listenerArray.length;
+			for(var i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
+		}
 		return Boolean(temp.length);
 	}
 	/**
@@ -617,7 +627,7 @@ class RealGroup extends RealNode{
 		while(i --> 0) Reflect.set(temp,keyArray[i],self[keyArray[i]] instanceof RealNode ? self[keyArray[i]].value : self[keyArray[i]]);
 		return temp;
 	}
-	/**@type {()=>T} */
+	/**@type {T & {()=>T}} */
 	get proxy(){return this.proto.value;}
 	get set(){return this.realSet;}
 	set set(set){/**tthis.log('Invalid set "set" !'); */}
@@ -629,7 +639,7 @@ class RealGroup extends RealNode{
 	get tryRealNode(){return false;}
 	set tryRealNode(tryRealNode){tryRealNode && this.log('I can not try realNode !');}
 	/**@type {Map<String | Symbol | (keyArray: (String | Symbol)[])=>Boolean,(()=>void)[]>} */
-	listenerMap = new Map;
+	listenerMap = new Map([[RealGroup._,[]]]);
 	/**
 	 * 
 	 * @param {{self?: T}} param0 
@@ -853,13 +863,13 @@ var RealElement = class RealElement extends RealTarget{
 		back: 'ArrowLeft'
 	});
 	/**@method */
-	static makeElementByString = function(){
+	static makeElementByString = (()=>{
 		/**@type {HTMLTemplateElement} */
 		const template = browserMode ? document.createElement('template') : {content: {}};
 		return Object.assign(function makeElementByString(innerHTML){
 			template.innerHTML = String(innerHTML); return template.content.firstElementChild;
 		},{_clear(){template.innerHTML = ''; return template.content;}});
-	}();
+	})();
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 	static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
@@ -926,7 +936,7 @@ var RealElement = class RealElement extends RealTarget{
 		}
 	})();
 	/**@method */
-	static addCSSRules = function(){
+	static addCSSRules = (()=>{
 		if(!browserMode){const addCSSRules = ()=>addCSSRules; return addCSSRules._css = RealWorld.onload,addCSSRules;}
 		var myCSS = RealWorld.onload.then(function(){
 			document.getElementsByTagName("head")[0].
@@ -961,7 +971,7 @@ var RealElement = class RealElement extends RealTarget{
 			cssName && RealElement.myStyle.set(cssName,Object.assign({},RealElement.myStyle.get(cssName),ruleObjObj));
 		}catch(e){console.error(e);}return addCSSRules;};
 		return addCSSRules._css = myCSS,addCSSRules;
-	}();
+	})();
 	static defaultInit = (()=>{
 		var onload = false;
 		return ()=>{
@@ -1225,7 +1235,7 @@ class RealPromise{
 		while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
 	}
 	get require(){return RealPromise.require;}
-	static require = function(){
+	static require = (()=>{
 		/**@this {Element} */
 		function onfinally(){this.remove();}
 		const pathSet = {},tempReg = /[^\/]+\/\.\.\//g;
@@ -1240,7 +1250,7 @@ class RealPromise{
 				script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
 			),this._push(temp.promise.finally(onfinally.bind(script)))));
 		} : function(){return Promise.reject(new Error('Mode error !'));};
-	}();
+	})();
 	get length(){return this.list.length;}
 	list = [];
 	/**
@@ -1279,7 +1289,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 		/**@type {CanvasRenderingContext2D} */
 		ctx;
 	}
-	static noCache = true;
+	static useCache = true;
 	/**@type {Map<String,HTMLImageElement>} */
 	static srcImageMap = new Map;
 	/**
@@ -1299,14 +1309,14 @@ var RealCanvas = class RealCanvas extends RealElement{
 		 */
 		function dealWithSrc(src,resolve,reject){
 			const temp = RealCanvas.srcImageMap.get(src) ?? new Image;
-			temp.src ? resolve(temp) : src && typeof src === 'string' && !(RealCanvas.noCache && RealCanvas.srcImageMap.has(src)) ?
+			temp.src ? resolve(temp) : src && typeof src === 'string' && !(RealCanvas.useCache && RealCanvas.srcImageMap.has(src)) ?
 			Object.assign(temp,{onload: ()=>(
 				RealCanvas.srcImageMap.set(src,temp),temp.onload = temp.onerror = resolve(temp)
 			),onerror: reject,src}) : reject();
 		}
 		return src=>new Promise(dealWithSrc.bind(null,src));
 	})();
-	static getRealGroupToClear = function(){
+	static getRealGroupToClear = (()=>{
 		class ConfigToClearShape{x = 0;y = 0;radiusX;radiusY;shape;relative;}
 		/**
 		 * 
@@ -1324,7 +1334,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 				await realCanvas.clearShape(config,config.shape).then(fnAfterClear);
 			}),realCanvas.loaded.finally(initFn),temp;
 		};
-	}();
+	})();
 	protoTransform(){}
 	protoGet(){return this.loaded.then(()=>this.proto.value);}
 	clearAsync(){return this.loaded = Promise.resolve(this.loaded).then(()=>this.clear());}
@@ -1333,16 +1343,16 @@ var RealCanvas = class RealCanvas extends RealElement{
 	clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
 	clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
 	rejectSrc(src,error){return src && console.error(
-		error instanceof Error ? error : (RealCanvas.noCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !')
+		error instanceof Error ? error : (RealCanvas.useCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !')
 	),false;}
 	protoSet(src){
 		return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).
 		then(img=>(this.proto.img = img,this.proto.value = src,true),this.rejectSrc.bind(this,src));
 	}
-	resizeBySrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
-		if(this.self.width !== img.naturalWidth) this.width = img.naturalWidth;
-		if(this.self.height !== img.naturalHeight) this.height = img.naturalHeight;
-	});}
+	preloadSrc(){
+		for(var temp = RealGroup.tempProxy.arr.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
+		return this.loaded = Promise.resolve(this.loaded).then(()=>Promise.allSettled(temp));
+	}
 	/**
 	 * 
 	 * @returns {Promise<Blob>}
@@ -1350,6 +1360,10 @@ var RealCanvas = class RealCanvas extends RealElement{
 	toBlob(){try{return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).then(
 		result=>(result[0] instanceof Error ? (console.error(result[0]),new Blob) : result[0])
 	);}catch(e){return console.error(e),Promise.resolve(new Blob);}}
+	resizeBySrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
+		if(this.self.width !== img.naturalWidth) this.width = img.naturalWidth;
+		if(this.self.height !== img.naturalHeight) this.height = img.naturalHeight;
+	});}
 	/**
 	 * 
 	 * @param {Boolean} react 
@@ -1367,6 +1381,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 		) ?? true).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(console.error(e),e));
 	}
 	multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
+		this.preloadSrc(bgSrc,srcArray);
 		var i = -1,temp = bgSrc ?? srcArray[0] ?? false;
 		resize && temp && this.resizeBySrc(temp);
 		this.loaded = Promise.resolve(this.loaded).then(()=>this.clearTemp());
@@ -1449,13 +1464,12 @@ var RealCanvas = class RealCanvas extends RealElement{
 		prefix,suffix,startN = 0,length,midLength,
 		bgSrc,playMode = 0,timeSep = 100,sizeMode = 'std',resizeAfter = true,
 	} = {}){
-		const size = {width: this.width,height: this.height},config = [1,2,3,5];
+		const size = {width: this.width,height: this.height},config = '1235',srcArr = [];
 		var i = startN + length + playMode;
-		length *= config[playMode] ?? 1;
-		timeSep /= config[playMode] ?? 1;
-		while(i --> startN) this.testSrc(prefix+RealCanvas.strN(i,midLength)+suffix);
-		i = 0;
-		return {loaded: this.loaded,finished: this.loaded.then(()=>{
+		length *= config[playMode] || 1;
+		timeSep /= config[playMode] || 1;
+		while(i --> startN) srcArr.push(prefix+RealCanvas.strN(i,midLength)+suffix);
+		return this.preloadSrc(srcArr),i = 0,{loaded: this.loaded,finished: this.loaded.then(()=>{
 			var resize;
 			/**@type {RealWorld} */
 			const temp = new RealWorld(timeSep);
@@ -1556,10 +1570,10 @@ class RealLoader extends RealElement{
 	static proto = class AntiLoader extends RealTarget.proto{
 		/**@type {null | (error: Error)=>void} */
 		onerror;
-		/**@type {null | (n: Number)=>void} */
+		/**@type {null | (this: RealLoader)=>void} */
 		onloadend;
 	};
-	static fs = function(){
+	static fs = (()=>{
 		class DocumentFs{get stat(){return DocumentFs.stat;}get readdir(){return DocumentFs.readdir;}}
 		DocumentFs.fetch = (()=>{
 			const temp = response=>response.status < 300 ? [,response] : RealLoader.error('Failed request !');
@@ -1598,10 +1612,10 @@ class RealLoader extends RealElement{
 			return [null,fileNameList];
 		}catch(e){return [e,[]];}});
 		return new DocumentFs;
-	}();
+	})();
 	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
 		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
-			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.(result[1]));
+			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.());
 			temp.react?.();
 			temp.notify(true);
 			break;
@@ -1614,43 +1628,35 @@ class RealLoader extends RealElement{
 	/**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
 	static load = (
 		nodeMode ? (async (realLoader)=>{try{
-			if('upload' === realLoader.type) return realLoader.temp.click(),[];
+			if('upload' === realLoader.type){
+				const temp = realLoader.temp.files;
+				return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[];
+			}
 			const fs = await nodeRequire('fs');
 			const data = await realLoader.dataGetter();
 			const {1: prefix = 'file',2: suffix = ''} = /(.+)(\..+)/.exec(realLoader.temp.download) || [];
-			return RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download).
-			then(async (value)=>{
-				if(!value) this.error('Unknown Error !');
-				if(value[0]) return RealLoader.getArrayBufferFrom(data).
-				then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
-				for(var i = 1;true;i++){
-					const path = './'+prefix+' - '+i+suffix;
-					if((await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
-					then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},path,Buffer.from(ab))).then(result=>[result[0],i]);
-				}
-			});
+			const result = await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download);
+			if(!result) this.error('Unknown Error !');
+			if(result[0]) return RealLoader.getArrayBufferFrom(data).
+			then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
+			for(var i = 1;true;i++){
+				const path = './'+prefix+' - '+i+suffix;
+				if((await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
+				then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},path,Buffer.from(ab)));
+			}
 		}catch(e){return [e];}}) :
 		(()=>{
 			const toBlob = data=>new Blob(data);
-			/**
-			 * 
-			 * @this {RealLoader} 
-			 * @param {Blob} blob 
-			 */
-			function temp(blob){
-				const href = URL.createObjectURL(blob);
-				this.temp.href = href;
-				this.temp.click();
-				URL.revokeObjectURL(href);
-				return [];
-			}
 			return async (realLoader)=>{try{
-				if('upload' === realLoader.type) return realLoader.temp.click(),[];
+				if('upload' === realLoader.type){
+					const temp = realLoader.temp.files;
+					return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[];
+				}
 				const data = await realLoader.dataGetter();
-				return Promise.resolve(
-					typeof data === 'string' ? new Blob([data]) : data instanceof Blob ? data :
-					RealLoader.getArrayBufferFrom(data).then(toBlob)
-				).then(temp.bind(realLoader)).catch(e=>[e]);
+				const href = URL.createObjectURL(await(
+					typeof data === 'string' ? new Blob([data]) : data instanceof Blob ? data : RealLoader.getArrayBufferFrom(data).then(toBlob)
+				));
+				return realLoader.temp.href = href,realLoader.temp.click(),URL.revokeObjectURL(href),[];
 			}catch(e){return [e];}}
 		})()
 	);
@@ -1678,7 +1684,7 @@ class RealLoader extends RealElement{
 	 * @param {T} isDownload 
 	 * @param {String} fileName 
 	 * @param {()=>*} dataGetter 
-	 * @param {{innerHTML?: String;onerror?: (e: ErrorEvent)=>void;onloadend?: (e: Event)=>void;}} param3 
+	 * @param {{innerHTML?: String;onerror?: (e)=>void;onloadend?: (this: RealLoader)=>void;}} param3 
 	 */
 	constructor(isDownload,fileName,dataGetter,{innerHTML,onerror,onloadend} = {}){
 		super({self: document.createElement('div'),key: 'innerHTML'});
@@ -1689,11 +1695,11 @@ class RealLoader extends RealElement{
 		this.dataGetter = dataGetter;
 		this.value = innerHTML;
 		isDownload = Boolean(isDownload);
-		this.type = isDownload ? 'download' : 'upload';
 		this.temp = document.createElement(isDownload ? 'a' : 'input');
+		this.type = isDownload ? (this.fileName = fileName || 'file','download') :
+		(this.temp.type = 'file','upload');
 		Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 		Reflect.defineProperty(this,'temp',RealLoader._configDescriptor);
-		isDownload ? this.fileName = fileName || 'file' : this.temp.type = 'file';
 	}
 };
 var RealSelect = class RealSelect extends RealElement{
@@ -2190,7 +2196,7 @@ finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	'>div': {'background-color':'#333','transform':'scale(0.8,1)'},
 	'>div:hover': {'transform':'scale(0.9,1)'},
 	'>.selected': {'background-color':'#555','transform':'scale(1)','font-weight':'bolder'},
-},function(){
+},(()=>{
 	const changeConfig = {bubbles: true,cancelable: false};
 	/**@type {(this: RealDivList)=>*[]} */
 	function tempGet(){
@@ -2231,14 +2237,14 @@ finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 		if(typeof onchange === 'function') this.self.onchange = onchange.bind(this);
 		this.value = optionConfig;
 	};
-}()));
+})()));
 /**
  * 
  * @param {String} [placeholder] 
  */
 var createRealDivSearch = placeholder=>RealDivList.createByClassName('realDivSearch',placeholder);
 RealWorld.onload = RealWorld.onload.
-finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},function(){
+finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
 	/**@type {RealDivList} */
 	var tempRealDivList;
 	const changeConfig = {bubbles: true,cancelable: false},now = Promise.resolve();
@@ -2285,7 +2291,7 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 		this.get = tempGet;
 		this.set = tempSet;
 	};
-}()));
+})()));
 /**
  * 
  * @param {String | RealNode | ()=>String} titleGetter 
@@ -2295,7 +2301,7 @@ RealWorld.onload = RealWorld.onload.
 finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	'>div:nth-child(1)': {'font-weight':'bolder'},
 	'.hidden>div:nth-child(n + 2)': {'display':'none'},
-},function(){
+},(()=>{
 	RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
 		var REList = RealElement.searchByObj(e.target?.parentElement),temp;
 		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSeries')) break;
@@ -2314,7 +2320,7 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	getTransform.realNode = function(titleGetter,value){return this.protoTransform(temp.concat(String(titleGetter.value),value));}
 	/**@type {(this: RealDivList,titleGetter: String | RealNode | ()=>String)=>void} */
 	return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
-}()));
+})()));
 
 }else log('No DOM !');
 	log('Sync\nin '+(performance.now() - t0).toFloat()+' ms.');
