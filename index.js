@@ -16,7 +16,7 @@ var exports;
 /**# 搜索## */
 	const
 	nodeRequire = require,
-	prevent = function(){},
+	prevent = function(v){return v;},
 	Element = globalThis.Element ?? prevent,
 	performance = globalThis.performance ?? Date,
 	setInterval = globalThis.setInterval ?? prevent,
@@ -1300,6 +1300,10 @@ var RealCanvas = class RealCanvas extends RealElement{
 	 * @returns {String}
 	 */
 	static strN(N,longN){const i = String(N).length; while(longN --> i) N = '0'+N; return N};
+	static preloadSrc(){
+		for(var temp = RealGroup.tempProxy.arr.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
+		return Promise.allSettled(temp);
+	}
 	/**@method @type {(src)=>Promise<HTMLImageElement>} */
 	static getImageBySrc = (()=>{
 		/**
@@ -1340,19 +1344,17 @@ var RealCanvas = class RealCanvas extends RealElement{
 	protoGet(){return this.loaded.then(()=>this.proto.value);}
 	clearAsync(){return this.loaded = Promise.resolve(this.loaded).then(()=>this.clear());}
 	fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
-	testSrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
+	/**@returns {Promise<PromiseSettledResult<HTMLImageElement>[]>} */
+	preloadSrc(){return this.loaded = Promise.resolve(this.loaded).then(prevent.bind(null,RealCanvas.preloadSrc.apply(null,arguments)));}
 	clear(){return this.proto.ctx.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.ctx.closePath(),this.proto.ctx;}
 	clearTemp(){return this.proto.temp.clearRect(0,0,this.proto.self.width,this.proto.self.height),this.proto.temp.closePath(),this.proto.temp;}
+	testSrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,this.rejectSrc.bind(this,src));}
 	rejectSrc(src,error){return src && console.error(
 		error instanceof Error ? error : (RealCanvas.useCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !')
 	),false;}
 	protoSet(src){
 		return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).
 		then(img=>(this.proto.img = img,this.proto.value = src,true),this.rejectSrc.bind(this,src));
-	}
-	preloadSrc(){
-		for(var temp = RealGroup.tempProxy.arr.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
-		return this.loaded = Promise.resolve(this.loaded).then(()=>Promise.allSettled(temp));
 	}
 	/**
 	 * 
