@@ -49,6 +49,7 @@ var exports;
 	Reflect.defineProperty(globalThis.Number.prototype,'toFloat',tempConfig);
 /**# RealWorld 事件循环类 */
 var RealWorld = (()=>{
+	var undefined;
 	/**@this {{resolve(...value)=>void}} */
 	const thisResolve = function(...value){this.resolve(value);};
 	/**
@@ -156,7 +157,7 @@ var RealNode = class RealNode{
 	static t0 = Date.now();
 	static tryRealNode = false;
 	static now = Promise.resolve();
-	static eventLoop = new RealWorld(4);
+	static eventLoop = new RealWorld;
 	/**
 	 * @typedef {{
 	 * tryRealNode: Boolean,
@@ -1613,11 +1614,11 @@ class RealLoader extends RealElement{
 		}catch(e){return [e,[]];}});
 		return new DocumentFs;
 	})();
-	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",e=>{
+	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",async e=>{
 		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
-			RealLoader.load(temp).then(result=>result[0] ? temp.onerror?.(result[0]) : temp.onloadend?.());
-			temp.react?.();
+			try{const err = (await RealLoader.load(temp))[0];err ? temp.onerror?.(err) : temp.onloadend?.();}catch(e){console.error(e);}
 			temp.notify(true);
+			temp.react?.();
 			break;
 		}
 	})),{writable: false,enumerable: false,configurable: false});
@@ -1696,10 +1697,9 @@ class RealLoader extends RealElement{
 		this.value = innerHTML;
 		isDownload = Boolean(isDownload);
 		this.temp = document.createElement(isDownload ? 'a' : 'input');
-		this.type = isDownload ? (this.fileName = fileName || 'file','download') :
-		(this.temp.type = 'file','upload');
-		Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 		Reflect.defineProperty(this,'temp',RealLoader._configDescriptor);
+		this.type = isDownload ? (this.fileName = fileName || 'file','download') : (this.temp.type = 'file','upload');
+		Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 	}
 };
 var RealSelect = class RealSelect extends RealElement{
@@ -2330,11 +2330,11 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 /**## 如果使用ESM规范，请不要注释掉上面这一行，如果使用CommonJS规范，请注释掉上面这一行。  */
 exports = Object.assign(exports ?? {},{
 	RealWorld,
+	RealNode,RealGroup,RealTarget,RealElement,	// 5
 	RealStory,
 	RealPromise,
-	RealNode,RealGroup,RealTarget,RealElement,	// 5
-	createRealDivSelect,createRealDivSearch,createRealDivSeries,	// 3
 	RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,	// 7
+	createRealDivSelect,createRealDivSearch,createRealDivSeries,	// 3
 });
 /**## 如果用作油猴脚本，请不要注释掉下面这一行。  */
 // Object.assign(globalThis,exports);
