@@ -83,18 +83,27 @@ var RealWorld = (()=>{
 	 */
 	return RealWorld.onload = !browserMode ? Promise.resolve() :
 	new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener)})),
+	RealWorld.createInterval =
+	/**
+	 * 
+	 * @param {Number} timeSep 
+	 * @param {()=>void} intervalFn 
+	 * @returns {RealWorld}
+	 */
+	function(timeSep,intervalFn){return (timeSep = new RealWorld(timeSep)).intervalFn = intervalFn,timeSep;},
 	/**## getPromiseState 异步获取承诺状态 */
 	RealWorld.getPromiseState = (()=>{
 		const temp = Symbol(),tryFn = v=>Number(temp !== v),catchFn = ()=>-1;
 		return function getPromiseState(promise){return Promise.race([promise,temp]).then(tryFn,catchFn);};
 	})(),
+	RealWorld.onceIf = 
 	/**
 	 * ## onceIf 生成条件检测承诺 
 	 * @method
 	 * @param {()=>Boolean} ifFn
 	 * @param {Number} [timeSep]
 	 */
-	RealWorld.onceIf = function(ifFn,timeSep){
+	function(ifFn,timeSep){
 		if(typeof ifFn !== 'function') return Promise.reject();
 		const temp = new RealWorld(timeSep);
 		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
