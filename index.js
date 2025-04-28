@@ -82,7 +82,7 @@ var RealWorld = (()=>{
 	 * @type {Promise<void>}
 	 */
 	return RealWorld.onload = !browserMode ? Promise.resolve() :
-	new Promise(r=>window.addEventListener('load',function tempListener(){r();window.removeEventListener('load',tempListener)})),
+	new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener)})),
 	/**## getPromiseState 异步获取承诺状态 */
 	RealWorld.getPromiseState = (()=>{
 		const temp = Symbol(),tryFn = v=>Number(temp !== v),catchFn = ()=>-1;
@@ -668,9 +668,9 @@ var RealTarget = class RealTarget extends RealNode{
 	};
 	/**
 	 * 
-	 * @type {{(element: {})=>RealTarget[];(element)=>RealElement[];}}
+	 * @type {{(element: Element)=>RealElement[];(element: {})=>RealTarget[];(element)=>RealElement[];}}
 	 */
-	static searchByObj = function(element){
+	static searchByObj(element){
 		const temp = [];
 		if(Object(element) !== element) return temp;
 		for(const realTarget of RealTarget._sys.values()) if(element === realTarget.self) temp.push(realTarget);
@@ -927,7 +927,7 @@ var RealElement = class RealElement extends RealTarget{
 				!RealElement.selectorEventListeners[type] && (RealElement.selectorEventListeners[type] = new Map,addEventListener(
 					type,e=>{
 						const t0 = performance.now();
-						RealElement.selectorEventListeners[type].forEach((listenerArray,selectors)=>temp(e,listenerArray,selectors));
+						RealElement.selectorEventListeners[type].forEach(temp.bind(null,e));
 						log(tempStr+'-listeners completed\nin '+(performance.now() - t0).toFloat()+' ms.');
 					}
 				)),
@@ -1590,12 +1590,12 @@ class RealLoader extends RealElement{
 		DocumentFs.readdir = nodeMode ?
 		(async (path)=>RealWorld.cb2promise({thisArg: await nodeRequire('fs'),useFn: 'readdir'},path)) :
 		(async (path,...strArgs)=>{try{
-			const length = strArgs.length,fileNameList = [];
-			var i = length,j;
+			const length = strArgs.length;
+			var i = length,fileName;
 			/\/$/.test(path) || (path += '/');
 			iLoop: while(i --> 0){
 				if(Array.isArray(strArgs[i])){
-					for(j = strArgs[i].length;j --> 0;) strArgs[i][j] = String(strArgs[i][j]);
+					for(fileName = strArgs[i].length;fileName --> 0;) strArgs[i][fileName] = String(strArgs[i][fileName]);
 					continue iLoop;
 				}
 				const str = String(strArgs[i]);
@@ -1605,25 +1605,28 @@ class RealLoader extends RealElement{
 				}
 				else strArgs[i] = [str];
 			}
+			const statList = [],testFileNameList = [],fileNameList = [];
 			for(const temp = Array(length).fill(0);!('-1' in temp);){
-				j = '';
-				for(i = 0;i < length;i++) j+=strArgs[i][temp[i]];
-				log(path+j);
-				(await DocumentFs.stat(path+j))[0] || log(fileNameList.push(j),j);
+				fileName = '';
+				for(i = 0;i < length;i++) fileName+=strArgs[i][temp[i]];
+				testFileNameList.push(fileName),fileName = path+fileName,statList.push(DocumentFs.stat(fileName));
+				// log(fileName);
 				for(temp[(i = length) - 1]++;i --> 0;) strArgs[i].length > temp[i] || (temp[i] = 0,temp[i - 1]++);
 			}
+			const resultList = await Promise.all(statList),limit = resultList.length;
+			for(i = 0;i < limit;i++) resultList[i][0] ?? log(fileNameList.push(testFileNameList[i]),testFileNameList[i]);
 			return [null,fileNameList];
 		}catch(e){return [e,[]];}});
 		return new DocumentFs;
 	})();
-	static _configDescriptor = (browserMode && RealWorld.onload.then(()=>RealElement.addEventListenerBySelectors('.RealLoader',"click",async e=>{
-		for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
+	static _configDescriptor = (browserMode && addEventListener('click',async e=>{
+		if(e.target.classList.contains('RealLoader')) for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
 			try{const err = (await RealLoader.load(temp))[0];err ? temp.onerror?.(err) : temp.onloadend?.();}catch(e){console.error(e);}
 			temp.notify(true);
 			temp.react?.();
 			break;
 		}
-	})),{writable: false,enumerable: false,configurable: false});
+	}),{writable: false,enumerable: false,configurable: false});
 	static getArrayBufferFrom(data){return Promise.resolve(
 		data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
 		data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
@@ -2217,13 +2220,14 @@ finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
 	}
 	/**@type {(RS: RealDivList)=>Boolean} */
 	async function tempReact(RS){return RS.react?.(),await RS.notify(),RS.self.dispatchEvent(new Event('change',changeConfig));}
-	RealElement.addEventListenerBySelectors('.realDivSelect>div','click',e=>{
-		var REList = RealTarget.searchByObj(e.target.parentElement),i = 0,temp;
-		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSelect')) break;
+	addEventListener('click',e=>{
+		/**@type {?Element} */
+		const parentElement = e.target.parentElement;
+		if(!parentElement || !parentElement.classList.contains('realDivSelect')) return;
+		var REList = RealTarget.searchByObj(parentElement),i = 0,temp;
+		while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 		if(!temp) return;
-		/**@type {RealDivList} */
 		const RS = temp,previousValue = RS.value[0];
-		/**@type {HTMLDivElement[]} */
 		REList = RS.proto.list;
 		if(RS.info.multiple) e.target.classList.toggle('selected'),tempReact(RS);else{
 			while(temp = REList[i++]) temp.classList[e.target === temp ? 'add' : 'remove']('selected');
@@ -2252,35 +2256,35 @@ finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-
 	const changeConfig = {bubbles: true,cancelable: false},now = Promise.resolve();
 	/**@type {(this: RealDivList)=>String} */
 	function tempGet(){return this.info.inputer.value;}
+	/**@type {(target: Element)=>void} */
+	function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
+		tempRealDivList.info.matcher.value = {},tempRealDivList.react?.(),tempRealDivList.notify(true)
+	);}
 	/**@type {(this: RealDivList,value: *[])=>false} */
 	function tempSet(value){
 		Array.isArray(value) ? this.info.wordList = value : this.error('"value must be Array !');
 		return now.then(()=>this.info.inputer.dispatchEvent(new Event('input',changeConfig))),
 		(tempRealDivList || (tempRealDivList = this)).info.matcher.value = {},false;
 	}
-	/**@type {(target: Element)=>void} */
-	function tempReact(target){tempRealDivList && target !== tempRealDivList.info.inputer && (
-		tempRealDivList.info.matcher.value = {},tempRealDivList.react?.(),tempRealDivList.notify(true)
-	);}
 	addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',async e=>(
+		await 0,e.target.dispatchEvent(new Event('input',changeConfig))
+	));
+	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','input',e=>{
+		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
+		while(temp = REList.pop()) if(temp instanceof RealDivList) break;
+		if(!temp) return;
+		const testReg = new RegExp(temp.info.inputer.value,'i');
+		temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
+	});
 	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
 		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
-		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
+		while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 		if(!temp) return;
 		temp.info.inputer.value = temp.info.matcher.value[0];
 		tempRealDivList = temp;
 		tempRealDivList.react?.(),tempRealDivList.notify(true);
 		// (tempRealDivList = temp).info.inputer.dispatchEvent(new Event('input',changeConfig));
-	});
-	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','input',e=>{
-		var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
-		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSearch')) break;
-		if(!temp) return;
-		const testReg = new RegExp(temp.info.inputer.value,'i');
-		temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
-	});
-	RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',e=>{
-		now.then(()=>e.target.dispatchEvent(new Event('input',changeConfig)));
 	});
 	/**@type {(this: RealDivList)=>void} */
 	return function(placeholder){
@@ -2305,8 +2309,8 @@ finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
 	'.hidden>div:nth-child(n + 2)': {'display':'none'},
 },(()=>{
 	RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
-		var REList = RealElement.searchByObj(e.target?.parentElement),temp;
-		while(temp = REList.pop()) if(temp && temp.self.classList.contains('realDivSeries')) break;
+		var REList = RealElement.searchByObj(e.target.parentElement),temp;
+		while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 		temp && temp.toggleClassName('hidden');
 	});
 	/**@type {(this: RealDivList,titleGetter: String | RealNode | ()=>String)=>(getTransform.fn | getTransform.realNode | getTransform.str)} */
