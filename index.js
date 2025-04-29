@@ -129,7 +129,7 @@ var RealWorld = (()=>{
 		}).catch(e=>console.error(e.stack));
 	},
 	/**## destroy 销毁本对象 */
-	RealWorld.prototype.destroy = function(){return clearInterval(this._id);},
+	RealWorld.prototype.destroy = function(){this._mainFn(),clearInterval(this._id);},
 	/**## then 添加函数入执行队列 */
 	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;},
 	/**## 生成RealElement实例 */
@@ -146,7 +146,7 @@ var RealWorld = (()=>{
 	RealWorld.prototype._mainFn = function(){
 		if(this.paused) return;
 		try{this.intervalFn?.();}catch(e){this.intervalFn = console.error(e);}
-		try{this.info = this.fnList.pop()?.call(this,this.info);}catch(e){console.error(e);}
+		try{this.info = this.fnList.pop()?.call?.(this,this.info);}catch(e){console.error(e);}
 		try{if(this.ifFn?.()){this.soFn?.();this.ifFn = this.soFn = null;}}catch(e0){
 			try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
 			this.paused || (this.soFn = null);this.paused = false;console.error(e0);
