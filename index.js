@@ -103,10 +103,11 @@ var RealWorld = (()=>{
 	 * @param {()=>Boolean} ifFn
 	 * @param {Number} [timeSep]
 	 */
-	function(ifFn,timeSep){
-		if(typeof ifFn !== 'function') return Promise.reject();
+	async(ifFn,timeSep)=>{
+		if(typeof ifFn !== 'function') throw new TypeError('"ifFn" must be Function !');
 		const temp = new RealWorld(timeSep);
-		return new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn)).then(()=>temp.destroy());
+		await new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn));
+		clearInterval(temp._id);
 	},
 	RealWorld.cb2promise = 
 	/**
