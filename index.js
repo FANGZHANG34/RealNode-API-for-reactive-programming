@@ -51,7 +51,7 @@ var exports;
 var RealWorld = (()=>{
 	var undefined;
 	/**@this {{resolve(...value)=>void}} */
-	const thisResolve = function(...value){this.resolve(value);};
+	function thisResolve(...value){this.resolve(value);};
 	/**
 	 * 
 	 * @param {Number} timeSep 
@@ -124,13 +124,15 @@ var RealWorld = (()=>{
 			const temp = {callback,resolve};
 			try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch(error0){
 				try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch(error1){
-					temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+error0?.stack+'\n'+error1?.stack)]);
+					temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+(
+						String(error0?.stack ?? error0)+'\n'+String(error1?.stack ?? error1)
+					))]);
 				}
 			}
 		}).catch(e=>console.error(e.stack));
 	},
 	/**## destroy 销毁本对象 */
-	RealWorld.prototype.destroy = function(){this._mainFn(),clearInterval(this._id);},
+	RealWorld.prototype.destroy = function(){clearInterval(this._id),this._mainFn();},
 	/**## then 添加函数入执行队列 */
 	RealWorld.prototype.then = function(fn){return typeof fn === 'function' && this.fnList.unshift(fn),this;},
 	/**## 生成RealElement实例 */
@@ -617,7 +619,7 @@ class RealGroup extends RealNode{
 		self[key] instanceof RealNode ? self[key].set(obj[key],true,true,true) && temp.push(key) :
 		obj[key] !== self[key] && (self[key] = obj[key],temp.push(key));
 		this.listenerMap.get(RealGroup._).forEach(listener=>listener());
-		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e?.stack);}else{
+		if(temp.length) try{this.react?.(temp);}catch(e){this.log(e?.stack ?? e);}else{
 			const listenerArray = this.listenerMap.get(RealGroup._),l = listenerArray.length;
 			for(var i = 0;i < l;i++) try{listenerArray[i]();}catch(e){this.log('Wrong with ',listenerArray[i]);}
 		}
@@ -877,9 +879,8 @@ var RealElement = class RealElement extends RealTarget{
 	static makeElementByString = (()=>{
 		/**@type {HTMLTemplateElement} */
 		const template = browserMode ? document.createElement('template') : {content: {}};
-		return Object.assign(function makeElementByString(innerHTML){
-			template.innerHTML = String(innerHTML); return template.content.firstElementChild;
-		},{_clear(){template.innerHTML = ''; return template.content;}});
+		function makeElementByString(innerHTML){template.innerHTML = String(innerHTML); return template.content.firstElementChild;}
+		return makeElementByString._clear = ()=>(template.innerHTML = '',template.content),makeElementByString;
 	})();
 	static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
 	static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
@@ -923,7 +924,7 @@ var RealElement = class RealElement extends RealTarget{
 		 * @param {keyof HTMLElementTagNameMap} selectors 
 		 */
 		function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
-			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e?.stack);}
+			for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e?.stack ?? e);}
 		}}catch(e){console.error(e);}}
 		/**
 		 * 
@@ -1403,7 +1404,7 @@ var RealCanvas = class RealCanvas extends RealElement{
 		if(srcArray.length > 1 && autoOpacity){
 			for(i = srcArray.length,temp = 0;i --> 0;) this.tempOpacity = .625 ** i,this.temp = srcArray[temp++];
 		}else for(i = -1,temp = srcArray.length;temp >++ i;) this.temp = srcArray[i];
-		return this.loaded = Promise.resolve(this.loaded).then(()=>{this.fix(this.proto.temp.canvas);},e=>alert(e.stack));
+		return this.loaded = Promise.resolve(this.loaded).then(()=>{this.fix(this.proto.temp.canvas);},e=>log(e?.stack ?? e));
 	}
 	/**
 	 * 
