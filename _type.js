@@ -1,39 +1,5 @@
 "use strict";
-// ==UserScript==
-// @name			real-node
-// @namespace		http://tampermonkey.net/
-// @version			2024-12-14
-// @description		Try to take over the world after watching the end of this script!
-// @author			FANGZHANG34
-// @match			https://*/*
-// @icon			https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
-// @grant			none
-// ==/UserScript==
-var
-RealWorld,RealNode,RealGroup,RealTarget,
-RealStory,RealPromise,
-RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
-createRealDivSelect,createRealDivSearch,createRealDivSeries
-;
-/**
- * ## 使用以下代码获得类型提示，不用时再注释掉。
- * ### var {
- * ### RealWorld,RealNode,RealGroup,RealTarget,
- * ### RealStory,RealPromise,
- * ### RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
- * ### createRealDivSelect,createRealDivSearch,createRealDivSeries
- * ### } = await import('real-node').then(EXPORTS=>EXPORTS.default);
 var {
-	RealWorld,RealNode,RealGroup,RealTarget,
-	RealStory,RealPromise,
-	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
-	createRealDivSelect,createRealDivSearch,createRealDivSeries
-} = await import('real-node').then(EXPORTS=>EXPORTS.default);
- * 
- * ## 如果使用ESM规范，请不要注释掉"export default"，否则请注释掉"export default"。
- */
-// export default
-({
 	RealWorld,RealNode,RealGroup,RealTarget,
 	RealStory,RealPromise,
 	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
@@ -2476,4 +2442,4 @@ var {
 	// Object.assign(globalThis,EXPORTS);
 	log('Sync\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
 	return EXPORTS;
-})());
+})();
