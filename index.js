@@ -613,48 +613,44 @@ var {
 			for(i = 0;i < length;i++) temp[keyArray[i]] = createDeepGroup(obj[keyArray[i]],keyArray[i],tryRealNode,true);
 			return new RealGroup({self: temp});
 		};
+		/**
+		 * ## 针对JSON对象的强制数据结构转换
+		 * @template {{}} T
+		 * @template U
+		 * @type {{
+		 * (target,structure: "array")=>*[];
+		 * (target,structure: "string")=>String;
+		 * (target,structure: "number")=>Number;
+		 * (target,structure: "bigint")=>BigInt;
+		 * (target,structure: "boolean")=>Boolean;
+		 * (target,structure: "undefined" | "null")=>null;
+		 * (target,structure: T)=>T;
+		 * (target: U,structure: unknown)=>U;
+		 * }} 
+		 */
 		static getObjByStructure = (()=>{
-			/**
-			 * 
-			 * @template {{}} T
-			 * @template U
-			 * @type {{
-			 * (target,structure: "string")=>String;
-			 * (target,structure: "number")=>Number;
-			 * (target,structure: "boolean")=>Boolean;
-			 * (target,structure: "undefined" | "null")=>null;
-			 * (target,structure: "array")=>*[];
-			 * (target,structure: T)=>T;
-			 * (target: U,structure: unknown)=>U;
-			 * }} 
-			 */
-			const getObjByStructure = (target,structure)=>{
+			const getObjByStructure = (source,structure)=>{
 				var index,keys,temp,key;
 				switch(structure){
-					case "string": {
-						try{return String(target);}catch{}
-						try{return String(target[Symbol.toPrimitive]());}catch{}
-						try{return String(target.toString());}catch{}
-						try{return String(target.valueOf());}catch{}
-						try{return Object.prototype.toString.call(target);}catch{}
-						return '[object Object]';
+					case "boolean": return Boolean(source);
+					case "null": case "undefined": return null;
+					case "bigint": try{return BigInt(source);}catch{return 0n;}
+					case "number": try{return Number(source);}catch{return NaN;}
+					case "string": try{return String(source);}catch{return 'Symbol(unknown)';}
+					case "array": switch(typeof source){
+						case "string": return source.split('');
+						case "object": if(source === null) return [];else if(Array.isArray(source)) return source.concat();
+						else for(temp = [],keys = Object.keys(source),index = 0;true;) if(
+							Number.isInteger(key = +keys[index++]) && key > -1
+						) try{temp[key] = source[key];}catch(e){console.error(e);}else return temp;
+						default: return [];
 					}
-					case "number": try{return Number(target);}catch{return NaN;}
-					case "boolean": return Boolean(target);
-					case "undefined": case "null": return null;
-					case "array": if(Array.isArray(target)) return target;else try{
-						temp = [],keys = Object.keys(target),index = 0;
-						while(true){
-							const i = +(key = keys[index++]);
-							if(Number.isInteger(i) && i > -1) try{temp[i] = target[i];}catch(e){console.error(e);}else return temp;
-						}
-					}catch{return temp;}
+					default: if(Object(structure) !== structure) return source;
 				}
-				if(Object(structure) !== structure) return target;
-				target = Object(target),temp = Object.create(null),keys = Object.keys(structure),index = keys.length;
+				source = Object(source),temp = Object.create(null),keys = Object.keys(structure),index = keys.length;
 				while(index --> 0) try{
 					key = keys[index],structure[key];
-					try{temp[key] = getObjByStructure(target[key],structure[key]);}
+					try{temp[key] = getObjByStructure(source[key],structure[key]);}
 					catch(e){temp[key] = getObjByStructure(null,structure[key]);console.error(e);}
 				}catch(e){temp[key] = null;console.error(e);}
 				return temp;
