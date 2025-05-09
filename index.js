@@ -9,12 +9,6 @@
 // @icon			https://www.google.com/s2/favicons?sz=64&domain=bilibili.com
 // @grant			none
 // ==/UserScript==
-var
-RealWorld,RealNode,RealGroup,RealTarget,
-RealStory,RealPromise,
-RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
-createRealDivSelect,createRealDivSearch,createRealDivSeries
-;
 /**
  * ## 使用以下代码获得类型提示，不用时再注释掉。
  * ### var {
@@ -623,7 +617,7 @@ var {
 		 * (target,structure: "number")=>Number;
 		 * (target,structure: "bigint")=>BigInt;
 		 * (target,structure: "boolean")=>Boolean;
-		 * (target,structure: "undefined" | "null")=>null;
+		 * (target,structure: "null" | "undefined")=>null;
 		 * (target,structure: T)=>T;
 		 * (target: U,structure: unknown)=>U;
 		 * }} 
@@ -638,12 +632,12 @@ var {
 					case "number": try{return Number(source);}catch{return NaN;}
 					case "string": try{return String(source);}catch{return 'Symbol(unknown)';}
 					case "array": switch(typeof source){
+						default: return [];
 						case "string": return source.split('');
 						case "object": if(source === null) return [];else if(Array.isArray(source)) return source.concat();
 						else for(temp = [],keys = Object.keys(source),index = 0;true;) if(
 							Number.isInteger(key = +keys[index++]) && key > -1
 						) try{temp[key] = source[key];}catch(e){console.error(e);}else return temp;
-						default: return [];
 					}
 					default: if(Object(structure) !== structure) return source;
 				}
@@ -2473,3 +2467,9 @@ var {
 	log('Sync\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
 	return EXPORTS;
 })());
+var
+RealWorld,RealNode,RealGroup,RealTarget,
+RealStory,RealPromise,
+RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+createRealDivSelect,createRealDivSearch,createRealDivSeries
+;
