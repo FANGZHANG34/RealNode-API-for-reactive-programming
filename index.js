@@ -31,7 +31,7 @@ var {
 	RealWorld,RealNode,RealGroup,RealTarget,
 	RealStory,RealPromise,
 	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
-	createRealDivSelect,createRealDivSearch,createRealDivSeries
+	createRealDivSelect,createRealDivSearch,createRealDivSeries,
 } = (()=>{
 	function prevent(v){return v;}
 	/**##   */
@@ -1663,8 +1663,9 @@ var {
 		 * @param {...RealNode} [relativeRNs] 
 		 */
 		constructor(id,width,height,tryRealNode,...relativeRNs){
-			const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
-			self && self.tagName.toLocaleLowerCase() !== 'canvas' &&
+			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
+			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
+			self && self instanceof HTMLCanvasElement &&
 			RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
 			RealElement.addId(id,!self);
 			super({self: self || RealElement.makeElement('canvas',{id})},{id},tryRealNode,...relativeRNs);
@@ -1898,7 +1899,6 @@ var {
 		get list(){return this.proto.list;}
 		/**
 		 * 
-		 * @param {String | null} id 
 		 * @param {Boolean} multiple 
 		 * @param {{[text: String]: String}} optionConfig 
 		 * @param {Boolean} [tryRealNode] 
@@ -1907,8 +1907,9 @@ var {
 		 * @param {(e: Event)=>void} [onchange] 
 		 */
 		constructor(id,multiple,optionConfig,tryRealNode,defaultKey,defaultValue,onchange){
-			const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
-			if(self) self.tagName.toLocaleLowerCase() === 'select' ? Object.assign(self,{multiple,onchange}) :
+			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
+			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
+			if(self) self instanceof HTMLSelectElement ? Object.assign(self,{multiple,onchange}) :
 			RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
 			RealElement.addId(id,!self);
 			super({
@@ -1980,14 +1981,14 @@ var {
 		}
 		/**
 		 * 
-		 * @param {String} id 
 		 * @param {Boolean} tryHTML 
 		 * @param {(String | Element)[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 		 */
 		constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
-			const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
+			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
+			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
 			super({self: self || RealElement.makeElement('div',{id})},{
 				id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
@@ -2130,14 +2131,14 @@ var {
 		get childrenList(){return this.proto.childrenList;}
 		/**
 		 * 
-		 * @param {String} id 
 		 * @param {Boolean} tryHTML 
 		 * @param {(Element | String)[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 		 */
 		constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
-			const self = (typeof id === 'string' || (id = '',false)) && document.getElementById(id);
+			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
+			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
 			super({self: self || RealElement.makeElement('div',{id})},{
 				id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
