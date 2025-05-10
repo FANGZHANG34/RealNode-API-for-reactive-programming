@@ -1657,6 +1657,7 @@ var {
 		loaded = RealNode.now;
 		/**
 		 * 
+		 * @param {String | Element} id 
 		 * @param {Number} [width] 
 		 * @param {Number} [height] 
 		 * @param {Boolean} [tryRealNode] 
@@ -1899,6 +1900,7 @@ var {
 		get list(){return this.proto.list;}
 		/**
 		 * 
+		 * @param {String | Element} id 
 		 * @param {Boolean} multiple 
 		 * @param {{[text: String]: String}} optionConfig 
 		 * @param {Boolean} [tryRealNode] 
@@ -1927,24 +1929,23 @@ var {
 		/**
 		 * 
 		 * @param {String} className 
-		 * @param {Boolean} tryHTML 
 		 * @param {ArrayLike} optionList 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
 		 * @param {(this: RealComtag)=>void} [callback] 
 		 */
-		static defineComtagClass(className,tryHTML,optionList,tryRealNode,cssRuleObjObj,callback){
+		static defineComtagClass(className,optionList,tryRealNode,cssRuleObjObj,callback){
 			/^([A-Za-z]\w*)$/.test(className) || this.error('Illegal "className" !');
 			this.comtagClassMap.has(className) && this.error('"className" repeated !');
 			optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
 			this.addCSSRules('.'+className,cssRuleObjObj);
-			this.comtagClassMap.set(className,[tryHTML,optionList,tryRealNode,typeof callback === 'function' ? callback : null]);
+			this.comtagClassMap.set(className,[optionList,tryRealNode,typeof callback === 'function' ? callback : null]);
 		}
 		static createByClassName(className,...argArray){
 			const config = this.comtagClassMap.get(className);
 			config || this.error('"className" not found !');
-			const temp = new RealComtag('',config[0],config[1],config[2]);
-			return config[3].apply(temp,argArray),temp.addClassName(className),temp;
+			const temp = new RealComtag('',config[0],config[1]);
+			return config[2].apply(temp,argArray),temp.addClassName(className),temp;
 		}
 		fix(){
 			var temp = this.transform(this.proto.value),l = temp.length,i = 0;
@@ -1955,47 +1956,43 @@ var {
 			return this;
 		}
 		protoTransform(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
-				const list = [];
-				for(const temp of value) list.push(temp instanceof Element ? temp : document.createElement(String(temp)));
-				return list;
-			}
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
+			const list = [];
+			for(const temp of value) list.push(document.createElement(temp instanceof Element ? temp.tagName : String(temp)));
+			return list;
 		}
 		/**
 		 * 
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
-				/**@type {IterableIterator<HTMLImageElement | String>} */
-				const iter0 = this.proto.value[Symbol.iterator]();
-				const iter1 = value[Symbol.iterator]();
-				/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-				const temp = Array(2);
-				while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
-					if(temp[0].done) break;
-					if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
-				}
-				return false;
-			}
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
+			/**@type {IterableIterator<HTMLImageElement | String>} */
+			const iter0 = this.proto.value[Symbol.iterator]();
+			const iter1 = value[Symbol.iterator]();
+			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
+			const temp = Array(2);
+			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;
+			else if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
+			return false;
 		}
 		/**
 		 * 
-		 * @param {Boolean} tryHTML 
-		 * @param {(String | Element)[]} optionList 
+		 * @param {String | Element} id 
+		 * @param {String[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 		 */
-		constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
+		constructor(id,optionList,tryRealNode,selfAssign){
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
 			super({self: self || RealElement.makeElement('div',{id})},{
-				id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
+				id,initValue: optionList?.[Symbol.iterator] ? Array.from(optionList) : []
 			},tryRealNode);
 			/**@type {AntiList} */
 			this.proto;
-			this.tryHTML = tryHTML;
+			this.tryHTML = false;
 			Object.assign(this.fix().self,selfAssign);
 		}
 	};
@@ -2083,13 +2080,10 @@ var {
 		 */
 		protoTransform(value){
 			var list = [],temp,ele;
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			const iter = value[Symbol.iterator]();
-			while(!(temp = iter.next()).done){
-				list.push(ele = document.createElement('div'));
-				temp.value instanceof Element ? ele.appendChild(temp.value) :
-				this.tryHTML ? ele.innerHTML = String(temp.value) : ele.textContent = String(temp.value);
-			}
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			while(!(temp = iter.next()).done) list.push(ele = document.createElement('div')),
+			temp.value instanceof Element ? ele.appendChild(temp.value) :
+			this.tryHTML ? ele.innerHTML = String(temp.value) : ele.textContent = String(temp.value);
 			return list;
 		}
 		/**
@@ -2131,6 +2125,7 @@ var {
 		get childrenList(){return this.proto.childrenList;}
 		/**
 		 * 
+		 * @param {String | Element} id 
 		 * @param {Boolean} tryHTML 
 		 * @param {(Element | String)[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
@@ -2141,7 +2136,7 @@ var {
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
 			super({self: self || RealElement.makeElement('div',{id})},{
-				id,initValue: !optionList?.[Symbol.iterator] ? [] : Array.from(optionList)
+				id,initValue: optionList?.[Symbol.iterator] ? Array.from(optionList) : []
 			},tryRealNode);
 			/**@type {AntiList} */this.proto;
 			this.tryHTML = tryHTML;
@@ -2186,12 +2181,9 @@ var {
 		 */
 		protoTransform(value){
 			var list = [],temp;
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			const iter = value[Symbol.iterator]();
-			while(!(temp = iter.next()).done){
-				list.push(temp.done = document.createElement('div'));
-				temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
-			}
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			while(!(temp = iter.next()).done) list.push(temp.done = document.createElement('div')),
+			temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
 			return list;
 		}
 		/**
@@ -2199,20 +2191,16 @@ var {
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');else{
-				/**@type {IterableIterator<HTMLImageElement | String>} */
-				const iter0 = this.proto.value[Symbol.iterator]();
-				const iter1 = value[Symbol.iterator]();
-				/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-				const temp = Array(2);
-				while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)){
-					if(temp[0].done) break;
-					if((temp[0].value?.src ?? String(temp[0].value)) !== (temp[1].value?.src ?? String(temp[1].value))){
-						return this.proto.value = Array.from(value),true;
-					}
-				}
-				return false;
-			}
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
+			/**@type {IterableIterator<HTMLImageElement | String>} */
+			const iter0 = this.proto.value[Symbol.iterator]();
+			const iter1 = value[Symbol.iterator]();
+			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
+			const temp = Array(2);
+			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;else if(
+				(temp[0].value?.src ?? String(temp[0].value)) !== (temp[1].value?.src ?? String(temp[1].value))
+			) return this.proto.value = Array.from(value),true;
+			return false;
 		}
 		/**
 		 * 
