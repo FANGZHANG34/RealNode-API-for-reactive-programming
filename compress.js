@@ -5,8 +5,7 @@ try{var uglifyJS = require('./uglify-js');}catch{}
 try{var uglifyJS = require('uglify-js');}catch{}
 if(!uglifyJS) throw new Error('Require package "uglify-js" !!!');
 
-const indexJS = fs.readFileSync('./index.js','utf-8').
-replace('exports = Object.assign(exports,','Object.assign(exports,');
+const indexJS = fs.readFileSync('./index.js','utf-8');
 function prevent(){}
 /**
  * 
@@ -19,10 +18,10 @@ function minifyIndexJS(mode){
 		default: targetCode = indexJS;break;
 		case 'esm': targetCode = indexJS.replace('// export default','export default');break;
 		case 'usr':case 'user': user = true,targetCode = indexJS.
-		replace('// Object.assign(globalThis,exports);','Object.assign(globalThis,exports);');break;
+		replace('// Object.assign(globalThis,EXPORTS);','Object.assign(globalThis,EXPORTS);');break;
 	}
-	const temp = uglifyJS.minify(targetCode,{sourceMap: {url: './real-node-'+mode+'.min.js.map',includeSources: true}});
-	fs.writeFile('./real-node-'+mode+'.min.js',user ?
+	const temp = uglifyJS.minify(targetCode,{sourceMap: {url: './real-node-'+mode+'.min.js.map',includeSources: true},keep_fnames: true});
+	fs.writeFile('./real-node-'+mode+'.min.js',(user ?
 `"use strict";
 // ==UserScript==
 // @name			real-node
@@ -33,9 +32,9 @@ function minifyIndexJS(mode){
 // @match			https://*/*
 // @grant			none
 // ==/UserScript==
-`+temp.code.replace(/[\n\r].+$/,'') : temp.code,prevent);
-	fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
-	console.log((temp.code.length / targetCode.length));
+`+temp.code.replace(/[\n\r].+$/,'') : temp.code)+'\n',prevent);
+	user || fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
+	console.log(mode+'=>'+(temp.code.length / targetCode.length).toFixed(4));
 }
 minifyIndexJS('cjs');
 minifyIndexJS('esm');
