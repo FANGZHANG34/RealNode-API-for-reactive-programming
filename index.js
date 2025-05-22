@@ -30,7 +30,9 @@ var {
 ({
 	RealWorld,RealNode,RealGroup,RealTarget,
 	RealStory,RealPromise,
-	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+	RealElement,RealCanvas,RealLoader,RealSelect,
+	RealComtag,RealSVG,
+	RealDivList,RealImgList,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,createRealDivSeries,
 } = (()=>{
 	function prevent(v){return v;}
@@ -46,7 +48,19 @@ var {
 	browserMode = Element !== prevent,
 	tempConfig = {writable: false,enumerable: false},
 	/**@type {typeof console.log} */
-	log = (console.log.bind(console))
+	log = (console.log.bind(console)),
+	tryYieldKey =
+	/**
+	 * 
+	 * @template T
+	 * @template U
+	 * @template V
+	 * @param {T[] | Generator<T>} iter 
+	 * @param {U} key 
+	 * @param {V} type 
+	 * @returns {Generator<V>}
+	 */
+	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){console.error(e);}}
 	;
 	/**## nodeMode 是否存在nodejs环境 */
 	var nodeMode = false;
@@ -70,6 +84,7 @@ var {
 	 * RealLoader: typeof RealLoader;
 	 * RealSelect: typeof RealSelect;
 	 * RealComtag: typeof RealComtag;
+	 * RealSVG: typeof RealSVG;
 	 * RealDivList: typeof RealDivList;
 	 * RealImgList: typeof RealImgList;
 	 * RealDivQueue: typeof RealDivQueue;
@@ -1015,14 +1030,13 @@ var {
 		}
 		/**
 		 * @typedef {{this: HTMLElement;[attr: String]: String}} ElementConfig 
-		 * @typedef {{this: CSSStyleDeclaration;[attr: String]: String}} CSSStyleConfig 
 		 */
 		/**
 		 * 
 		 * @template {keyof HTMLElementTagNameMap} T
 		 * @param {T} tagName 
 		 * @param {ElementConfig} [config] 
-		 * @param {CSSStyleConfig} [cssConfig] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
 		 */
 		static newXHTML(tagName,config,cssConfig){
 			const temp = document.createElement(tagName);
@@ -1030,25 +1044,14 @@ var {
 		}
 		/**
 		 * 
-		 * @template {keyof SVGElementTagNameMap} T
-		 * @param {T} tagName 
-		 * @param {ElementConfig} [config] 
-		 * @param {CSSStyleConfig} [cssConfig] 
-		 */
-		static newSVG(tagName,config,cssConfig){
-			const temp = document.createElementNS('http://www.w3.org/2000/svg',tagName);
-			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
-		}
-		/**
-		 * 
 		 * @template {Element | keyof HTMLElementTagNameMap} T 
 		 * @param {T} element 
 		 * @param {ElementConfig} [config] 
-		 * @param {CSSStyleConfig} [cssConfig] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
 		 * @returns {T extends Element ? T : HTMLElementTagNameMap[T]}
 		 */
 		static makeElement(element,config,cssConfig){return Object.assign(Object.assign(
-			element instanceof Element ? element : element = document.createElement(element),config
+			element instanceof Element ? element : document.createElement(element),config
 		).style,cssConfig),element;}
 		/**
 		 * 
@@ -1068,19 +1071,43 @@ var {
 		}
 		/**
 		 * 
-		 * @template {(keyof SVGElementTagNameMap)[] | Generator<keyof SVGElementTagNameMap>} T
-		 * @param {T} SVGTagNameArray 
-		 * @returns {T extends Generator ? {(): Generator<SVGElement>; SVGTagNameGenerator: T} : SVGElement[]}
+		 * @template {keyof SVGElementTagNameMap} T
+		 * @param {T} tagName 
+		 * @param {ElementConfig} [config] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
 		 */
-		static newSVGs(SVGTagNameArray){
-			var temp;temp = SVGTagNameArray?.constructor?.name;
-			if(temp == null) throw new Error('"SVGTagNameArray" must be iterable !');
-			if(temp === 'GeneratorFunction') return (temp = function *SVGGenerator(){
-				const temp = SVGGenerator.SVGTagNameGenerator();
-				for(const tagName of temp) yield document.createElementNS('http://www.w3.org/2000/svg',tagName);
-			}).SVGTagNameGenerator = SVGTagNameArray,temp;
-			temp = [];
-			for(const tagName of SVGTagNameArray) temp.push(document.createElementNS('http://www.w3.org/2000/svg',tagName));
+		static newSVG(tagName,config,cssConfig){
+			const temp = document.createElementNS('http://www.w3.org/2000/svg',tagName);
+			try{if(Object.keys(config).includes('href') && 'href' in temp) temp.href.baseVal = config.href;}catch{}
+			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
+		}
+		/**
+		 * 
+		 * @template {String} T
+		 * @template {Boolean} U
+		 * @param {T} type 
+		 * @param {T extends 'svg' ? (keyof SVGElementTagNameMap)[] : (keyof HTMLElementTagNameMap)[]} tagNameArray 
+		 * @param {U} [toDocumentFragment] 
+		 * @returns {U extends true ? DocumentFragment : T extends 'svg' ? SVGElement[] : Element[]}
+		 */
+		static newElements(type,tagNameArray,toDocumentFragment){
+			const iter = tagNameArray[Symbol.iterator]();
+			var temp;
+			if(toDocumentFragment){if(temp = new DocumentFragment(),'svg' === type) for(const tagName of iter) temp.appendChild(
+				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
+			);else for(const tagName of iter) temp.appendChild(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));}
+			else if(temp = [],'svg' === type) for(const tagName of iter) temp.push(
+				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
+			);else for(const tagName of iter) temp.push(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));
+			return temp;
+		}
+		/**
+		 * 
+		 * @param {Element[] | Generator<Element>} Elements 
+		 */
+		static newDocumentFragmentFromElements(Elements){
+			const temp = new DocumentFragment();
+			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){console.error(e);}
 			return temp;
 		}
 		/**@method */
@@ -1119,9 +1146,8 @@ var {
 		static addCSSRules = (()=>{
 			if(!browserMode){const addCSSRules = ()=>addCSSRules; return addCSSRules._css = RealWorld.onload,addCSSRules;}
 			var myCSS = RealWorld.onload.then(function(){
-				document.getElementsByTagName("head")[0].
-				appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
-				myCSS = document.styleSheets[document.styleSheets.length - 1];
+				const style = document.getElementsByTagName("head")[0].appendChild(document.createElement("style"));
+				window.createPopup || style.appendChild(document.createTextNode("")),myCSS = style.sheet;
 			});
 			const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 			const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
@@ -1447,7 +1473,7 @@ var {
 	}(RealWorld.onload.then(()=>EXPORTS));
 	RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>log('Set up\nin '+RealNode.makeNumStr0oTail(time)+' ms.')));
 
-	if(browserMode){
+if(browserMode){
 
 	var RealCanvas = class RealCanvas extends RealElement{
 		/**
@@ -1859,13 +1885,15 @@ var {
 		);
 		load(){return RealLoader.load(this);}
 		protoSet(value){return this.self[this.key] = String(value),false;}
-		/**@returns {FileList} */
+		/**@type {(this: RealLoader<false>)=>FileList} */
 		get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
 		get onerror(){return this.proto.onerror;}
 		set onerror(onerror){this.proto.onerror = typeof onerror === 'function' ? onerror : null;}
 		get onloadend(){return this.proto.onloadend;}
 		set onloadend(onloadend){this.proto.onloadend = typeof onloadend === 'function' ? onloadend : null;}
+		/**@this {RealLoader<true>} */
 		get fileName(){return 'upload' === this.type ? this.error('Uploader bans "fileName" !') : this.temp.download;}
+		/**@this {RealLoader<true>} */
 		set fileName(fileName){
 			'upload' === this.type && this.error('Uploader bans "fileName" !');
 			typeof fileName === 'symbol' && this.error('"fileName" must be String but not Symbol !');
@@ -1892,8 +1920,10 @@ var {
 			this.dataGetter = dataGetter;
 			this.value = innerHTML;
 			isDownload = Boolean(isDownload);
+			/**@type {T extends true ? HTMLAnchorElement : HTMLInputElement} */
 			this.temp = document.createElement(isDownload ? 'a' : 'input');
 			Reflect.defineProperty(this,'temp',RealLoader._configDescriptor);
+			/**@type {T extends true ? 'download' : 'upload'} */
 			this.type = isDownload ? (this.fileName = fileName || 'file','download') : (this.temp.type = 'file','upload');
 			Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 		}
@@ -1958,7 +1988,7 @@ var {
 		}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value,defaultKey = String(this.defaultKey),defaultValue = String(this.defaultValue)){
 			var now;
@@ -2023,33 +2053,18 @@ var {
 			const temp = new RealComtag('',config[0],config[1],config[2]);
 			return config[3] && config[3].apply(temp,argArray),temp.addClassName(className),temp;
 		}
-		fix(){
-			var temp = this.transform(this.proto.value),l = temp.length,i = 0;
-			const elementList = RealElement.makeElementByString._clear();
-			while(i < l) elementList.appendChild(temp[i++]);
-			this.self.innerHTML = '';
-			this.self.appendChild(elementList);
-			return this;
-		}
-		protoTransform(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			const list = [];
-			for(const temp of value) list.push(document.createElement(temp instanceof Element ? temp.tagName : String(temp)));
-			return list;
-		}
+		protoTransform(value){return RealElement.newElements('',value,true);}
+		fix(){return this.self.innerHTML = '',this.self.appendChild(this.transform(this.proto.value)),this;}
 		/**
 		 * 
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			/**@type {IterableIterator<HTMLImageElement | String>} */
-			const iter0 = this.proto.value[Symbol.iterator]();
-			const iter1 = value[Symbol.iterator]();
-			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-			const temp = Array(2);
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Array !');
+			/**@type {[IteratorYieldResult<String>,IteratorYieldResult<String>]} */
+			const temp = Array(2),iter1 = tryYieldKey(value,'tagName',''),iter0 = tryYieldKey(this.proto.value,'tagName','');
 			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;
-			else if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
+			else if(temp[0].value.toLowerCase() !== temp[1].value.toLowerCase()) return this.proto.value = Array.from(value),true;
 			return false;
 		}
 		/**
@@ -2066,12 +2081,26 @@ var {
 			super({self: self || RealElement.newXHTML('div',{id})},{
 				id,initValue: optionList?.[Symbol.iterator] ? Array.from(optionList) : []
 			},tryRealNode);
-			/**@type {AntiList} */
-			this.proto;
-			this.tryHTML = false;
 			Object.assign(this.fix().self,selfAssign);
 		}
 	};
+	var RealSVG = class RealSVG extends RealComtag{
+		static comtagClassMap;
+		static defineComtagClass;
+		static createByClassName;
+		protoTransform(value){return RealElement.newElements('svg',value,true);}
+		/**
+		 * 
+		 * @param {keyof SVGElementTagNameMap} tagName 
+		 * @param {keyof SVGElementTagNameMap[]} [optionList] 
+		 * @param {(this: RealSVG,children: SVGElement[])=>void} [callback] 
+		 */
+		constructor(tagName,optionList,callback){
+			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,this.selfAssign);
+			typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));
+		}
+	};
+	RealSVG.prototype.protoSet = RealComtag.prototype.protoSet;
 	var RealDivList = class RealDivList extends RealElement{
 		/**@typedef {AntiTarget & {list: Element[],childrenList: Element[][]}} AntiList */
 		static proto = class AntiList extends RealTarget.proto{
@@ -2156,11 +2185,11 @@ var {
 		protoSet(value){return this.proto.value = Array.from(value),true;}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value){
 			var list = [],temp,ele;
-			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
 			while(!(temp = iter.next()).done) list.push(ele = document.createElement('div')),
 			temp.value instanceof Element ? ele.appendChild(temp.value) :
 			this.tryHTML ? ele.innerHTML = String(temp.value) : ele.textContent = String(temp.value);
@@ -2257,11 +2286,11 @@ var {
 		}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value){
 			var list = [],temp;
-			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
 			while(!(temp = iter.next()).done) list.push(temp.done = document.createElement('div')),
 			temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
 			return list;
@@ -2271,15 +2300,11 @@ var {
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			/**@type {IterableIterator<HTMLImageElement | String>} */
-			const iter0 = this.proto.value[Symbol.iterator]();
-			const iter1 = value[Symbol.iterator]();
-			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-			const temp = Array(2);
-			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;else if(
-				(temp[0].value?.src ?? String(temp[0].value)) !== (temp[1].value?.src ?? String(temp[1].value))
-			) return this.proto.value = Array.from(value),true;
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Array !');
+			/**@type {[IteratorYieldResult<String>,IteratorYieldResult<String>]} */
+			const temp = Array(2),iter1 = tryYieldKey(value,'src',''),iter0 = tryYieldKey(this.proto.value,'src','');
+			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;
+			else if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
 			return false;
 		}
 		/**
@@ -2512,7 +2537,8 @@ var {
 		return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
 	})()}));
 
-	}else log('No DOM !');
+}else log('No DOM !');
+
 	EXPORTS.RealWorld = RealWorld;
 	EXPORTS.RealNode = RealNode;
 	EXPORTS.RealGroup = RealGroup;
@@ -2524,6 +2550,7 @@ var {
 	EXPORTS.RealLoader = RealLoader;
 	EXPORTS.RealSelect = RealSelect;
 	EXPORTS.RealComtag = RealComtag;
+	EXPORTS.RealSVG = RealSVG;
 	EXPORTS.RealDivList = RealDivList;
 	EXPORTS.RealImgList = RealImgList;
 	EXPORTS.RealDivQueue = RealDivQueue;
@@ -2538,6 +2565,8 @@ var {
 var
 RealWorld,RealNode,RealGroup,RealTarget,
 RealStory,RealPromise,
-RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+RealElement,RealCanvas,RealLoader,RealSelect,
+RealComtag,RealSVG,
+RealDivList,RealImgList,RealDivQueue,
 createRealDivSelect,createRealDivSearch,createRealDivSeries
 ;
