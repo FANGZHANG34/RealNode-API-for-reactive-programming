@@ -53,12 +53,9 @@ var {
 	/**
 	 * 
 	 * @template T
-	 * @template U
-	 * @template V
-	 * @param {T[] | Generator<T>} iter 
-	 * @param {U} key 
-	 * @param {V} type 
-	 * @returns {Generator<V>}
+	 * @param {*[] | Generator} iter 
+	 * @param {T} [type] 
+	 * @returns {Generator<T>}
 	 */
 	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){console.error(e);}}
 	;
@@ -116,7 +113,7 @@ var {
 		 * @param {...()=>void} fnList 
 		 */
 		function RealWorld(timeSep,...fnList){
-			if(!new.target) return new RealWorld(timeSep,...fnList);
+			if(null == this || this === globalThis) return new RealWorld(timeSep,...fnList);
 			try{Number.isFinite(this.timeSep = Number(timeSep)) || (this.timeSep = 10);}catch{this.timeSep = 10;}
 			this._id = setInterval(this._mainFn.bind(this),this.timeSep);
 			/**@type {(()=>*)[]} */
@@ -134,6 +131,7 @@ var {
 			Reflect.defineProperty(this,'_id',tempConfig);
 			Reflect.defineProperty(this,'fnList',tempConfig);
 			Reflect.defineProperty(this,'timeSep',tempConfig);
+			return this;
 		};
 		/**
 		 * ## onload 环境准备好时兑现的承诺
@@ -144,16 +142,15 @@ var {
 		nodeMode ? Promise.resolve() : new Promise(async r=>{if(setInterval === prevent){
 			const {setTimeout,clearTimeout} = globalThis.setTimeout ? globalThis :
 			/**@type {{setTimeout: typeof globalThis.setTimeout;clearTimeout: typeof globalThis.clearTimeout;}} */ (await nodeRequire('os'));
-			class Interval{
-				constructor(handler,timeout,...argArray){this._ = setTimeout(this.transform(handler,timeout,...argArray),timeout,...argArray);}
-				transform(handler,timeout,...argArray){
-					const tempFn = ()=>{this._ = setTimeout(tempFn,timeout,...argArray);handler.apply(null,argArray);};
-					return tempFn; 
-				}
-				clear(){clearTimeout(this._);}
+			function Interval(handler,timeout,...argArray){
+				if(null == this || this === globalThis) return Reflect.construct(Interval,arguments);
+				return this._ = setTimeout(this.transform(handler,timeout,...argArray),timeout,...argArray),this;
 			}
-			setInterval = function(){return Reflect.construct(Interval,arguments);};
-			clearInterval = /**@type {(id: Interval)=>void} */ id=>id.clear();
+			Interval.prototype.transform = function(handler,timeout,...argArray){
+				const tempFn = ()=>{this._ = setTimeout(tempFn,timeout,...argArray);handler.apply(null,argArray);};
+				return tempFn; 
+			},Interval.prototype.clear = function(){clearTimeout(this._);};
+			setInterval = Interval,clearInterval = /**@type {(id: Interval)=>void} */ id=>id.clear();
 			Reflect.defineProperty(RealNode.eventLoop,'_id',{
 				value: setInterval(RealWorld.prototype._mainFn.bind(RealNode.eventLoop),RealNode.eventLoop.timeSep)
 			}),r();
@@ -586,6 +583,7 @@ var {
 			/**@type {AntiNode} */
 			this.proto = new this.constructor.proto;
 			this.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
+			Reflect.defineProperty(this,'relativeRNs',{enumerable: false});
 			Reflect.defineProperty(this,'notifyArray',{enumerable: false});
 			Reflect.defineProperty(this,'proto',tempConfig);
 			this.display = config.display ?? true;
@@ -973,7 +971,7 @@ var {
 		}
 		/**@type {Map<String,{[selector: String]: {}}>} */
 		static myStyle = new Map;
-		/**@type {{[type: String]:Map<keyof HTMLElementTagNameMap,EventListener[]>}} */
+		/**@type {{[type: String]:Map<(keyof HTMLElementTagNameMap,EventListener)[]>}} */
 		static selectorEventListeners = {};
 		static keyboardController = (browserMode && addEventListener('keydown',e=>{
 			if(/^(TEXTAREA)|(SELECT)|(INPUT)$/.test(document.activeElement?.tagName)) return;
@@ -1333,12 +1331,12 @@ var {
 		const executor = function(resolve,reject){this.resolve = resolve,this.reject = reject;};
 		/**@type {{()=>StoryPromise; new()=>StoryPromise;}} */
 		const StoryPromise = function(){
-			if(!new.target) return new StoryPromise;
+			if(null == this || this === globalThis) return new StoryPromise;
 			/**@type {(value)=>void} */
 			this.resolve = null;
 			/**@type {(reason?)=>void} */
 			this.reject = null;
-			this.promise = new Promise(executor.bind(this));
+			return this.promise = new Promise(executor.bind(this)),this;
 		};
 	var RealStory = new class RealStory{
 		newPage(){return new RealStory(this);}
@@ -1367,13 +1365,13 @@ var {
 		async launch(){
 			var i = 0,temp = this;
 			while((temp = temp.ofStory) instanceof RealStory) i++;
-			if(!i) isBusy = true;
+			const bool = !i;
+			if(bool) isBusy = true;
 			while(this.pages.length || this.fnList.length){
 				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
 				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
 				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
-			}
-			if(!i) isBusy = false;
+			}if(bool) isBusy = false;
 		}
 		get StoryPromise(){return StoryPromise;}
 		get index(){return this.ofStory instanceof RealStory ? this.ofStory.pages.indexOf(this) : -1;}
@@ -2085,18 +2083,15 @@ if(browserMode){
 		}
 	};
 	var RealSVG = class RealSVG extends RealComtag{
-		static comtagClassMap;
-		static defineComtagClass;
-		static createByClassName;
 		/**
 		 * 
-		 * @template {Boolean | Element} T
+		 * @template {Node | Boolean} T
 		 * @param {String[]} hrefList 
 		 * @param {T} [parentTarget] 
-		 * @returns {T extends true ? DocumentFragment : T extends Element ? T : SVGImageElement[]}
+		 * @returns {T extends true ? DocumentFragment : T extends Node ? T : SVGImageElement[]}
 		 */
 		static newImages(hrefList,parentTarget){
-			if(parentTarget) for(const href of (parentTarget instanceof Element ? parentTarget : parentTarget = new DocumentFragment(),hrefList)) try{
+			if(parentTarget) for(const href of (parentTarget instanceof Node ? parentTarget : parentTarget = new DocumentFragment(),hrefList)) try{
 				parentTarget.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(href);
 			}catch(e){console.error(e);}
 			else for(const href of (parentTarget = [],hrefList)) try{
@@ -2109,14 +2104,13 @@ if(browserMode){
 		/**
 		 * 
 		 * @param {keyof SVGElementTagNameMap} tagName 
-		 * @param {keyof SVGElementTagNameMap[]} [optionList] 
+		 * @param {(keyof SVGElementTagNameMap)[]} [optionList] 
 		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 		 * @param {(this: RealSVG,children: SVGElement[])=>void} [callback] 
 		 */
-		constructor(tagName,optionList,selfAssign,callback){
-			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,selfAssign);
-			typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));
-		}
+		constructor(tagName,optionList,selfAssign,callback){super(
+			document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,selfAssign
+		),typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));}
 	};
 	var RealDivList = class RealDivList extends RealElement{
 		/**@typedef {AntiTarget & {list: Element[],childrenList: Element[][]}} AntiList */
@@ -2556,34 +2550,22 @@ if(browserMode){
 
 }else log('No DOM !');
 
-	EXPORTS.RealWorld = RealWorld;
-	EXPORTS.RealNode = RealNode;
-	EXPORTS.RealGroup = RealGroup;
-	EXPORTS.RealTarget = RealTarget;
-	EXPORTS.RealStory = RealStory;
-	EXPORTS.RealPromise = RealPromise;
-	EXPORTS.RealElement = RealElement;
-	EXPORTS.RealCanvas = RealCanvas;
-	EXPORTS.RealLoader = RealLoader;
-	EXPORTS.RealSelect = RealSelect;
-	EXPORTS.RealComtag = RealComtag;
-	EXPORTS.RealSVG = RealSVG;
-	EXPORTS.RealDivList = RealDivList;
-	EXPORTS.RealImgList = RealImgList;
-	EXPORTS.RealDivQueue = RealDivQueue;
-	EXPORTS.createRealDivSelect = createRealDivSelect;
-	EXPORTS.createRealDivSearch = createRealDivSearch;
-	EXPORTS.createRealDivSeries = createRealDivSeries;
+	EXPORTS.RealWorld = RealWorld,EXPORTS.RealNode = RealNode,EXPORTS.RealGroup = RealGroup,EXPORTS.RealTarget = RealTarget,
+	EXPORTS.RealStory = RealStory,EXPORTS.RealPromise = RealPromise,
+	EXPORTS.RealElement = RealElement,EXPORTS.RealCanvas = RealCanvas,EXPORTS.RealLoader = RealLoader,EXPORTS.RealSelect = RealSelect,
+	EXPORTS.RealComtag = RealComtag,EXPORTS.RealSVG = RealSVG,
+	EXPORTS.RealDivList = RealDivList,EXPORTS.RealImgList = RealImgList,EXPORTS.RealDivQueue = RealDivQueue,
+	EXPORTS.createRealDivSelect = createRealDivSelect,EXPORTS.createRealDivSearch = createRealDivSearch,EXPORTS.createRealDivSeries = createRealDivSeries;
 	/**## 如果用作全局接口，请不要注释掉下面这一行。  */
 	// Object.assign(globalThis,EXPORTS);
 	log('Sync\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
 	return EXPORTS;
 })());
 var
-RealWorld,RealNode,RealGroup,RealTarget,
+RealNode,RealGroup,RealTarget,
 RealStory,RealPromise,
 RealElement,RealCanvas,RealLoader,RealSelect,
 RealComtag,RealSVG,
 RealDivList,RealImgList,RealDivQueue,
-createRealDivSelect,createRealDivSearch,createRealDivSeries
-;
+createRealDivSelect,createRealDivSearch,createRealDivSeries,
+RealWorld;
