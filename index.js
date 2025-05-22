@@ -2088,6 +2088,23 @@ if(browserMode){
 		static comtagClassMap;
 		static defineComtagClass;
 		static createByClassName;
+		/**
+		 * 
+		 * @template {Boolean | Element} T
+		 * @param {String[]} hrefList 
+		 * @param {T} [parentTarget] 
+		 * @returns {T extends true ? DocumentFragment : T extends Element ? T : SVGImageElement[]}
+		 */
+		static newImages(hrefList,parentTarget){
+			if(parentTarget) for(const href of (parentTarget instanceof Element ? parentTarget : parentTarget = new DocumentFragment(),hrefList)) try{
+				parentTarget.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(href);
+			}catch(e){console.error(e);}
+			else for(const href of (parentTarget = [],hrefList)) try{
+				const SVGImage = document.createElementNS('http://www.w3.org/2000/svg','image');
+				parentTarget.push(SVGImage),SVGImage.href.baseVal = String(href);
+			}catch(e){console.error(e);}
+			return parentTarget;
+		}
 		protoTransform(value){return RealElement.newElements('svg',value,true);}
 		/**
 		 * 
@@ -2289,10 +2306,10 @@ if(browserMode){
 		 * @param {*[]} value 
 		 */
 		protoTransform(value){
-			var list = [],temp;
+			var list = [],temp,img;
 			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
 			while(!(temp = iter.next()).done) list.push(temp.done = document.createElement('div')),
-			temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
+			temp.done.appendChild(temp.value instanceof Image ? temp.value : ((img = new Image()).src = String(temp.value),img));
 			return list;
 		}
 		/**
