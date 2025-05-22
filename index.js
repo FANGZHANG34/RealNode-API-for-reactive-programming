@@ -30,7 +30,9 @@ var {
 ({
 	RealWorld,RealNode,RealGroup,RealTarget,
 	RealStory,RealPromise,
-	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+	RealElement,RealCanvas,RealLoader,RealSelect,
+	RealComtag,RealSVG,
+	RealDivList,RealImgList,RealDivQueue,
 	createRealDivSelect,createRealDivSearch,createRealDivSeries,
 } = (()=>{
 	function prevent(v){return v;}
@@ -39,14 +41,26 @@ var {
 	const
 	Element = globalThis.Element ?? prevent,
 	performance = globalThis.performance ?? Date,
-	setInterval = globalThis.setInterval ?? prevent,
-	clearInterval = globalThis.clearInterval ?? prevent,
+	emptyArray = [],
 	t0 = performance.now(),
+	emptyObj = Object.create(null),
 	/**## browserMode 是否存在浏览器环境 */
 	browserMode = Element !== prevent,
 	tempConfig = {writable: false,enumerable: false},
 	/**@type {typeof console.log} */
-	log = (console.log.bind(console))
+	log = (console.log.bind(console)),
+	tryYieldKey =
+	/**
+	 * 
+	 * @template T
+	 * @template U
+	 * @template V
+	 * @param {T[] | Generator<T>} iter 
+	 * @param {U} key 
+	 * @param {V} type 
+	 * @returns {Generator<V>}
+	 */
+	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){console.error(e);}}
 	;
 	/**## nodeMode 是否存在nodejs环境 */
 	var nodeMode = false;
@@ -70,6 +84,7 @@ var {
 	 * RealLoader: typeof RealLoader;
 	 * RealSelect: typeof RealSelect;
 	 * RealComtag: typeof RealComtag;
+	 * RealSVG: typeof RealSVG;
 	 * RealDivList: typeof RealDivList;
 	 * RealImgList: typeof RealImgList;
 	 * RealDivQueue: typeof RealDivQueue;
@@ -78,9 +93,17 @@ var {
 	 * createRealDivSeries: typeof createRealDivSeries;
 	 * }} 
 	 */
-	var EXPORTS,nodeRequire;
+	var
+	EXPORTS,
+	nodeRequire,
+	setInterval = globalThis.setInterval ?? prevent,
+	clearInterval = globalThis.clearInterval ?? prevent
+	;
 	try{nodeRequire = require;EXPORTS = module.exports;nodeMode = true;}
-	catch{EXPORTS = {};nodeRequire = path=>new Promise(async r=>r((await import(String(path))).default));}
+	catch{EXPORTS = {};nodeRequire = path=>new Promise(async r=>{try{
+		const exports = await import(String(path));
+		r('default' in exports ? exports.default : exports);
+	}catch(e){r(e);console.log('\n\r\t'+String(e)+e?.stack);}});}
 	const nodeFS = nodeRequire('fs');
 	/**# RealWorld 事件循环类 */
 	var RealWorld = (()=>{
@@ -116,8 +139,25 @@ var {
 		 * ## onload 环境准备好时兑现的承诺
 		 * @type {Promise<void>}
 		 */
-		return RealWorld.onload = !browserMode ? Promise.resolve() :
-		new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener)})),
+		return RealWorld.onload =
+		browserMode ? new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener)})) :
+		nodeMode ? Promise.resolve() : new Promise(async r=>{if(setInterval === prevent){
+			const {setTimeout,clearTimeout} = globalThis.setTimeout ? globalThis :
+			/**@type {{setTimeout: typeof globalThis.setTimeout;clearTimeout: typeof globalThis.clearTimeout;}} */ (await nodeRequire('os'));
+			class Interval{
+				constructor(handler,timeout,...argArray){this._ = setTimeout(this.transform(handler,timeout,...argArray),timeout,...argArray);}
+				transform(handler,timeout,...argArray){
+					const tempFn = ()=>{this._ = setTimeout(tempFn,timeout,...argArray);handler.apply(null,argArray);};
+					return tempFn; 
+				}
+				clear(){clearTimeout(this._);}
+			}
+			setInterval = function(){return Reflect.construct(Interval,arguments);};
+			clearInterval = /**@type {(id: Interval)=>void} */ id=>id.clear();
+			Reflect.defineProperty(RealNode.eventLoop,'_id',{
+				value: setInterval(RealWorld.prototype._mainFn.bind(RealNode.eventLoop),RealNode.eventLoop.timeSep)
+			}),r();
+		}}),
 		RealWorld.createInterval =
 		/**
 		 * 
@@ -131,7 +171,7 @@ var {
 			const temp = Symbol(),tryFn = v=>+(temp !== v),catchFn = ()=>-1;
 			return function getPromiseState(promise){return Promise.race([promise,temp]).then(tryFn,catchFn);};
 		})(),
-		RealWorld.onceIf = 
+		RealWorld.onceIf =
 		/**
 		 * ## onceIf 生成条件检测承诺 
 		 * @method
@@ -144,7 +184,7 @@ var {
 			await new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn));
 			clearInterval(temp._id);
 		},
-		RealWorld.cb2promise = 
+		RealWorld.cb2promise =
 		/**
 		 * ## cb2promise 回调转承诺
 		 * @template T
@@ -152,7 +192,7 @@ var {
 		 * @param {...any} parameters 
 		 * @returns {Promise<[?Error,...T]>}
 		 */
-		function({thisArg,useFn,callback = thisResolve} = {},...parameters){
+		function({thisArg,useFn,callback = thisResolve} = emptyObj,...parameters){
 			if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
 			if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
 			return new Promise(resolve=>{
@@ -189,7 +229,8 @@ var {
 				try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
 				this.paused || (this.soFn = null);this.paused = false;console.error(e0);
 			}
-		},RealWorld;
+		},
+		RealWorld;
 	})();
 	var RealNode = class RealNode{
 		/**
@@ -562,7 +603,6 @@ var {
 	/**@template {{}} T */
 	class RealGroup extends RealNode{
 		static tempProxy = class AntiGroup extends Function{
-			static arr = [];
 			apply(){return this.self;}
 			ownKeys(){return Reflect.ownKeys(this);}
 			has(target,key){return Reflect.has(this,key);}
@@ -678,7 +718,7 @@ var {
 		 * 
 		 * @param {(String | Symbol)[]} [keyArray] 
 		 */
-		protoReact(keyArray = RealGroup.tempProxy.arr){
+		protoReact(keyArray = emptyArray){
 			Array.isArray(keyArray) || this.error('"keyArray" must be Array !');
 			this.listenerMap.forEach((listenerArray,ifKeyOrFn)=>{try{
 				if(typeof ifKeyOrFn === 'function' ? ifKeyOrFn(keyArray) : keyArray.indexOf(ifKeyOrFn) !== -1){
@@ -754,7 +794,7 @@ var {
 		 * 
 		 * @param {{self?: T}} param0 
 		 */
-		constructor({id,info,self = Object.create(null)} = {}){
+		constructor({id,info,self = Object.create(null)} = emptyObj){
 			var temp;
 			if((temp = RealGroup.groupMap.get(self)) instanceof RealGroup) return console.log('Please do not new for "self":'+self+' again !'),temp;
 			super({id,info});
@@ -984,19 +1024,35 @@ var {
 		static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
 		static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
 		static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
-		static createTextarea(placeholder){return new RealElement({self: RealElement.makeElement('textarea',{placeholder: String(placeholder)}),key: 'value'});}
+		static createTextarea(placeholder){
+			const temp = document.createElement('textarea');
+			return new RealElement({self: (temp.placeholder = String(placeholder),temp),key: 'value'});
+		}
+		/**
+		 * @typedef {{this: HTMLElement;[attr: String]: String}} ElementConfig 
+		 */
 		/**
 		 * 
-		 * @template {Element} T
-		 * @param {keyof HTMLElementTagNameMap | T} tagName 
-		 * @param {{this: T | Element;[attr: String]: String}} [config] 
-		 * @param {{this: CSSStyleDeclaration;[attr: String]: String}} [cssConfig] 
-		 * @returns {T}
+		 * @template {keyof HTMLElementTagNameMap} T
+		 * @param {T} tagName 
+		 * @param {ElementConfig} [config] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
 		 */
-		static makeElement(tagName,config,cssConfig){
-			tagName instanceof Element || (tagName = document.createElement(tagName));
-			return Object.assign(Object.assign(tagName,config).style,cssConfig),tagName;
+		static newXHTML(tagName,config,cssConfig){
+			const temp = document.createElement(tagName);
+			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
 		}
+		/**
+		 * 
+		 * @template {Element | keyof HTMLElementTagNameMap} T 
+		 * @param {T} element 
+		 * @param {ElementConfig} [config] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 * @returns {T extends Element ? T : HTMLElementTagNameMap[T]}
+		 */
+		static makeElement(element,config,cssConfig){return Object.assign(Object.assign(
+			element instanceof Element ? element : document.createElement(element),config
+		).style,cssConfig),element;}
 		/**
 		 * 
 		 * @param {...(Element | {self: Element})}
@@ -1012,6 +1068,47 @@ var {
 		static cancelKeyboardController(){
 			for(const ele of arguments) ele instanceof Element ? ele.classList.remove('keyboardController') :
 			ele?.self instanceof Element && ele.self.classList.remove('keyboardController');
+		}
+		/**
+		 * 
+		 * @template {keyof SVGElementTagNameMap} T
+		 * @param {T} tagName 
+		 * @param {ElementConfig} [config] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 */
+		static newSVG(tagName,config,cssConfig){
+			const temp = document.createElementNS('http://www.w3.org/2000/svg',tagName);
+			try{if(Object.keys(config).includes('href') && 'href' in temp) temp.href.baseVal = config.href;}catch{}
+			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
+		}
+		/**
+		 * 
+		 * @template {String} T
+		 * @template {Boolean} U
+		 * @param {T} type 
+		 * @param {T extends 'svg' ? (keyof SVGElementTagNameMap)[] : (keyof HTMLElementTagNameMap)[]} tagNameArray 
+		 * @param {U} [toDocumentFragment] 
+		 * @returns {U extends true ? DocumentFragment : T extends 'svg' ? SVGElement[] : Element[]}
+		 */
+		static newElements(type,tagNameArray,toDocumentFragment){
+			const iter = tagNameArray[Symbol.iterator]();
+			var temp;
+			if(toDocumentFragment){if(temp = new DocumentFragment(),'svg' === type) for(const tagName of iter) temp.appendChild(
+				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
+			);else for(const tagName of iter) temp.appendChild(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));}
+			else if(temp = [],'svg' === type) for(const tagName of iter) temp.push(
+				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
+			);else for(const tagName of iter) temp.push(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));
+			return temp;
+		}
+		/**
+		 * 
+		 * @param {Element[] | Generator<Element>} Elements 
+		 */
+		static newDocumentFragmentFromElements(Elements){
+			const temp = new DocumentFragment();
+			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){console.error(e);}
+			return temp;
 		}
 		/**@method */
 		static addEventListenerBySelectors = (()=>{
@@ -1049,9 +1146,8 @@ var {
 		static addCSSRules = (()=>{
 			if(!browserMode){const addCSSRules = ()=>addCSSRules; return addCSSRules._css = RealWorld.onload,addCSSRules;}
 			var myCSS = RealWorld.onload.then(function(){
-				document.getElementsByTagName("head")[0].
-				appendChild(document.createElement("style"))[!window.createPopup && "appendChild"]?.(document.createTextNode(""));
-				myCSS = document.styleSheets[document.styleSheets.length - 1];
+				const style = document.getElementsByTagName("head")[0].appendChild(document.createElement("style"));
+				window.createPopup || style.appendChild(document.createTextNode("")),myCSS = style.sheet;
 			});
 			const testReg = /^\.([A-Za-z][A-Z0-9a-z]{0,})$/;
 			const strReg0 = /[A-Za-z]$/,strReg1 = /^[A-Za-z]/;
@@ -1290,8 +1386,8 @@ var {
 		info;
 		constructor(ofStory){(this.ofStory = ofStory instanceof RealStory && ofStory) && ofStory.pages.push(this);}
 	};
-		let isBusy = false;
-		Reflect.getPrototypeOf(RealStory).constructor = setInterval(()=>isBusy || RealStory.launch(),50);
+		let isBusy = Reflect.getPrototypeOf(RealStory).constructor = false;
+		RealWorld.onload.then(()=>Reflect.getPrototypeOf(RealStory).constructor = setInterval(()=>isBusy || RealStory.launch(),50));
 	}
 	var RealPromise = new
 	/**@template T */
@@ -1356,9 +1452,9 @@ var {
 				var temp,script;
 				path = String(path).replaceAll('\\','/');
 				if(this instanceof RealPromise) while(tempReg.test(path)) path = path.replaceAll(tempReg,'');else return Promise.reject();
-				return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild(
-					script = RealElement.makeElement('script',{onload: temp.resolve,onerror: temp.reject,src: path})
-				),this._push(temp.promise.finally(onfinally.bind(script)))));
+				return pathSet[path] || (pathSet[path] = (temp = RealStory.StoryPromise(),document.head.appendChild((
+					script = document.createElement('script'),script.onload = temp.resolve,script.onerror = temp.reject,script.src = path,script
+				)),this._push(temp.promise.finally(onfinally.bind(script)))));
 			} : function(){return Promise.reject(new Error('Mode error !'));};
 		})();
 		get length(){return this.list.length;}
@@ -1374,10 +1470,10 @@ var {
 			/**@type {Promise<T>} */
 			this.self = Promise.resolve(promise).then(this._push,this._throw);
 		}
-	}(RealWorld.onload);
+	}(RealWorld.onload.then(()=>EXPORTS));
 	RealPromise.self.finally(()=>RealNode.time(RealWorld.onload,time=>log('Set up\nin '+RealNode.makeNumStr0oTail(time)+' ms.')));
 
-	if(browserMode){
+if(browserMode){
 
 	var RealCanvas = class RealCanvas extends RealElement{
 		/**
@@ -1410,7 +1506,7 @@ var {
 		 */
 		static strN(N,longN){return String(N).padStart(longN,'0');}
 		static preloadSrc(){
-			for(var temp = RealGroup.tempProxy.arr.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
+			for(var temp = emptyArray.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
 			return Promise.allSettled(temp);
 		}
 		/**@method @type {(src)=>Promise<HTMLImageElement>} */
@@ -1438,7 +1534,7 @@ var {
 			 * @param {T} realCanvas 
 			 * @param {{initFn?: ()=>void;fnBeforeClear?: (this: T)=>void;fnAfterClear?: (this: T)=>void;}} [param1] 
 			 */
-			return function getRealGroupToClear(realCanvas,{initFn,fnBeforeClear,fnAfterClear} = {}){
+			return function getRealGroupToClear(realCanvas,{initFn,fnBeforeClear,fnAfterClear} = emptyObj){
 				if(!(realCanvas instanceof RealCanvas)) throw new Error('=> "realCanvas" must be instanceof RealCanvas !');
 				if(typeof fnAfterClear === 'function') fnAfterClear = fnAfterClear.bind(realCanvas);
 				if(typeof fnBeforeClear === 'function') fnBeforeClear = fnBeforeClear.bind(realCanvas);
@@ -1509,7 +1605,7 @@ var {
 		 * @param {{radiusX: Number;radiusY: Number;relative?: Boolean;}} param0 
 		 * @param {'rect' | 'circle'} [shape] 
 		 */
-		applyMouseClear({radiusX,radiusY,relative} = {},shape){
+		applyMouseClear({radiusX,radiusY,relative} = emptyObj,shape){
 			const self = this.proto.self,backup = this.proto.backup,nowStyle = getComputedStyle(self);
 			const mouseenter = ()=>(backup.canvas.width = self.width,backup.canvas.height = self.height,backup.drawImage(self,0,0)),
 			/**@type {(e: MouseEvent)=>Promise<void>} */
@@ -1532,7 +1628,7 @@ var {
 		 * @param {{x: Number;y: Number;radiusX: Number;radiusY: Number;relative?: Boolean;}} param0 
 		 * @param {'rect' | 'circle'} [shape] 
 		 */
-		clearShape({x = 0,y = 0,radiusX,radiusY,relative} = {},shape){
+		clearShape({x = 0,y = 0,radiusX,radiusY,relative} = emptyObj,shape){
 			var failed = false;
 			typeof radiusX === 'number' ? typeof radiusY === 'number' || (radiusY = radiusX) :
 			typeof radiusY === 'number' ? radiusX = radiusY : failed = true;
@@ -1575,7 +1671,7 @@ var {
 		animate({
 			prefix,suffix,startN = 0,length,midLength,
 			bgSrc,playMode = 0,timeSep = 100,sizeMode = 'std',resizeAfter = true,
-		} = {}){
+		} = emptyObj){
 			const size = {width: this.width,height: this.height},config = '1235',srcArr = [];
 			var i = startN + length + playMode;
 			length *= config[playMode] || 1;
@@ -1664,12 +1760,14 @@ var {
 		 * @param {...RealNode} [relativeRNs] 
 		 */
 		constructor(id,width,height,tryRealNode,...relativeRNs){
-			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
+			var temp;temp = id;
+			const self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			self && self instanceof HTMLCanvasElement &&
 			RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
 			RealElement.addId(id,!self);
-			super({self: self || RealElement.makeElement('canvas',{id})},{id},tryRealNode,...relativeRNs);
+			temp = {id};
+			super({self: self || RealElement.newXHTML('canvas',temp)},temp,tryRealNode,...relativeRNs);
 			/**@type {AntiCanvas} */
 			this.proto;
 			this.width = width;
@@ -1759,7 +1857,7 @@ var {
 				}
 				const fs = await nodeFS;
 				const data = await realLoader.dataGetter();
-				const {1: prefix = 'file',2: suffix = ''} = /(.+)(\..+)/.exec(realLoader.temp.download) || [];
+				const {1: prefix = 'file',2: suffix = ''} = /(.+)(\..+)/.exec(realLoader.temp.download) || emptyArray;
 				const result = await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download);
 				if(!result) this.error('Unknown Error !');
 				if(result[0]) return RealLoader.getArrayBufferFrom(data).
@@ -1787,13 +1885,15 @@ var {
 		);
 		load(){return RealLoader.load(this);}
 		protoSet(value){return this.self[this.key] = String(value),false;}
-		/**@returns {FileList} */
+		/**@type {(this: RealLoader<false>)=>FileList} */
 		get files(){return 'upload' === this.type ? this.temp.files : this.error('I\'m an downloader without files !');}
 		get onerror(){return this.proto.onerror;}
 		set onerror(onerror){this.proto.onerror = typeof onerror === 'function' ? onerror : null;}
 		get onloadend(){return this.proto.onloadend;}
 		set onloadend(onloadend){this.proto.onloadend = typeof onloadend === 'function' ? onloadend : null;}
+		/**@this {RealLoader<true>} */
 		get fileName(){return 'upload' === this.type ? this.error('Uploader bans "fileName" !') : this.temp.download;}
+		/**@this {RealLoader<true>} */
 		set fileName(fileName){
 			'upload' === this.type && this.error('Uploader bans "fileName" !');
 			typeof fileName === 'symbol' && this.error('"fileName" must be String but not Symbol !');
@@ -1811,7 +1911,7 @@ var {
 		 * @param {()=>*} dataGetter 
 		 * @param {{innerHTML?: String;onerror?: (e)=>void;onloadend?: (this: RealLoader)=>void;}} param3 
 		 */
-		constructor(isDownload,fileName,dataGetter,{innerHTML,onerror,onloadend} = {}){
+		constructor(isDownload,fileName,dataGetter,{innerHTML,onerror,onloadend} = emptyObj){
 			super({self: document.createElement('div'),key: 'innerHTML'});
 			/**@type {AntiLoader} */
 			this.proto;
@@ -1820,8 +1920,10 @@ var {
 			this.dataGetter = dataGetter;
 			this.value = innerHTML;
 			isDownload = Boolean(isDownload);
+			/**@type {T extends true ? HTMLAnchorElement : HTMLInputElement} */
 			this.temp = document.createElement(isDownload ? 'a' : 'input');
 			Reflect.defineProperty(this,'temp',RealLoader._configDescriptor);
+			/**@type {T extends true ? 'download' : 'upload'} */
 			this.type = isDownload ? (this.fileName = fileName || 'file','download') : (this.temp.type = 'file','upload');
 			Reflect.defineProperty(this,'type',RealLoader._configDescriptor);
 		}
@@ -1886,7 +1988,7 @@ var {
 		}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value,defaultKey = String(this.defaultKey),defaultValue = String(this.defaultValue)){
 			var now;
@@ -1915,7 +2017,7 @@ var {
 			RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
 			RealElement.addId(id,!self);
 			super({
-				key: 'innerHTML',self: self || RealElement.makeElement('select',{id,multiple,onchange})
+				key: 'innerHTML',self: self || RealElement.newXHTML('select',{id,multiple,onchange})
 			},{id,initValue: Object.assign({},optionConfig)},tryRealNode);
 			/**@type {AntiSelect} */this.proto;
 			this.defaultKey = defaultKey ?? '_';
@@ -1924,56 +2026,45 @@ var {
 		}
 	};
 	var RealComtag = class RealComtag extends RealElement{
-		/**@type {Map<String,[Boolean,*[],Boolean,((this: RealComtag)=>void) | null]>} */
+		/**@type {Map<String,[*[],Boolean,{[selector: String]: {[styleName: String]: String}},((this: RealComtag)=>void) | null]>} */
 		static comtagClassMap = new Map;
 		/**
 		 * 
 		 * @param {String} className 
-		 * @param {ArrayLike} optionList 
-		 * @param {Boolean} [tryRealNode] 
-		 * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
-		 * @param {(this: RealComtag)=>void} [callback] 
+		 * @param {{
+		 * optionList?: [];
+		 * tryRealNode?: Boolean;
+		 * selfAssign?: {[attr: String]: (event: Event)=>void};
+		 * cssRuleObjObj?: {[selector: String]: {[styleName: String]: String}};
+		 * callback?: (this: RealDivList)=>void;
+		 * }} config 
 		 */
-		static defineComtagClass(className,optionList,tryRealNode,cssRuleObjObj,callback){
+		static defineComtagClass(className,config){
+			const {optionList = [],tryRealNode,selfAssign,cssRuleObjObj,callback} = config || emptyObj;
 			/^([A-Za-z]\w*)$/.test(className) || this.error('Illegal "className" !');
 			this.comtagClassMap.has(className) && this.error('"className" repeated !');
 			optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
 			this.addCSSRules('.'+className,cssRuleObjObj);
-			this.comtagClassMap.set(className,[optionList,tryRealNode,typeof callback === 'function' ? callback : null]);
+			this.comtagClassMap.set(className,[optionList,tryRealNode,selfAssign,typeof callback === 'function' ? callback : null]);
 		}
-		static createByClassName(className,...argArray){
+		static createByClassName(className,...argArray){Comtag
 			const config = this.comtagClassMap.get(className);
 			config || this.error('"className" not found !');
-			const temp = new RealComtag('',config[0],config[1]);
-			return config[2].apply(temp,argArray),temp.addClassName(className),temp;
+			const temp = new RealComtag('',config[0],config[1],config[2]);
+			return config[3] && config[3].apply(temp,argArray),temp.addClassName(className),temp;
 		}
-		fix(){
-			var temp = this.transform(this.proto.value),l = temp.length,i = 0;
-			const elementList = RealElement.makeElementByString._clear();
-			while(i < l) elementList.appendChild(temp[i++]);
-			this.self.innerHTML = '';
-			this.self.appendChild(elementList);
-			return this;
-		}
-		protoTransform(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			const list = [];
-			for(const temp of value) list.push(document.createElement(temp instanceof Element ? temp.tagName : String(temp)));
-			return list;
-		}
+		protoTransform(value){return RealElement.newElements('',value,true);}
+		fix(){return this.self.innerHTML = '',this.self.appendChild(this.transform(this.proto.value)),this;}
 		/**
 		 * 
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			/**@type {IterableIterator<HTMLImageElement | String>} */
-			const iter0 = this.proto.value[Symbol.iterator]();
-			const iter1 = value[Symbol.iterator]();
-			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-			const temp = Array(2);
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Array !');
+			/**@type {[IteratorYieldResult<String>,IteratorYieldResult<String>]} */
+			const temp = Array(2),iter1 = tryYieldKey(value,'tagName',''),iter0 = tryYieldKey(this.proto.value,'tagName','');
 			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;
-			else if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
+			else if(temp[0].value.toLowerCase() !== temp[1].value.toLowerCase()) return this.proto.value = Array.from(value),true;
 			return false;
 		}
 		/**
@@ -1987,13 +2078,46 @@ var {
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
-			super({self: self || RealElement.makeElement('div',{id})},{
+			super({self: self || RealElement.newXHTML('div',{id})},{
 				id,initValue: optionList?.[Symbol.iterator] ? Array.from(optionList) : []
 			},tryRealNode);
-			/**@type {AntiList} */
-			this.proto;
-			this.tryHTML = false;
 			Object.assign(this.fix().self,selfAssign);
+		}
+	};
+	var RealSVG = class RealSVG extends RealComtag{
+		static comtagClassMap;
+		static defineComtagClass;
+		static createByClassName;
+		/**
+		 * 
+		 * @template {Boolean | Element} T
+		 * @param {String[]} hrefList 
+		 * @param {T} [toDocumentFragment] 
+		 * @returns {T extends true ? DocumentFragment : T extends Element ? T : SVGImageElement[]}
+		 */
+		static newImages(hrefList,parentTarget){
+			// const temp = toDocumentFragment ? new DocumentFragment() : [];
+			var temp;
+			if(parentTarget) for(const href of (temp = parentTarget instanceof Element ? parentTarget : new DocumentFragment(),hrefList)) try{
+				temp.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(href);
+			}catch(e){console.error(e);}
+			else for(const href of (temp = [],hrefList)) try{
+				const SVGImage = document.createElementNS('http://www.w3.org/2000/svg','image');
+				temp.push(SVGImage),SVGImage.href.baseVal = String(href);
+			}catch(e){console.error(e);}
+			return temp;
+		}
+		protoTransform(value){return RealElement.newElements('svg',value,true);}
+		/**
+		 * 
+		 * @param {keyof SVGElementTagNameMap} tagName 
+		 * @param {keyof SVGElementTagNameMap[]} [optionList] 
+		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {(this: RealSVG,children: SVGElement[])=>void} [callback] 
+		 */
+		constructor(tagName,optionList,selfAssign,callback){
+			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,selfAssign);
+			typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));
 		}
 	};
 	var RealDivList = class RealDivList extends RealElement{
@@ -2004,7 +2128,7 @@ var {
 			/**@type {Element[][]} */
 			childrenList = [];
 		}
-		/**@type {Map<String,[Boolean,*[],Boolean,((this: RealDivList)=>void) | null]>} */
+		/**@type {Map<String,[Boolean,*[],Boolean,{[selector: String]: {[styleName: String]: String}},((this: RealDivList)=>void) | null]>} */
 		static divListClassMap = new Map;
 		/**
 		 * 
@@ -2045,24 +2169,28 @@ var {
 		/**
 		 * 
 		 * @param {String} className 
-		 * @param {Boolean} tryHTML 
-		 * @param {ArrayLike} optionList 
-		 * @param {Boolean} [tryRealNode] 
-		 * @param {{[selector: String]: {[styleName: String]: String}}} [cssRuleObjObj] 
-		 * @param {(this: RealDivList)=>void} [callback] 
+		 * @param {{
+		 * tryHTML?: Boolean;
+		 * optionList?: [];
+		 * tryRealNode?: Boolean;
+		 * selfAssign?: {[attr: String]: (event: Event)=>void};
+		 * cssRuleObjObj?: {[selector: String]: {[styleName: String]: String}};
+		 * callback?: (this: RealDivList)=>void;
+		 * }} config 
 		 */
-		static defineDivListClass(className,tryHTML,optionList,tryRealNode,cssRuleObjObj,callback){
+		static defineDivListClass(className,config){
+			const {tryHTML,optionList = [],tryRealNode,selfAssign,cssRuleObjObj,callback} = config || emptyObj;
 			/^([A-Za-z]\w*)$/.test(className) || this.error('Illegal "className" !');
 			this.divListClassMap.has(className) && this.error('"className" repeated !');
 			optionList?.[Symbol.iterator] || this.error('"optionList" must be Array !');
 			this.addCSSRules('.'+className,cssRuleObjObj);
-			this.divListClassMap.set(className,[tryHTML,optionList,tryRealNode,typeof callback === 'function' ? callback : null]);
+			this.divListClassMap.set(className,[tryHTML,optionList,tryRealNode,selfAssign,typeof callback === 'function' ? callback : null]);
 		}
 		static createByClassName(className,...argArray){
 			const config = this.divListClassMap.get(className);
 			config || this.error('"className" not found !');
-			const temp = new RealDivList('',config[0],config[1],config[2]);
-			return config[3].apply(temp,argArray),temp.addClassName(className),temp;
+			const temp = new RealDivList('',config[0],config[1],config[2],config[3]);
+			return config[4] && config[4].apply(temp,argArray),temp.addClassName(className),temp;
 		}
 		/**
 		 * 
@@ -2076,11 +2204,11 @@ var {
 		protoSet(value){return this.proto.value = Array.from(value),true;}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value){
 			var list = [],temp,ele;
-			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
 			while(!(temp = iter.next()).done) list.push(ele = document.createElement('div')),
 			temp.value instanceof Element ? ele.appendChild(temp.value) :
 			this.tryHTML ? ele.innerHTML = String(temp.value) : ele.textContent = String(temp.value);
@@ -2135,7 +2263,7 @@ var {
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
 			RealElement.addId(id,!self);
-			super({self: self || RealElement.makeElement('div',{id})},{
+			super({self: self || RealElement.newXHTML('div',{id})},{
 				id,initValue: optionList?.[Symbol.iterator] ? Array.from(optionList) : []
 			},tryRealNode);
 			/**@type {AntiList} */this.proto;
@@ -2177,13 +2305,13 @@ var {
 		}
 		/**
 		 * 
-		 * @param {Array} value 
+		 * @param {*[]} value 
 		 */
 		protoTransform(value){
-			var list = [],temp;
-			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Arraylike !');}
+			var list = [],temp,img;
+			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
 			while(!(temp = iter.next()).done) list.push(temp.done = document.createElement('div')),
-			temp.done.appendChild(temp.value instanceof Image ? temp.value : Object.assign(new Image(),{src: String(temp.value)}));
+			temp.done.appendChild(temp.value instanceof Image ? temp.value : ((img = new Image()).src = String(temp.value),img));
 			return list;
 		}
 		/**
@@ -2191,15 +2319,11 @@ var {
 		 * @param {(Element | String)[]} value 
 		 */
 		protoSet(value){
-			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Arraylike !');
-			/**@type {IterableIterator<HTMLImageElement | String>} */
-			const iter0 = this.proto.value[Symbol.iterator]();
-			const iter1 = value[Symbol.iterator]();
-			/**@type {[IteratorResult<HTMLImageElement>,IteratorResult<HTMLImageElement>]} */
-			const temp = Array(2);
-			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;else if(
-				(temp[0].value?.src ?? String(temp[0].value)) !== (temp[1].value?.src ?? String(temp[1].value))
-			) return this.proto.value = Array.from(value),true;
+			if(!value?.[Symbol.iterator]) throw new Error('=> "value" must be Array !');
+			/**@type {[IteratorYieldResult<String>,IteratorYieldResult<String>]} */
+			const temp = Array(2),iter1 = tryYieldKey(value,'src',''),iter0 = tryYieldKey(this.proto.value,'src','');
+			while((temp[0] = iter0.next(),temp[1] = iter1.next(),!temp[0].done ^ temp[1].done)) if(temp[0].done) break;
+			else if(temp[0].value !== temp[1].value) return this.proto.value = Array.from(value),true;
 			return false;
 		}
 		/**
@@ -2301,12 +2425,12 @@ var {
 	 */
 	var createRealDivSelect = (optionConfig,multiple,onchange)=>RealDivList.createByClassName('realDivSelect',optionConfig,multiple,onchange);
 	RealWorld.onload = RealWorld.onload.
-	finally(()=>RealDivList.defineDivListClass('realDivSelect',false,[],true,{
+	finally(()=>RealDivList.defineDivListClass('realDivSelect',{tryRealNode: true,cssRuleObjObj: {
 		'': {'background':'linear-gradient(135deg,#fff,#000)'},
 		'>div': {'background-color':'#333','transform':'scale(0.8,1)'},
 		'>div:hover': {'transform':'scale(0.9,1)'},
 		'>.selected': {'background-color':'#555','transform':'scale(1)','font-weight':'bolder'},
-	},(()=>{
+	},callback: (()=>{
 		const changeConfig = {bubbles: true,cancelable: false};
 		/**@type {(this: RealDivList)=>*[]} */
 		function tempGet(){
@@ -2348,14 +2472,14 @@ var {
 			if(typeof onchange === 'function') this.self.onchange = onchange.bind(this);
 			this.value = optionConfig;
 		};
-	})()));
+	})()}));
 	/**
 	 * 
 	 * @param {String} [placeholder] 
 	 */
 	var createRealDivSearch = placeholder=>RealDivList.createByClassName('realDivSearch',placeholder);
 	RealWorld.onload = RealWorld.onload.
-	finally(()=>RealDivList.defineDivListClass('realDivSearch',true,[],true,{'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}},(()=>{
+	finally(()=>RealDivList.defineDivListClass('realDivSearch',{callback: (()=>{
 		/**@type {RealDivList} */
 		var tempRealDivList;
 		const changeConfig = {bubbles: true,cancelable: false},now = Promise.resolve();
@@ -2402,17 +2526,17 @@ var {
 			this.get = tempGet;
 			this.set = tempSet;
 		};
-	})()));
+	})(),tryHTML: true,tryRealNode: true,cssRuleObjObj: {'>:nth-child(2)>div>div:hover': {'transform':'scale(0.9,1)'}}}));
 	/**
 	 * 
 	 * @param {String | RealNode | ()=>String} titleGetter 
 	 */
 	var createRealDivSeries = titleGetter=>RealDivList.createByClassName('realDivSeries',titleGetter);
 	RealWorld.onload = RealWorld.onload.
-	finally(()=>RealDivList.defineDivListClass('realDivSeries',false,[],true,{
+	finally(()=>RealDivList.defineDivListClass('realDivSeries',{tryRealNode: true,cssRuleObjObj: {
 		'>div:nth-child(1)': {'font-weight':'bolder'},
 		'.hidden>div:nth-child(n + 2)': {'display':'none'},
-	},(()=>{
+	},callback: (()=>{
 		RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
 			var REList = RealElement.searchByObj(e.target.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
@@ -2422,18 +2546,18 @@ var {
 		function getTransform(titleGetter){return(
 			typeof titleGetter === 'function' ? _fn : titleGetter instanceof RealNode ? _realNode : _str
 		).bind(this,titleGetter);}
-		const temp = [];
 		/**@type {(this: RealDivList,titleGetter: ()=>String,value: String[])=>HTMLDivElement[]} */
-		function _fn(titleGetter,value){return this.protoTransform(temp.concat(titleGetter(),value));}
+		function _fn(titleGetter,value){return this.protoTransform(emptyArray.concat(titleGetter(),value));}
 		/**@type {(this: RealDivList,titleGetter: String,value: String[])=>HTMLDivElement[]} */
-		function _str(titleGetter,value){return this.protoTransform(temp.concat(String(titleGetter),value));}
+		function _str(titleGetter,value){return this.protoTransform(emptyArray.concat(String(titleGetter),value));}
 		/**@type {(this: RealDivList,titleGetter: RealNode,value: String[])=>HTMLDivElement[]} */
-		function _realNode(titleGetter,value){return this.protoTransform(temp.concat(String(titleGetter.value),value));}
+		function _realNode(titleGetter,value){return this.protoTransform(emptyArray.concat(String(titleGetter.value),value));}
 		/**@type {(this: RealDivList,titleGetter: String | RealNode | ()=>String)=>void} */
 		return function(titleGetter){this.transform = getTransform.call(this,titleGetter),this.fix();};
-	})()));
+	})()}));
 
-	}else log('No DOM !');
+}else log('No DOM !');
+
 	EXPORTS.RealWorld = RealWorld;
 	EXPORTS.RealNode = RealNode;
 	EXPORTS.RealGroup = RealGroup;
@@ -2445,6 +2569,7 @@ var {
 	EXPORTS.RealLoader = RealLoader;
 	EXPORTS.RealSelect = RealSelect;
 	EXPORTS.RealComtag = RealComtag;
+	EXPORTS.RealSVG = RealSVG;
 	EXPORTS.RealDivList = RealDivList;
 	EXPORTS.RealImgList = RealImgList;
 	EXPORTS.RealDivQueue = RealDivQueue;
@@ -2459,6 +2584,8 @@ var {
 var
 RealWorld,RealNode,RealGroup,RealTarget,
 RealStory,RealPromise,
-RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+RealElement,RealCanvas,RealLoader,RealSelect,
+RealComtag,RealSVG,
+RealDivList,RealImgList,RealDivQueue,
 createRealDivSelect,createRealDivSearch,createRealDivSeries
 ;
