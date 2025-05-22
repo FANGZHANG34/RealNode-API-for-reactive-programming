@@ -2093,14 +2093,14 @@ if(browserMode){
 		 * 
 		 * @param {keyof SVGElementTagNameMap} tagName 
 		 * @param {keyof SVGElementTagNameMap[]} [optionList] 
+		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
 		 * @param {(this: RealSVG,children: SVGElement[])=>void} [callback] 
 		 */
-		constructor(tagName,optionList,callback){
-			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,this.selfAssign);
+		constructor(tagName,optionList,selfAssign,callback){
+			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,selfAssign);
 			typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));
 		}
 	};
-	RealSVG.prototype.protoSet = RealComtag.prototype.protoSet;
 	var RealDivList = class RealDivList extends RealElement{
 		/**@typedef {AntiTarget & {list: Element[],childrenList: Element[][]}} AntiList */
 		static proto = class AntiList extends RealTarget.proto{
