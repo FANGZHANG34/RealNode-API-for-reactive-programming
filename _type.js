@@ -26,8 +26,7 @@ var {
  * 
  * ## 如果使用ESM规范，请不要注释掉"export default"，否则请注释掉"export default"。
  */
-// export default
-({
+var{
 	RealWorld,RealNode,RealGroup,RealTarget,
 	RealStory,RealPromise,
 	RealElement,RealCanvas,RealLoader,RealSelect,
@@ -2568,12 +2567,4 @@ if(browserMode){
 	// Object.assign(globalThis,EXPORTS);
 	log('Sync\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
 	return EXPORTS;
-})());
-var
-RealNode,RealGroup,RealTarget,
-RealStory,RealPromise,
-RealElement,RealCanvas,RealLoader,RealSelect,
-RealComtag,RealSVG,
-RealDivList,RealImgList,RealDivQueue,
-createRealDivSelect,createRealDivSearch,createRealDivSeries,
-RealWorld;
+})();
