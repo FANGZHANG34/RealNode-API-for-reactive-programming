@@ -6,6 +6,11 @@ try{var uglifyJS = require('uglify-js');}catch{}
 if(!uglifyJS) throw new Error('Require package "uglify-js" !!!');
 
 const indexJS = fs.readFileSync('./index.js','utf-8');
+minifyIndexJS('cjs');
+minifyIndexJS('esm');
+minifyIndexJS('usr');
+fs.writeFile('./_type.js',indexJS.replace(/\/\/ export default[\n\r]+\(/,'var').replace(/\);[\n\r]+var[\n\r]+([\n\r]|.)+$/,';'),prevent);
+
 function prevent(){}
 /**
  * 
@@ -36,6 +41,3 @@ function minifyIndexJS(mode){
 	user || fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
 	console.log(mode+'=>'+(temp.code.length / targetCode.length).toFixed(4));
 }
-minifyIndexJS('cjs');
-minifyIndexJS('esm');
-minifyIndexJS('usr');

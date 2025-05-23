@@ -47,15 +47,16 @@ var {
 	/**## browserMode 是否存在浏览器环境 */
 	browserMode = Element !== prevent,
 	tempConfig = {writable: false,enumerable: false},
+	nonEnumerableConfig = {enumerable: false},
 	/**@type {typeof console.log} */
 	log = (console.log.bind(console)),
 	tryYieldKey =
 	/**
 	 * 
 	 * @template T
-	 * @param {*[] | Generator} iter 
+	 * @param {*[] | IterableIterator} iter 
 	 * @param {T} [type] 
-	 * @returns {Generator<T>}
+	 * @returns {IterableIterator<T>}
 	 */
 	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){console.error(e);}}
 	;
@@ -113,7 +114,7 @@ var {
 		 * @param {...()=>void} fnList 
 		 */
 		function RealWorld(timeSep,...fnList){
-			if(null == this || this === globalThis) return new RealWorld(timeSep,...fnList);
+			if(null == this || this === globalThis) return Reflect.construct(RealWorld,arguments);
 			try{Number.isFinite(this.timeSep = Number(timeSep)) || (this.timeSep = 10);}catch{this.timeSep = 10;}
 			this._id = setInterval(this._mainFn.bind(this),this.timeSep);
 			/**@type {(()=>*)[]} */
@@ -583,8 +584,8 @@ var {
 			/**@type {AntiNode} */
 			this.proto = new this.constructor.proto;
 			this.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
-			Reflect.defineProperty(this,'relativeRNs',{enumerable: false});
-			Reflect.defineProperty(this,'notifyArray',{enumerable: false});
+			Reflect.defineProperty(this,'relativeRNs',nonEnumerableConfig);
+			Reflect.defineProperty(this,'notifyArray',nonEnumerableConfig);
 			Reflect.defineProperty(this,'proto',tempConfig);
 			this.display = config.display ?? true;
 			this.info = config.info;
@@ -1026,31 +1027,34 @@ var {
 			const temp = document.createElement('textarea');
 			return new RealElement({self: (temp.placeholder = String(placeholder),temp),key: 'value'});
 		}
-		/**
-		 * @typedef {{this: HTMLElement;[attr: String]: String}} ElementConfig 
-		 */
+		static newXHTML =
 		/**
 		 * 
 		 * @template {keyof HTMLElementTagNameMap} T
 		 * @param {T} tagName 
-		 * @param {ElementConfig} [config] 
+		 * @param {HTMLElement} [config] 
 		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 * @returns {HTMLElementTagNameMap[T]}
 		 */
-		static newXHTML(tagName,config,cssConfig){
-			const temp = document.createElement(tagName);
-			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
-		}
+		(tagName,config,cssConfig)=>(Object.assign(Object.assign(tagName = document.createElement(tagName),config).style,cssConfig),tagName)
+		static newSVG =
 		/**
 		 * 
-		 * @template {Element | keyof HTMLElementTagNameMap} T 
-		 * @param {T} element 
-		 * @param {ElementConfig} [config] 
+		 * @template {keyof SVGElementTagNameMap} T
+		 * @param {T} tagName 
+		 * @param {SVGElement} [config] 
 		 * @param {CSSStyleDeclaration} [cssConfig] 
-		 * @returns {T extends Element ? T : HTMLElementTagNameMap[T]}
 		 */
-		static makeElement(element,config,cssConfig){return Object.assign(Object.assign(
-			element instanceof Element ? element : document.createElement(element),config
-		).style,cssConfig),element;}
+		(tagName,config,cssConfig)=>RealElement.makeElement(document.createElementNS('http://www.w3.org/2000/svg',tagName),config,cssConfig);
+		/**
+		 * 
+		 * @param {Element[] | IterableIterator<Element>} Elements 
+		 */
+		static newDocumentFragmentFromElements(Elements){
+			const temp = new DocumentFragment();
+			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){console.error(e);}
+			return temp;
+		}
 		/**
 		 * 
 		 * @param {...(Element | {self: Element})}
@@ -1069,20 +1073,26 @@ var {
 		}
 		/**
 		 * 
-		 * @template {keyof SVGElementTagNameMap} T
-		 * @param {T} tagName 
-		 * @param {ElementConfig} [config] 
+		 * @template {Element | keyof HTMLElementTagNameMap} T 
+		 * @param {T} element 
+		 * @param {HTMLElement & SVGElement} [config] 
 		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 * @returns {T extends Element ? T : HTMLElementTagNameMap[T]}
 		 */
-		static newSVG(tagName,config,cssConfig){
-			const temp = document.createElementNS('http://www.w3.org/2000/svg',tagName);
-			try{if(Object.keys(config).includes('href') && 'href' in temp) temp.href.baseVal = config.href;}catch{}
-			return Object.assign(Object.assign(temp,config).style,cssConfig),temp;
+		static makeElement(element,config,cssConfig){
+			element instanceof Element || (element = document.createElement(element));
+			const style = element.style;
+			var temp;
+			if(config) for(const attr of Object.keys(config)) try{if(attr in element) try{
+				typeof (temp = element[attr]) === 'object' && null !== temp ?
+				'baseVal' in temp && element.setAttribute(attr,config[attr]) : element[attr] = config[attr];
+			}catch(e){console.error(e);}else if(attr in style) style[attr] = String(config[attr]);}catch(e){console.error(e);}
+			return Object.assign(style,cssConfig),element;
 		}
 		/**
 		 * 
 		 * @template {String} T
-		 * @template {Boolean} U
+		 * @template {Boolean | Node | []} U
 		 * @param {T} type 
 		 * @param {T extends 'svg' ? (keyof SVGElementTagNameMap)[] : (keyof HTMLElementTagNameMap)[]} tagNameArray 
 		 * @param {U} [toDocumentFragment] 
@@ -1090,23 +1100,14 @@ var {
 		 */
 		static newElements(type,tagNameArray,toDocumentFragment){
 			const iter = tagNameArray[Symbol.iterator]();
-			var temp;
-			if(toDocumentFragment){if(temp = new DocumentFragment(),'svg' === type) for(const tagName of iter) temp.appendChild(
-				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
-			);else for(const tagName of iter) temp.appendChild(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));}
-			else if(temp = [],'svg' === type) for(const tagName of iter) temp.push(
-				document.createElementNS('http://www.w3.org/2000/svg',tagName instanceof Element ? tagName.tagName : tagName)
-			);else for(const tagName of iter) temp.push(document.createElement(tagName instanceof Element ? tagName.tagName : tagName));
-			return temp;
-		}
-		/**
-		 * 
-		 * @param {Element[] | Generator<Element>} Elements 
-		 */
-		static newDocumentFragmentFromElements(Elements){
-			const temp = new DocumentFragment();
-			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){console.error(e);}
-			return temp;
+			if(toDocumentFragment){
+				if(toDocumentFragment = new DocumentFragment(),'svg' === type) for(tagNameArray of iter) toDocumentFragment.
+				appendChild(document.createElementNS('http://www.w3.org/2000/svg',tagNameArray?.tagName ?? tagNameArray));
+				else for(tagNameArray of iter) toDocumentFragment.appendChild(document.createElement(tagNameArray?.tagName ?? tagNameArray));
+			}else if(toDocumentFragment = [],'svg' === type) for(tagNameArray of iter) toDocumentFragment.push(
+				document.createElementNS('http://www.w3.org/2000/svg',tagNameArray?.tagName ?? tagNameArray)
+			);else for(tagNameArray of iter) toDocumentFragment.push(document.createElement(tagNameArray?.tagName ?? tagNameArray));
+			return toDocumentFragment;
 		}
 		/**@method */
 		static addEventListenerBySelectors = (()=>{
@@ -1498,11 +1499,10 @@ if(browserMode){
 		static srcImageMap = new Map;
 		/**
 		 * 
-		 * @param {Number | String} N 
-		 * @param {Number} longN 
-		 * @returns {String}
+		 * @param {Number} n 
+		 * @param {Number} length 
 		 */
-		static strN(N,longN){return String(N).padStart(longN,'0');}
+		static strN(n,length){return String(n).padStart(length,'0');}
 		static preloadSrc(){
 			for(var temp = emptyArray.concat(...arguments),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
 			return Promise.allSettled(temp);
@@ -2024,7 +2024,7 @@ if(browserMode){
 		}
 	};
 	var RealComtag = class RealComtag extends RealElement{
-		/**@type {Map<String,[*[],Boolean,{[selector: String]: {[styleName: String]: String}},((this: RealComtag)=>void) | null]>} */
+		/**@type {Map<String,[*[],Boolean,HTMLDivElement,((this: RealComtag)=>void) | null]>} */
 		static comtagClassMap = new Map;
 		/**
 		 * 
@@ -2032,7 +2032,7 @@ if(browserMode){
 		 * @param {{
 		 * optionList?: [];
 		 * tryRealNode?: Boolean;
-		 * selfAssign?: {[attr: String]: (event: Event)=>void};
+		 * selfAssign?: HTMLDivElement;
 		 * cssRuleObjObj?: {[selector: String]: {[styleName: String]: String}};
 		 * callback?: (this: RealDivList)=>void;
 		 * }} config 
@@ -2070,7 +2070,7 @@ if(browserMode){
 		 * @param {String | Element} id 
 		 * @param {String[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
-		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {HTMLDivElement} [selfAssign] 
 		 */
 		constructor(id,optionList,tryRealNode,selfAssign){
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
@@ -2085,32 +2085,37 @@ if(browserMode){
 	var RealSVG = class RealSVG extends RealComtag{
 		/**
 		 * 
-		 * @template {Node | Boolean} T
+		 * @template {Boolean | Node | []} T
 		 * @param {String[]} hrefList 
-		 * @param {T} [parentTarget] 
-		 * @returns {T extends true ? DocumentFragment : T extends Node ? T : SVGImageElement[]}
+		 * @param {T} [toDocumentFragment] 
+		 * @returns {T extends true ? DocumentFragment : SVGImageElement[]}
 		 */
-		static newImages(hrefList,parentTarget){
-			if(parentTarget) for(const href of (parentTarget instanceof Node ? parentTarget : parentTarget = new DocumentFragment(),hrefList)) try{
-				parentTarget.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(href);
+		static newImages(hrefList,toDocumentFragment){
+			const iter = hrefList[Symbol.iterator]();
+			if(toDocumentFragment) for(hrefList of (toDocumentFragment = new DocumentFragment(),iter)) try{
+				toDocumentFragment.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(hrefList);
 			}catch(e){console.error(e);}
-			else for(const href of (parentTarget = [],hrefList)) try{
+			else for(hrefList of (toDocumentFragment = [],iter)) try{
 				const SVGImage = document.createElementNS('http://www.w3.org/2000/svg','image');
-				parentTarget.push(SVGImage),SVGImage.href.baseVal = String(href);
+				toDocumentFragment.push(SVGImage),SVGImage.href.baseVal = String(hrefList);
 			}catch(e){console.error(e);}
-			return parentTarget;
+			return toDocumentFragment;
 		}
 		protoTransform(value){return RealElement.newElements('svg',value,true);}
 		/**
 		 * 
-		 * @param {keyof SVGElementTagNameMap} tagName 
+		 * @template {keyof SVGElementTagNameMap} T
+		 * @param {T} tagName 
 		 * @param {(keyof SVGElementTagNameMap)[]} [optionList] 
-		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {SVGElementTagNameMap[T]} [selfAssign] 
 		 * @param {(this: RealSVG,children: SVGElement[])=>void} [callback] 
 		 */
-		constructor(tagName,optionList,selfAssign,callback){super(
-			document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false,selfAssign
-		),typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));}
+		constructor(tagName,optionList,selfAssign,callback){
+			super(document.createElementNS('http://www.w3.org/2000/svg',tagName),optionList,false);
+			if(selfAssign) for(const attr of Object.keys(selfAssign)) try{this.proto.self[attr] = selfAssign[attr];}
+			catch{this.proto.self.setAttribute(attr,selfAssign[attr]);}
+			typeof callback === 'function' && callback.call(this,Array.from(this.proto.self.children));
+		}
 	};
 	var RealDivList = class RealDivList extends RealElement{
 		/**@typedef {AntiTarget & {list: Element[],childrenList: Element[][]}} AntiList */
@@ -2127,7 +2132,7 @@ if(browserMode){
 		 * @param {Number} length 
 		 * @param {String} tagName 
 		 * @param {String} [id] 
-		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {HTMLDivElement} [selfAssign] 
 		 */
 		static createList(length = 0,tagName,id,selfAssign){
 			const temp = [];
@@ -2165,7 +2170,7 @@ if(browserMode){
 		 * tryHTML?: Boolean;
 		 * optionList?: [];
 		 * tryRealNode?: Boolean;
-		 * selfAssign?: {[attr: String]: (event: Event)=>void};
+		 * selfAssign?: HTMLDivElement;
 		 * cssRuleObjObj?: {[selector: String]: {[styleName: String]: String}};
 		 * callback?: (this: RealDivList)=>void;
 		 * }} config 
@@ -2249,7 +2254,7 @@ if(browserMode){
 		 * @param {Boolean} tryHTML 
 		 * @param {(Element | String)[]} optionList 
 		 * @param {Boolean} [tryRealNode] 
-		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {HTMLDivElement} [selfAssign] 
 		 */
 		constructor(id,tryHTML,optionList,tryRealNode,selfAssign){
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
@@ -2323,7 +2328,7 @@ if(browserMode){
 		 * @param {String} id 
 		 * @param {(Element | String)[]} srcList 
 		 * @param {Boolean} [tryRealNode] 
-		 * @param {{[attr: String]: (event: Event)=>void}} [selfAssign] 
+		 * @param {HTMLDivElement} [selfAssign] 
 		 */
 		constructor(id,srcList,tryRealNode,selfAssign){super(id,true,srcList,tryRealNode,selfAssign);}
 	};
@@ -2488,17 +2493,17 @@ if(browserMode){
 			(tempRealDivList || (tempRealDivList = this)).info.matcher.value = {},false;
 		}
 		addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
-		RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','click',async e=>(
+		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(1)>textarea','click',async e=>(
 			await 0,e.target.dispatchEvent(new Event('input',changeConfig))
 		));
-		RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(1)>textarea','input',e=>{
+		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(1)>textarea','input',e=>{
 			var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 			if(!temp) return;
 			const testReg = new RegExp(temp.info.inputer.value,'i');
 			temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
 		});
-		RealElement.addEventListenerBySelectors('.realDivSearch>:nth-child(2)>div>div','click',e=>{
+		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(2)>div>div','click',e=>{
 			var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 			if(!temp) return;
@@ -2529,7 +2534,7 @@ if(browserMode){
 		'>div:nth-child(1)': {'font-weight':'bolder'},
 		'.hidden>div:nth-child(n + 2)': {'display':'none'},
 	},callback: (()=>{
-		RealElement.addEventListenerBySelectors('.realDivSeries>div:nth-child(1)','click',e=>{
+		RealElement.addEventListenerBySelectors('.RealDivList.realDivSeries>div:nth-child(1)','click',e=>{
 			var REList = RealElement.searchByObj(e.target.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 			temp && temp.toggleClassName('hidden');
@@ -2556,6 +2561,9 @@ if(browserMode){
 	EXPORTS.RealComtag = RealComtag,EXPORTS.RealSVG = RealSVG,
 	EXPORTS.RealDivList = RealDivList,EXPORTS.RealImgList = RealImgList,EXPORTS.RealDivQueue = RealDivQueue,
 	EXPORTS.createRealDivSelect = createRealDivSelect,EXPORTS.createRealDivSearch = createRealDivSearch,EXPORTS.createRealDivSeries = createRealDivSeries;
+	(function tempFn(fn){for(const key of Object.keys(fn)){
+		if(typeof fn[key] === 'function') Reflect.defineProperty(fn,key,nonEnumerableConfig),tempFn(fn[key]);
+	}})(EXPORTS);
 	/**## 如果用作全局接口，请不要注释掉下面这一行。  */
 	// Object.assign(globalThis,EXPORTS);
 	log('Sync\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
