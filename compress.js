@@ -9,6 +9,9 @@ const indexJS = fs.readFileSync('./index.js','utf-8');
 minifyIndexJS('cjs');
 minifyIndexJS('esm');
 minifyIndexJS('usr');
+minifyIndexJS('cjs',true);
+minifyIndexJS('esm',true);
+minifyIndexJS('usr',true);
 fs.writeFile('./_type.js',indexJS.replace(/\/\/ export default[\n\r]+\(/,'var').replace(/\);[\n\r]+var[\n\r]+([\n\r]|.)+$/,';'),prevent);
 
 function prevent(){}
@@ -16,7 +19,7 @@ function prevent(){}
  * 
  * @param {keyof{cjs;esm;usr;user;}} mode 
  */
-function minifyIndexJS(mode){
+function minifyIndexJS(mode,tryFunctionRealNode = false){
 	mode = String(mode);
 	var targetCode,user;
 	switch(mode){
@@ -25,8 +28,11 @@ function minifyIndexJS(mode){
 		case 'usr':case 'user': user = true,targetCode = indexJS.
 		replace('// Object.assign(globalThis,EXPORTS);','Object.assign(globalThis,EXPORTS);');break;
 	}
-	const temp = uglifyJS.minify(targetCode,{sourceMap: {url: './real-node-'+mode+'.min.js.map',includeSources: true},keep_fnames: true});
-	fs.writeFile('./real-node-'+mode+'.min.js',(user ?
+	const temp = uglifyJS.minify(
+		tryFunctionRealNode ? targetCode = targetCode.replace('tryFunctionRealNode = false','tryFunctionRealNode = true') : targetCode,
+		{sourceMap: {url: './real-node-'+mode+'.min.js.map',includeSources: true},keep_fnames: true}
+	),nodeType = tryFunctionRealNode ? 'fn-' : '';
+	fs.writeFile('./real-node-'+nodeType+mode+'.min.js',(user ?
 `"use strict";
 // ==UserScript==
 // @name			real-node
@@ -38,6 +44,6 @@ function minifyIndexJS(mode){
 // @grant			none
 // ==/UserScript==
 `+temp.code.replace(/[\n\r].+$/,'') : temp.code)+'\n',prevent);
-	user || fs.writeFile('./real-node-'+mode+'.min.js.map',temp.map,prevent);
+	user || fs.writeFile('./real-node-'+nodeType+mode+'.min.js.map',temp.map,prevent);
 	console.log(mode+'=>'+(temp.code.length / targetCode.length).toFixed(4));
 }
