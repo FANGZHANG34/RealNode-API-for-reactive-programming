@@ -1,5 +1,10 @@
 "use strict";
-
+// var {
+// 	RealWorld,RealNode,RealGroup,RealTarget,
+// 	RealStory,RealPromise,
+// 	RealElement,RealCanvas,RealLoader,RealSelect,RealComtag,RealDivList,RealImgList,RealDivQueue,
+// 	createRealDivSelect,createRealDivSearch,createRealDivSeries
+// } = await import('real-node').then(exports=>exports.default);
 var GM;
 var temp;
 var GM = RealPromise.newOne(temp = RealElement.defaultInit().then(()=>RealStory.newPage().newPromiseObj()));
@@ -75,7 +80,7 @@ var GM = GM.then(temp=>class GM{
 				const [boy,girl,teacher] = mainEle.self.children;
 				const competition = new RealGroup({self: [0,0]});
 				const tempFn = ()=>Math.random() > Math.random() ? boy.textContent = ++competition.proxy[0] : girl.textContent = ++competition.proxy[1];
-				competition.addSetterListener(null,function(){
+				competition.addSetterListener(null,()=>{
 					const queue = competition.proxy[0] > competition.proxy[1] ?
 					[boy,girl,competition.proxy[0],competition.proxy[1]] : [girl,boy,competition.proxy[1],competition.proxy[0]];
 					queue[2] < 256 ? RealGroup.afterNow(tempFn) : (
@@ -178,10 +183,65 @@ var GM = GM.then(temp=>class GM{
 
 				break;
 			}
+			case 3: {
+				const mainSVG = new RealSVG('svg',['text','text','text'],{id: 'mainSVG',width: '500',height: '500'},function(svgArray){
+					document.body.appendChild(this.self);
+					/**@type {SVGTextElement} */
+					const a = svgArray[0];
+					RealElement.makeElement(a,{innerHTML: '-',y: '25',fill: 'white'});
+					/**@type {SVGTextElement} */
+					const b = svgArray[1];
+					RealElement.makeElement(b,{innerHTML: '-',y: '50',fill: 'white'});
+				});
+			}
+			/**
+			 * 使用RealNode和RealNode.eventLoop 16行
+			 * RealStory
+			 * RealNode
+			 * RealElement
+			 * RealDivList
+			 */
+			case -1: {
+				const
+				teacher = new RealNode({id: 'Ms. White',initValue: 'pending...'}),
+				boy = new RealNode({id: 'Mike',initValue: 0}),
+				girl = new RealNode({id: 'Mary',initValue: 0})
+				;
+				const mainEle = new RealDivList('mainEle',false,[boy,girl,teacher],true);
+				const competition = RealNode.eventLoop;
+				competition.intervalFn = ()=>Math.random() > Math.random() ? boy.value++ : girl.value++;
+				competition.ifFn = ()=>boy() >= 256 || girl() >= 256;
+				competition.soFn = ()=>{
+					competition.intervalFn = null;
+					boy() >= 256 ?
+					(temp.resolve('\t=>'+boy+' : +'+(boy - girl)),teacher.value = boy.id.description+' wins!!!') :
+					(temp.resolve('\t=>'+girl+' : +'+(girl - boy)),teacher.value = girl.id.description+' wins!!!');
+				};
+				RealElement.applyKeyboardController(mainEle);
+				mainEle.applyCSS('',{
+					'':{
+						'transform':'translate(-50%,0)',
+						'left':'50vw',
+						'color':'#fff',
+						'width':'40vw',
+						'font-size':'5vw',
+					},
+					' *':{
+						'text-align':'center',
+						'align-items':'center',
+						'align-content':'center',
+						'vertical-align':'middle',
+						'justify-content': 'center',
+					}
+				});
+				document.body.appendChild(mainEle.self);
+
+				break;
+			}
 		}
 	}
 });
-GM.tryHandler(protoGM=>RealNode.time(()=>(GM = new protoGM,GM.temp.promise)).then(result=>console.log(result.value,'in '+result.time.toFloat()+' ms')));
+GM.tryHandler(protoGM=>RealNode.time(()=>(GM = new protoGM(-1),GM.temp.promise)).then(result=>console.log(result.value,'in '+RealNode.makeNumStr0oTail(result.time)+' ms')));
 
 
 // switch(mode){

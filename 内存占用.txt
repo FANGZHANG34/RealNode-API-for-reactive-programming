@@ -1,0 +1,9 @@
+RealNode * 1e6
+fn	python3	515.4mb
+fn	node	754mb
+fn	edge	391mb
+fn	qjs	1211.5mb
+normal	python3	515mb
+normal	node	279mb
+normal	edge	150mb
+normal	qjs	1043mb
