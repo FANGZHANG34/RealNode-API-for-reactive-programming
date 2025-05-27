@@ -2,7 +2,7 @@
 
 ---
 
-| typeof <br> \["object" RealNode\] </br> |  Inter <br> preter </br> | RAM-usage <br> (mb) </br> |
+| typeof \["object" RealNode\] |  Interpreter | RAM-usage (mb) |
 | :----: | :----: | ---: |
 | "function" | python <br> v3.13.3 </br> | 515 |
 | "function" | node <br> v22.12.0 </br> | 754 |
@@ -11,7 +11,7 @@
 
 ---
 
-| typeof <br> \["object" RealNode\] </br> |  Inter <br> preter </br> | RAM-usage <br> (mb) </br> |
+| typeof \["object" RealNode\] |  Interpreter | RAM-usage (mb) |
 | :----: | :----: | ---: |
 | "object" | python <br> v3.13.3 </br> | 515 |
 | "object" | node <br> v22.12.0 </br> | 279 |
