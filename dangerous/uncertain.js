@@ -126,3 +126,87 @@ const RealPromise = function(){
 	};
 	return PromiseWithList();
 }();
+
+{
+	const proto = function(...argArray){return argArray.length > 0 ? this.set(argArray[0]) : this.get();};
+	/**@template T */
+	class protoRealNode{
+		/**@type {T} */
+		value;
+		get(){return this.value;}
+		set(value){return value !== this.value && (this.value = value,true);}
+	}
+	const prototype = new protoRealNode;
+/**
+ * @template T
+ * @param {T} value 
+ * @returns {{
+ * ()=>T;
+ * (value)=>Boolean;
+ * proto: protoRealNode<T>;
+ * }}
+ */
+var RealNode = function(value){
+	if(null == this || this === globalThis) return new RealNode(value);
+	// if(!new.target) return new RealNode(value);
+	/**
+	 * @type {{
+	 * ()=>T;
+	 * (value: T)=>Boolean;
+	 * proto: {value: T};
+	 * }}
+	 */
+	const thisArg = proto.bind(this);
+	(thisArg.proto = this).value = value;
+	return thisArg;
+};
+RealNode.prototype.get = prototype.get;
+RealNode.prototype.set = prototype.set;
+Reflect.defineProperty(RealNode,Symbol.hasInstance,{value(target){
+	return typeof target === 'function' && Object[Symbol.hasInstance].call(this,target.proto);
+}});
+
+}
+{
+	const config = {value: null,writable: true};
+	const proto = (thisArg,...argArray)=>argArray.length ? thisArg.set(...argArray) : thisArg.get(...argArray);
+var RealNode = class RealNode{
+	get(){return this.value;}
+	set(value){return value !== this.value && (this.value = value,true);}
+	constructor(value){
+		const thisArg = (...argArray)=>proto(thisArg,...argArray);
+		// "this" 仅用于获取当前原型，真正的 this 为 "thisArg"
+		Reflect.setPrototypeOf(thisArg,Reflect.getPrototypeOf(this));
+		Reflect.defineProperty(thisArg,'length',config);
+		Reflect.defineProperty(thisArg,'name',config);
+		thisArg.value = value;
+		return thisArg;
+	}
+};
+}
+{
+	let a = new RealNode(123);
+	console.log(a); // [Function: undefined] RealNode { value: 123 }
+	console.log(a()); // 123
+	console.log(a('abc')); // true
+	console.log(a()); // 'abc'
+	console.log(a('abc')); // false
+	console.log(a.value); // 'abc'
+	console.log(a instanceof RealNode); // true
+
+	class Abc extends RealNode{}
+	console.log(new Abc(123)(456)); // true
+}
+3.2,368,727
+3.2,399,790
+21.8,788,1542
+1.8,1209.9,2421.4
+
+10,524.7,1040.1
+9.5,524.4,1039.5
+0
+const RealNode = (await import('./index.js')).default.RealNode;
+for(var i = 0;i < 1e6;i++) new RealNode;null;
+const RealNode = (await import('./index.js')).default.RealNode;
+const test = realNode=>void(realNode(0),realNode());
+for(var i = 0;i < 1e6;i++) test(new RealNode);null;
