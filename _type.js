@@ -64,7 +64,7 @@ var{
 	 * @param {RealNode} thisArg 
 	 * @param {[*,Boolean,Boolean,Boolean] | []} argArray 
 	 */
-	(thisArg,...argArray)=>argArray.length ? thisArg.realSet(argArray[0],true,true,true) : thisArg.get(),
+	(thisArg,...argArray)=>argArray.length ? thisArg.realSet(...argArray,true,true,true) : thisArg.get(),
 	tryYieldKey =
 	/**
 	 * 
