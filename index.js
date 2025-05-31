@@ -1812,7 +1812,7 @@ if(browserMode){
 			var temp;temp = id;
 			const self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
-			self && self instanceof HTMLCanvasElement &&
+			if(self) self instanceof HTMLCanvasElement ||
 			RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
 			RealElement.addId(id,!self);
 			temp = {id};
