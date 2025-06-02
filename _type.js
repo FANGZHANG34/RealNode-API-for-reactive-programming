@@ -50,7 +50,7 @@ var{
 	writableNull = {value: null,writable: true},
 	tempConfig = {writable: false,enumerable: false},
 	/**### bind @type {typeof console.log} */
-	log = ((...argArray)=>console.log.apply(console,argArray)),
+	log = ((...argArray)=>console.log(...argArray)),
 	/**
 	 * 
 	 * @type {{
@@ -599,20 +599,21 @@ var{
 			const thisArg = tryFunctionRealNode ? (...argArray)=>protoThisArg(thisArg,...argArray) : this;
 			// "this" 仅用于获取当前原型，真正的 this 为 "thisArg"
 			tryFunctionRealNode && (
-				thisArg.relativeRNs = this.relativeRNs,
-				thisArg.notifyArray = this.notifyArray,
 				Reflect.setPrototypeOf(thisArg,Reflect.getPrototypeOf(this)),
 				Reflect.defineProperty(thisArg,'length',writableNull),
-				Reflect.defineProperty(thisArg,'name',writableNull)
+				Reflect.defineProperty(thisArg,'name',writableNull),
+				thisArg.relativeRNs = this.relativeRNs,
+				thisArg.notifyArray = this.notifyArray,
+				null
 			);
 			/**@type {AntiNode} */
 			thisArg.proto = new this.constructor.proto;
+			thisArg.info = config.info;
 			thisArg.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
 			Reflect.defineProperty(thisArg,'relativeRNs',nonEnumerableConfig);
 			Reflect.defineProperty(thisArg,'notifyArray',nonEnumerableConfig);
 			Reflect.defineProperty(thisArg,'proto',tempConfig);
 			thisArg.display = config.display ?? true;
-			thisArg.info = config.info;
 			thisArg.get = config.get;
 			thisArg.set = config.set;
 			thisArg.react = config.react;
@@ -1811,8 +1812,7 @@ if(browserMode){
 			var temp;temp = id;
 			const self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
-			self && self instanceof HTMLCanvasElement &&
-			RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
+			if(self) self instanceof HTMLCanvasElement || RealNode.error('=> "id" exists but not within an HTMLCanvasElement !');
 			RealElement.addId(id,!self);
 			temp = {id};
 			super({self: self || RealElement.newXHTML('canvas',temp)},temp,tryRealNode,...relativeRNs);
