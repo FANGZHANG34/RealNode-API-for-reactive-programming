@@ -289,6 +289,7 @@ var{
 		 * @param {Symbol} id 
 		 */
 		static search(id){return RealNode._sys.get(id);}
+		static newByInitValue(initValue){return new RealNode({initValue});}
 		static is(value1,value2){return Object.is(value1,value2) || value1 === value2;}
 		/**
 		 * ### bind
@@ -312,14 +313,14 @@ var{
 		)(()=>false);
 		/**
 		 * 
+		 * @type {(config: {get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?})=>RealNode}
+		 */
+		static createHidden(config){return new RealNode((config = Object.assign({},config),config.display = false,config));}
+		/**
+		 * 
 		 * @param {RealNode} realNode 
 		 */
 		static check(realNode){for(const temp of RealNode._sys.entries()) if(realNode === temp[1]) return realNode.id === temp[0];}
-		/**
-		 * 
-		 * @type {(config: {get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?})=>RealNode}
-		 */
-		static createHidden = (temp=>function(config){return new RealNode(Object.assign({},config,temp));})({display: false});
 		/**
 		 * 
 		 * @param {()=>*} fn 
@@ -416,8 +417,6 @@ var{
 		protoReact(){}
 		protoGet(){return this.proto.value;}
 		log(...message){console.log(this+':',...message);}
-		done(){return RealNode.justNow(this.protoDone,this);}
-		// done(keepNow){return RealNode.afterNow(this.protoDone,keepNow,this);}
 		/**
 		 * 
 		 * @throws
@@ -438,22 +437,39 @@ var{
 		[Symbol.toPrimitive](hint){try{
 			return 'number' === hint ? Number(this.value) : '[object '+this.constructor.name+']{ '+this.id.description+' }';
 		}catch{return NaN;}}
-		async protoDone(){
-			var i = 0;
-			while(i < this.notifyArray.length) await Promise.allSettled(this.notifyArray[i++]);
-			return this.notifyArray.splice(0);
+		/**
+		 * 
+		 * @param {Boolean} noSelf 
+		 * @param {(error: Error,status: {depth: Number,done: Boolean,finished: Promise<void>})=>void} [onerror] 
+		 */
+		notify(noSelf,onerror){
+			const tempFn = typeof onerror === 'function' ? onerror : prevent;
+			const status = {depth: 0,done: false,finished: RealNode.justNow(async()=>{
+				for await(const err of this.protoNotify(noSelf,status)) try{tempFn(err,status);}catch{}
+			})};
+			return status;
 		}
 		/**
 		 * 
 		 * @param {Boolean} noSelf 
-		 * @param {RealNode} [thisArg] 
-		 * @param {number} [count] 
-		 * @returns {?Promise<void>}
+		 * @param {{depth: Number,done: Boolean,finished: Promise<void>}} [status] 
 		 */
-		notify(noSelf,thisArg,count){
-			// return this.relativeRNs.length ? this.done().finally(this.protoNotify.bind(this,noSelf,thisArg,count)) : null;
-			for(const id of this.relativeRNs) Promise.resolve(RealNode.search(id)).
-			then(realNode=>!realNode || (noSelf && this === realNode) || realNode.realReact?.());
+		async*protoNotify(noSelf,status){
+			if(typeof status?.depth !== 'number') status = {depth: 0,done: false};
+			var realNode,temp = this.relativeRNs.concat();
+			do{await 0;
+				const reactedArray = [],failedArray = [];
+				for(realNode of temp) try{
+					realNode = RealNode.search(realNode);
+					if(!realNode || (noSelf && this === realNode)) continue;
+					realNode.react?.();
+					reactedArray.push(realNode);
+				}catch(e){failedArray.push(e);}
+				yield*failedArray;
+				status.depth++;
+				temp = emptyArray.concat(...tryYieldKey(reactedArray,'relativeRNs',emptyArray));
+			}while(temp.length);
+			status.done = true;
 		}
 		/**
 		 * 
@@ -479,21 +495,6 @@ var{
 			const childRNs = this.proto.childRNs,temp = [];
 			for(var i = childRNs.length,iter;i --> 0;) iter = childRNs[i].info.values(),realNode === iter.next().value && temp.push(...iter);
 			return temp;
-		}
-		/**
-		 * 
-		 * @param {Boolean} noSelf 
-		 * @param {RealNode} [thisArg] 
-		 * @param {number} [count] 
-		 */
-		protoNotify(noSelf,thisArg,count = 0){
-			!thisArg ? thisArg = this : count++;
-			(thisArg.notifyArray[count] || (thisArg.notifyArray[count] = [])).push(new Promise(r=>{
-				for(var id of this.relativeRNs){
-					!(noSelf && id === this.id) && (id = RealNode.search(id)) && (id.react?.(),id.notify(noSelf,thisArg,count));
-				}
-				r();
-			}));
 		}
 		/**
 		 * 
@@ -589,8 +590,6 @@ var{
 			config = Object(config);
 			/**@type {Symbol[]} */
 			this.relativeRNs = [];
-			/**@type {Promise[][]} */
-			this.notifyArray = [];
 			/**@type {AntiNode} */
 			this.proto = null;
 			/**@type {*} */
@@ -603,7 +602,6 @@ var{
 				Reflect.defineProperty(thisArg,'length',writableNull),
 				Reflect.defineProperty(thisArg,'name',writableNull),
 				thisArg.relativeRNs = this.relativeRNs,
-				thisArg.notifyArray = this.notifyArray,
 				null
 			);
 			/**@type {AntiNode} */
@@ -611,7 +609,6 @@ var{
 			thisArg.info = config.info;
 			thisArg.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
 			Reflect.defineProperty(thisArg,'relativeRNs',nonEnumerableConfig);
-			Reflect.defineProperty(thisArg,'notifyArray',nonEnumerableConfig);
 			Reflect.defineProperty(thisArg,'proto',tempConfig);
 			thisArg.display = config.display ?? true;
 			thisArg.get = config.get;
@@ -628,7 +625,6 @@ var{
 			// this.proto = new this.constructor.proto;
 			// this.proto.id = Symbol(String(config.id ?? config.info?.id ?? ''));
 			// Reflect.defineProperty(this,'relativeRNs',nonEnumerableConfig);
-			// Reflect.defineProperty(this,'notifyArray',nonEnumerableConfig);
 			// Reflect.defineProperty(this,'proto',tempConfig);
 			// this.display = config.display ?? true;
 			// this.info = config.info;
@@ -670,6 +666,8 @@ var{
 		/**@type {Map<{},RealGroup>} */
 		static groupMap = new Map;
 		static _ = ()=>true;
+		/**@param {{}} obj  */
+		static newByObj(obj){return new RealGroup({self: Object(obj)});}
 		/**
 		 * 
 		 * @template T
@@ -854,6 +852,8 @@ var{
 			/**@type {(value)=>*} */
 			transform;
 		};
+		/**@param {Element} self  */
+		static newBySelf(self){return new this({self});}
 		/**
 		 * 
 		 * @type {{(element: Element)=>RealElement[];(element: {})=>RealTarget[];(element)=>RealElement[];}}
@@ -1536,6 +1536,8 @@ if(browserMode){
 		static useCache = true;
 		/**@type {Map<String,HTMLImageElement>} */
 		static srcImageMap = new Map;
+		/**@param {HTMLCanvasElement} canvas  */
+		static newBySelf(canvas){return new RealCanvas(canvas);}
 		/**
 		 * 
 		 * @param {Number} n 
@@ -1768,7 +1770,7 @@ if(browserMode){
 						break;
 					}
 				}
-				return temp.then(()=>(this.clearTemp(),resizeAfter && Object.assign(this,size),temp.destroy()));
+				return temp.then(()=>(this.clearTemp(),resizeAfter && (this.width = size.width,this.height = size.height),temp.destroy()));
 			})};
 		}
 		get ctx(){return this.proto.ctx;}
@@ -1776,9 +1778,9 @@ if(browserMode){
 		get imgW(){return this.proto.img.naturalWidth;}
 		get imgH(){return this.proto.img.naturalHeight;}
 		get width(){return this.proto.self.width;}
-		set width(width){this.proto.self.width = this.proto.temp.canvas.width = width ?? 640;}
+		set width(width){if(null != width) this.proto.self.width = this.proto.temp.canvas.width = width;}
 		get height(){return this.proto.self.height;}
-		set height(height){this.proto.self.height = this.proto.temp.canvas.height = height ?? 360;}
+		set height(height){if(null != height) this.proto.self.height = this.proto.temp.canvas.height = height;}
 		get self(){return this.proto.self;}
 		set self(self){if(self instanceof HTMLCanvasElement) this.proto.ctx = (this.proto.self = self).getContext('2d');}
 		get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
@@ -1892,6 +1894,8 @@ if(browserMode){
 				break;
 			}
 		}),{writable: false,enumerable: false,configurable: false});
+		/**@param {Boolean} isDownload  */
+		static newByType(isDownload){return new RealLoader(isDownload,'file');}
 		static getArrayBufferFrom(data){return Promise.resolve(
 			data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
 			data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
@@ -1982,6 +1986,8 @@ if(browserMode){
 			/**@type {HTMLOptionElement[]} */
 			list = [];
 		};
+		/**@param {HTMLSelectElement} select  */
+		static newBySelf(select){return new RealSelect(select);}
 		/**
 		 * 
 		 * @this {RealSelect}
@@ -2061,7 +2067,7 @@ if(browserMode){
 		constructor(id,multiple,optionConfig,tryRealNode,defaultKey,defaultValue,onchange){
 			const temp = id,self = temp instanceof Element ? (id = temp.id,temp) :
 			(typeof temp === 'string' || (id = '',false)) && document.getElementById(temp);
-			if(self) self instanceof HTMLSelectElement ? Object.assign(self,{multiple,onchange}) :
+			if(self) self instanceof HTMLSelectElement ? (self.multiple = multiple,self.onchange = onchange) :
 			RealNode.error('=> "id" exists but not within an HTMLSelectElement !');
 			RealElement.addId(id,!self);
 			super({
@@ -2076,6 +2082,8 @@ if(browserMode){
 	var RealComtag = class RealComtag extends RealElement{
 		/**@type {Map<String,[*[],Boolean,HTMLDivElement,((this: RealComtag)=>void) | null]>} */
 		static comtagClassMap = new Map;
+		/**@param {Element} self  */
+		static newBySelf(self){return new RealComtag(self);}
 		/**
 		 * 
 		 * @param {String} className 
@@ -2133,6 +2141,8 @@ if(browserMode){
 		}
 	};
 	var RealSVG = class RealSVG extends RealComtag{
+		/**@param {keyof SVGElementTagNameMap} tagName  */
+		static newByTagName(tagName){return new RealSVG(tagName);}
 		/**
 		 * 
 		 * @template {Boolean | Node | []} T
@@ -2175,6 +2185,8 @@ if(browserMode){
 		}
 		/**@type {Map<String,[Boolean,*[],Boolean,{[selector: String]: {[styleName: String]: String}},((this: RealDivList)=>void) | null]>} */
 		static divListClassMap = new Map;
+		/**@param {Element} self  */
+		static newBySelf(self){return new this(self);}
 		/**
 		 * 
 		 * @param {Number} length 
