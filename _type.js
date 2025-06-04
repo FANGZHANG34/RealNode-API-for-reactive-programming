@@ -51,6 +51,8 @@ var{
 	tempConfig = {writable: false,enumerable: false},
 	/**### bind @type {typeof console.log} */
 	log = ((...argArray)=>console.log(...argArray)),
+	/**### bind @type {typeof console.error} */
+	error = ((...argArray)=>console.error(...argArray)),
 	/**
 	 * 
 	 * @type {{
@@ -73,7 +75,7 @@ var{
 	 * @param {T} [type] 
 	 * @returns {IterableIterator<T>}
 	 */
-	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){console.error(e);}}
+	function*tryYieldKey(iter,key,type){try{for(const target of iter) yield target?.[key] ?? target;}catch(e){error(e);}}
 	;
 	/**## nodeMode 是否存在nodejs环境 */
 	var nodeMode = false;
@@ -112,11 +114,11 @@ var{
 	setInterval = globalThis.setInterval ?? prevent,
 	clearInterval = globalThis.clearInterval ?? prevent
 	;
-	try{nodeRequire = require;EXPORTS = module.exports;nodeMode = true;}
-	catch{EXPORTS = {};nodeRequire = path=>new Promise(async r=>{try{
+	try{EXPORTS = module.exports;}catch{EXPORTS = {};}
+	try{nodeRequire = require;nodeMode = true;}catch{nodeRequire = path=>new Promise(async r=>{try{
 		const exports = await import(String(path));
 		r('default' in exports ? exports.default : exports);
-	}catch(e){r(e);console.log('\n\r\t'+String(e)+e?.stack);}});}
+	}catch(e){r(e);console.log('\n\r\t'+String(e)+e?.stack);}});log('No CJS !');}
 	const nodeFS = nodeRequire('fs');
 	/**# RealWorld 事件循环类 */
 	var RealWorld = (()=>{
@@ -217,7 +219,7 @@ var{
 						))]);
 					}
 				}
-			}).catch(e=>console.error(e.stack));
+			}).catch(e=>error(e.stack));
 		};
 		/**## destroy 销毁本对象 */
 		RealWorld.prototype.destroy = function(){clearInterval(this._id),this._mainFn();};
@@ -236,11 +238,11 @@ var{
 		};
 		RealWorld.prototype._mainFn = function(){
 			if(this.paused) return;
-			try{this.intervalFn?.();}catch(e){this.intervalFn = null;console.error(e);}
-			try{this.info = this.fnList.pop()?.call?.(this,this.info);}catch(e){console.error(e);}
+			try{this.intervalFn?.();}catch(e){this.intervalFn = null;error(e);}
+			try{this.info = this.fnList.pop()?.call?.(this,this.info);}catch(e){error(e);}
 			try{if(this.ifFn?.()) this.ifFn = this.soFn = void this.soFn?.();}catch(e0){
 				try{this.ifFn?.();}catch(e1){e0 = e1;this.ifFn = null;this.paused = true;}
-				this.paused || (this.soFn = null);this.paused = false;console.error(e0);
+				this.paused || (this.soFn = null);this.paused = false;error(e0);
 			}
 		};
 		return RealWorld;
@@ -370,9 +372,9 @@ var{
 		 */
 		static async time(promise,callback){
 			const t0 = performance.now(),result = {time: null,error: null,value: null,};
-			try{result.value = await(typeof promise === 'function' ? promise() : promise);}catch(e){console.error(result.error = e);}
+			try{result.value = await(typeof promise === 'function' ? promise() : promise);}catch(e){error(result.error = e);}
 			result.time = performance.now() - t0;
-			if(typeof callback === 'function') try{callback(result.time,result.error,result.value);}catch(e){console.error(e);}
+			if(typeof callback === 'function') try{callback(result.time,result.error,result.value);}catch(e){error(e);}
 			return result;
 		}
 		/**
@@ -443,10 +445,9 @@ var{
 		 * @param {(error: Error,status: {depth: Number,done: Boolean,finished: Promise<void>})=>void} [onerror] 
 		 */
 		notify(noSelf,onerror){
-			const tempFn = typeof onerror === 'function' ? onerror : prevent;
 			const status = {depth: 0,done: false,finished: RealNode.justNow(async()=>{
 				for await(const err of this.protoNotify(noSelf,status)) try{tempFn(err,status);}catch{}
-			})};
+			})},tempFn = typeof onerror === 'function' ? onerror : prevent;
 			return status;
 		}
 		/**
@@ -456,19 +457,24 @@ var{
 		 */
 		async*protoNotify(noSelf,status){
 			if(typeof status?.depth !== 'number') status = {depth: 0,done: false};
-			var realNode,temp = this.relativeRNs.concat();
-			do{await 0;
-				const reactedArray = [],failedArray = [];
-				for(realNode of temp) try{
+			var realNode,temp = this.relativeRNs.concat().reverse(),i;
+			const reactedArray = [];
+			while(await temp.length){
+				const failedArray = [];
+				while(realNode = temp.pop()) try{
 					realNode = RealNode.search(realNode);
 					if(!realNode || (noSelf && this === realNode)) continue;
 					realNode.react?.();
 					reactedArray.push(realNode);
 				}catch(e){failedArray.push(e);}
+				// realNode = failedArray.length,i = 0;
+				// while(i < realNode) yield failedArray[i++];
 				yield*failedArray;
 				status.depth++;
-				temp = emptyArray.concat(...tryYieldKey(reactedArray,'relativeRNs',emptyArray));
-			}while(temp.length);
+				try{while(realNode = reactedArray.pop()) for(realNode = realNode.relativeRNs,i = realNode.length;i --> 0;){
+					temp.includes(realNode[i]) || temp.push(realNode[i]);
+				}}catch{this.log('More than 2^32 RNs to notify so break it !');break;}
+			}
 			status.done = true;
 		}
 		/**
@@ -485,7 +491,7 @@ var{
 				this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 				this._dealWithPositionsOfRNs(temp,value) : value
 			) ?? true) && (react && this.react?.(),notify && this.notify(noSelf),true);
-		}catch(e){return console.error(e),e;}}
+		}catch(e){return error(e),e;}}
 		/**
 		 * 
 		 * @param {RealNode} realNode 
@@ -717,7 +723,7 @@ var{
 						case "object": if(source === null) return [];else if(Array.isArray(source)) return source.concat();
 						else for(temp = [],keys = Object.keys(source),index = 0;true;) if(
 							Number.isInteger(key = +keys[index++]) && key > -1
-						) try{temp[key] = source[key];}catch(e){console.error(e);}else return temp;
+						) try{temp[key] = source[key];}catch(e){error(e);}else return temp;
 					}
 					default: if(Object(structure) !== structure) return source;
 				}
@@ -725,8 +731,8 @@ var{
 				while(index --> 0) try{
 					key = keys[index],structure[key];
 					try{temp[key] = getObjByStructure(source[key],structure[key]);}
-					catch(e){temp[key] = getObjByStructure(null,structure[key]);console.error(e);}
-				}catch(e){temp[key] = null;console.error(e);}
+					catch(e){temp[key] = getObjByStructure(null,structure[key]);error(e);}
+				}catch(e){temp[key] = null;error(e);}
 				return temp;
 			};
 			return getObjByStructure;
@@ -738,7 +744,7 @@ var{
 		 * @param {Boolean} [noSelf] 
 		 * @returns {Boolean | Error}
 		 */
-		realSet(value,notify,noSelf){try{return this.protoSet(value) && (notify && this.notify(noSelf),true);}catch(e){return console.error(e),e;}}
+		realSet(value,notify,noSelf){try{return this.protoSet(value) && (notify && this.notify(noSelf),true);}catch(e){return error(e),e;}}
 		/**
 		 * 
 		 * @param {String | Symbol | ?(keyArray: (String | Symbol)[])=>Boolean} ifKeyOrFn 
@@ -918,7 +924,7 @@ var{
 				this.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 				this._dealWithPositionsOfRNs(temp,value) : value
 			) ?? true) && (this.fix(),react && this.react?.(),notify && this.notify(noSelf),true);
-		}catch(e){return console.error(e),e;};}
+		}catch(e){return error(e),e;};}
 		/**
 		 * 
 		 * @param {keyof HTMLElementTagNameMap} selfSelector 
@@ -1000,7 +1006,7 @@ var{
 		/**@type {Set<String>} */
 		static idSet = new Set;
 		static findId(id){return this.idSet.has(id);}
-		static deleteId(id){typeof id !== 'string' && console.error('=> Please use String "id" !');return this.idSet.delete(id);}
+		static deleteId(id){typeof id !== 'string' && error('=> Please use String "id" !');return this.idSet.delete(id);}
 		static getRandomId(){
 			for(var temp;this.idSet.has(temp = 'C3'+Math.floor(Math.random() * 1e14).toString(36)););
 			return temp;
@@ -1092,7 +1098,7 @@ var{
 		 */
 		static newDocumentFragmentFromElements(Elements){
 			const temp = new DocumentFragment();
-			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){console.error(e);}
+			for(const ele of Elements) try{temp.appendChild(ele);}catch(e){error(e);}
 			return temp;
 		}
 		/**
@@ -1126,7 +1132,7 @@ var{
 			if(config) for(const attr of Object.keys(config)) try{if(attr in element) try{
 				typeof (temp = element[attr]) === 'object' && null !== temp ?
 				'baseVal' in temp && element.setAttribute(attr,config[attr]) : element[attr] = config[attr];
-			}catch(e){console.error(e);}else if(attr in style) style[attr] = String(config[attr]);}catch(e){console.error(e);}
+			}catch(e){error(e);}else if(attr in style) style[attr] = String(config[attr]);}catch(e){error(e);}
 			return Object.assign(style,cssConfig),element;
 		}
 		/**
@@ -1158,8 +1164,8 @@ var{
 			 * @param {keyof HTMLElementTagNameMap} selectors 
 			 */
 			function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
-				for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){console.error,alert(e?.stack ?? e);}
-			}}catch(e){console.error(e);}}
+				for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){error(e?.stack ?? e);}
+			}}catch(e){error(e);}}
 			/**
 			 * 
 			 * @param {keyof HTMLElementTagNameMap} selectors 
@@ -1214,7 +1220,7 @@ var{
 				}
 				const cssName = testReg.exec(prefix)?.[1];
 				cssName && RealElement.myStyle.set(cssName,Object.assign({},RealElement.myStyle.get(cssName),ruleObjObj));
-			}catch(e){console.error(e);}return addCSSRules;};
+			}catch(e){error(e);}return addCSSRules;};
 			return addCSSRules._css = myCSS,addCSSRules;
 		})();
 		static defaultInit = (()=>{
@@ -1409,8 +1415,8 @@ var{
 			if(bool) isBusy = true;
 			while(this.pages.length || this.fnList.length){
 				while(this.fnList.length) try{this.info = await this.fnList.pop()?.(this.info);}
-				catch(e){console.error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
-				try{await this.pages.shift()?.launch?.();}catch(e){console.error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
+				catch(e){error('Depth of the fn : '+i+'\n'+String(e?.stack ?? e));}
+				try{await this.pages.shift()?.launch?.();}catch(e){error('Depth of the page : '+i+'\n'+String(e?.stack ?? e));}
 			}if(bool) isBusy = false;
 		}
 		get StoryPromise(){return StoryPromise;}
@@ -1474,9 +1480,9 @@ var{
 		 */
 		async tryHandler(handler,onerror){
 			if(typeof handler !== 'function') throw new TypeError('"handler" must be Function !');
-			try{await this.self;}catch(e){console.error(this.length,e);}
+			try{await this.self;}catch(e){error(this.length,e);}
 			var i = this.length;
-			while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? console.error)(e);}}catch(e){console.error(e);}
+			while(i --> 0) try{try{return handler(await this.list[i]);}catch(e){(onerror ?? error)(e);}}catch(e){error(e);}
 		}
 		get require(){return RealPromise.require;}
 		static require = (()=>{
@@ -1603,8 +1609,8 @@ if(browserMode){
 		/**### bind */
 		testSrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(()=>true,e=>this.rejectSrc(src,e));}
 		/**### bind */
-		rejectSrc(src,error){return src && console.error(error instanceof Error ? error : (
-			RealCanvas.useCache && error && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !'
+		rejectSrc(src,err){return src && error(err instanceof Error ? err : (
+			RealCanvas.useCache && err && RealCanvas.srcImageMap.set(src),this+': Fail to load by src "'+src+'" !'
 		)),false;}
 		/**### bind */
 		protoSet(src){
@@ -1616,8 +1622,8 @@ if(browserMode){
 		 * @returns {Promise<Blob>}
 		 */
 		toBlob(){try{return RealWorld.cb2promise({thisArg: this.self,useFn: 'toBlob'}).then(
-			result=>(result[0] instanceof Error ? (console.error(result[0]),new Blob) : result[0])
-		);}catch(e){return console.error(e),Promise.resolve(new Blob);}}
+			result=>(result[0] instanceof Error ? (error(result[0]),new Blob) : result[0])
+		);}catch(e){return error(e),Promise.resolve(new Blob);}}
 		resizeBySrc(src){return this.loaded = Promise.resolve(this.loaded).then(()=>RealCanvas.getImageBySrc(src)).then(img=>{
 			if(this.self.width !== img.naturalWidth) this.width = img.naturalWidth;
 			if(this.self.height !== img.naturalHeight) this.height = img.naturalHeight;
@@ -1636,7 +1642,7 @@ if(browserMode){
 				this,
 				this.proto.tryRealNode && (temp = this._computePositionsOfRNs(value)).length ?
 				this._dealWithPositionsOfRNs(temp,value) : value
-			) ?? true).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(console.error(e),e));
+			) ?? true).then(v=>v && (this.fix(this.img),react && this.react?.(),notify && this.notify(noSelf),true)).catch(e=>(error(e),e));
 		}
 		multiDrawSrcArray({bgSrc,autoOpacity,resize},...srcArray){
 			this.preloadSrc(bgSrc,srcArray);
@@ -1707,7 +1713,7 @@ if(browserMode){
 						break;
 					}
 				}this.clear().drawImage(temp.canvas,0,0);
-			}).catch(e=>console.error(e));
+			}).catch(e=>error(e));
 		}
 		/**
 		 * 
@@ -1888,7 +1894,7 @@ if(browserMode){
 		})();
 		static _configDescriptor = (browserMode && addEventListener('click',async e=>{
 			if(e.target.classList.contains('RealLoader')) for(const temp of RealTarget.searchByObj(e.target)) if(temp instanceof RealLoader){
-				try{const err = (await RealLoader.load(temp))[0];err ? temp.onerror?.(err) : temp.onloadend?.();}catch(e){console.error(e);}
+				try{const err = (await RealLoader.load(temp))[0];err ? temp.onerror?.(err) : temp.onloadend?.();}catch(e){error(e);}
 				temp.notify(true);
 				temp.react?.();
 				break;
@@ -2154,11 +2160,11 @@ if(browserMode){
 			const iter = hrefList[Symbol.iterator]();
 			if(toDocumentFragment) for(hrefList of (toDocumentFragment = new DocumentFragment(),iter)) try{
 				toDocumentFragment.appendChild(document.createElementNS('http://www.w3.org/2000/svg','image')).href.baseVal = String(hrefList);
-			}catch(e){console.error(e);}
+			}catch(e){error(e);}
 			else for(hrefList of (toDocumentFragment = [],iter)) try{
 				const SVGImage = document.createElementNS('http://www.w3.org/2000/svg','image');
 				toDocumentFragment.push(SVGImage),SVGImage.href.baseVal = String(hrefList);
-			}catch(e){console.error(e);}
+			}catch(e){error(e);}
 			return toDocumentFragment;
 		}
 		protoTransform(value){return RealElement.newElements('svg',value,true);}
