@@ -157,7 +157,7 @@ var {
 		 * @type {Promise<void>}
 		 */
 		RealWorld.onload =
-		browserMode ? new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener)})) :
+		browserMode ? new Promise(r=>addEventListener('load',function tempListener(){r();removeEventListener('load',tempListener);})) :
 		nodeMode ? Promise.resolve() : new Promise(async r=>{if(setInterval === prevent){
 			const {setTimeout,clearTimeout} = globalThis.setTimeout ? globalThis :
 			/**@type {{setTimeout: typeof globalThis.setTimeout;clearTimeout: typeof globalThis.clearTimeout;}} */ (await nodeRequire('os'));
@@ -174,41 +174,37 @@ var {
 				value: setInterval(/**### bind */()=>RealNode.eventLoop._mainFn(),RealNode.eventLoop.timeSep)
 			}),r();
 		}});
-		RealWorld.createInterval =
 		/**
 		 * 
 		 * @param {Number} timeSep 
 		 * @param {()=>void} intervalFn 
 		 * @returns {RealWorld}
 		 */
-		function(timeSep,intervalFn){return (timeSep = new RealWorld(timeSep)).intervalFn = intervalFn,timeSep;};
-		/**## getPromiseState 异步获取承诺状态 */
-		RealWorld.getPromiseState = (()=>{
-			const temp = Symbol(),tryFn = v=>+(temp !== v),catchFn = ()=>-1;
-			return function getPromiseState(promise){return Promise.race([promise,temp]).then(tryFn,catchFn);};
-		})();
-		RealWorld.onceIf =
+		RealWorld.createInterval = (timeSep,intervalFn)=>((timeSep = new RealWorld(timeSep)).intervalFn = intervalFn,timeSep);
+		{
+			const syncSymbol = Symbol(),tryFn = v=>+(syncSymbol !== v),catchFn = ()=>-1;
+			/**## getPromiseState 异步获取承诺状态 */
+		RealWorld.getPromiseState = (promise)=>Promise.race([promise,syncSymbol]).then(tryFn,catchFn);
+		}
 		/**
 		 * ## onceIf 生成条件检测承诺 
-		 * @method
 		 * @param {()=>Boolean} ifFn
 		 * @param {Number} [timeSep]
 		 */
-		async(ifFn,timeSep)=>{
+		RealWorld.onceIf = async(ifFn,timeSep)=>{
 			if(typeof ifFn !== 'function') throw new TypeError('"ifFn" must be Function !');
 			const temp = new RealWorld(timeSep);
 			await new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn));
 			clearInterval(temp._id);
 		};
-		RealWorld.cb2promise =
 		/**
 		 * ## cb2promise 回调转承诺
 		 * @template T
 		 * @param {{thisArg?: {}; useFn: String | (callback: (err?: Error,...value: T)=>void)=>void; callback: typeof thisResolve;}} param0 
-		 * @param {...any} parameters 
+		 * @param {...*} parameters 
 		 * @returns {Promise<[?Error,...T]>}
 		 */
-		function({thisArg,useFn,callback = thisResolve} = emptyObj,...parameters){
+		RealWorld.cb2promise = ({thisArg,useFn,callback = thisResolve} = emptyObj,...parameters)=>{
 			if(typeof useFn !== 'function') useFn = thisArg?.[useFn];
 			if(typeof useFn !== 'function') throw new Error('=> Wrong:\n	"thisArg" is not Object\n or\n	"useFn" not in "thisArg" !');
 			return new Promise(resolve=>{
@@ -222,6 +218,37 @@ var {
 				}
 			}).catch(e=>error(e.stack));
 		};
+		{
+			/**
+			 * 
+			 * @param {AsyncIterator} iter 迭代器
+			 * @param {(error)=>*} [onhandle] 错误处理函数
+			 */
+			const asyncFunctionWithErrorHandler = async(iter,onhandle)=>{
+				var resume;
+				if(typeof iter?.next !== 'function') return void log(String(iter)+' is not an iterator !');
+				if(typeof onhandle === 'function') while(true) try{
+					if((resume = await iter.next(resume))?.done ?? true) break; throw resume.value;
+				}catch(e){resume = onhandle(e);} else while(true) try{if((await iter.next())?.done ?? true) break;}catch(e){throw e;}
+				return resume.value;
+			};
+			/**
+			 * 
+			 * @template T,U,V
+			 * @param {ArrayLike<T> | Iterator<T,U,V> | (()=>Iterator<T,U,V>)} anyWithIterator
+			 */
+		RealWorld.makeAsyncFunctionWithErrorHandler = (anyWithIterator)=>{
+			if(typeof anyWithIterator === 'function') return /**@returns {Promise<U>} @param {(error: T)=>V} [onhandle] 错误处理函数 */ (
+				onhandle,...argArray
+			)=>asyncFunctionWithErrorHandler(anyWithIterator(...argArray),onhandle);
+			/**@type {()=>Iterator} 迭代器函数 */
+			const iteratorFn = anyWithIterator?.[Symbol.asyncIterator] || anyWithIterator?.[Symbol.iterator];
+			if(typeof iteratorFn !== 'function') throw new Error('Illegal "anyWithIterator" without legal iteratorFunction !');
+			return /**@returns {Promise<U>} @param {(error: T)=>V} [onhandle] 错误处理函数 */ (
+				onhandle,...argArray
+			)=>asyncFunctionWithErrorHandler(Function.prototype.call.call(iteratorFn,anyWithIterator,...argArray),onhandle);
+		};
+		}
 		/**## destroy 销毁本对象 */
 		RealWorld.prototype.destroy = function(){clearInterval(this._id),this._mainFn();};
 		/**## then 添加函数入执行队列 */
@@ -306,14 +333,15 @@ var {
 			return temp;
 		}
 		/**@method */
-		static createExpression = (set=>
+		static createExpression = (()=>{
+			const config = {get: null,set: ()=>false};
 			/**
 			 * 
-			 * @param {()=>any} get 
+			 * @param {()=>*} get 
 			 * @param {RealNode[]} relativeRNs
 			 * */
-			(get,...relativeRNs)=>new RealNode({get,set},true,...relativeRNs)
-		)(()=>false);
+			return(get,...relativeRNs)=>new RealNode((config.get = get,config),true,...relativeRNs);
+		})();
 		/**
 		 * 
 		 * @type {(config: {get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?})=>RealNode}
@@ -507,12 +535,37 @@ var {
 		 * 
 		 * @param {...(RealNode | Symbol)} relativeRNs 
 		 */
-		relate(...relativeRNs){
-			var id = relativeRNs[relativeRNs.length - 1];
+		cancelWatch(...relativeRNs){
+			var i = relativeRNs.length,id;
+			while(i --> 0){
+				if(typeof (id = relativeRNs[i]) === 'symbol') id = RealNode.search(id);
+				const temp = id?.relativeRNs,index = temp?.indexOf(this.id);
+				null == index || -1 === index || temp.splice(index,1);
+			}
+		}
+		/**
+		 * 
+		 * @param {...(RealNode | Symbol)} relativeRNs 
+		 */
+		watch(...relativeRNs){
+			var i = relativeRNs.length,id = relativeRNs[i - 1];
 			const temp = RealNode.search(id?.id ?? id);
-			while(relativeRNs.length){
-				id = relativeRNs.pop();
-				typeof id === 'symbol' || (id instanceof RealNode ? id = id.id : this.error(
+			while(i --> 0){
+				if(typeof (id = relativeRNs[i]) === 'symbol') id = RealNode.search(id);
+				const temp = id?.relativeRNs;
+				temp && temp.indexof(this.id) === -1 && temp.push(this.id);
+			}
+			return temp;
+		}
+		/**
+		 * 
+		 * @param {...(RealNode | Symbol)} relativeRNs 
+		 */
+		relate(...relativeRNs){
+			var i = relativeRNs.length,id = relativeRNs[i - 1];
+			const temp = RealNode.search(id?.id ?? id);
+			while(i --> 0){
+				typeof (id = relativeRNs[i]) === 'symbol' || (id instanceof RealNode ? id = id.id : this.error(
 					'=> "relativeRNs['+relativeRNs.length+']" is not legal id !'
 				));
 				RealNode.search(id) && !this.relativeRNs.includes(id) && this.relativeRNs.push(id);
@@ -672,7 +725,7 @@ var {
 		};
 		/**@type {Map<{},RealGroup>} */
 		static groupMap = new Map;
-		static _ = ()=>true;
+		static _(){return true;}
 		/**@param {{}} obj  */
 		static newByObj(obj){return new RealGroup({self: Object(obj)});}
 		/**
@@ -682,7 +735,7 @@ var {
 		 * @param {String} [id] 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {Boolean} [strict] 
-		 * @returns {RealGroup<T> | any}
+		 * @returns {RealGroup<T> | *}
 		 */
 		static createDeepGroup = function createDeepGroup(obj,id = '',tryRealNode,strict){
 			var i;
@@ -753,11 +806,11 @@ var {
 		 */
 		addSetterListener(ifKeyOrFn,listener){
 			var temp;
-			if(!listener) return;
+			if(!listener) return this;
 			if(typeof listener !== 'function') this.error('"listener" must be function !');
 			if(null == ifKeyOrFn) ifKeyOrFn = RealGroup._;
 			Array.isArray(temp = this.listenerMap.get(ifKeyOrFn)) || this.listenerMap.set(ifKeyOrFn,temp = []);
-			temp.push(listener);
+			return temp.push(listener),this;
 		}
 		/**
 		 * 
@@ -849,7 +902,12 @@ var {
 			RealGroup.groupMap.set(self,this);
 		}
 	};
-	var RealTarget = class RealTarget extends RealNode{
+	var RealTarget =
+	/**
+	 * 
+	 * @template {Element | {}} T
+	 */
+	class RealTarget extends RealNode{
 		/**@typedef {AntiNode & {self: Element & {},isElement: Boolean,transform(value)=>*}} AntiTarget */
 		static proto = class AntiTarget extends RealNode.proto{
 			/**@type {Element & {}} */
@@ -892,6 +950,7 @@ var {
 			if(this instanceof RealTarget) throw e;
 			this.error('Please avoid using method "react" of typeof '+this?.name+' !\n'+e.message);
 		}}
+		forceRefresh(){this.self.load?.();}
 		/**
 		 * 
 		 * @template T
@@ -973,7 +1032,7 @@ var {
 		get transform(){return this.proto.transform;}
 		/**@param {(value)=>*} transform */
 		set transform(transform){this.proto.transform = typeof transform === 'function' ? transform : this.protoTransform;}
-		/**@type { Element | {}} */
+		/**@type {T} */
 		get self(){return this.proto.self;}
 		set self(self){
 			Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof Element :
@@ -981,7 +1040,7 @@ var {
 		}
 		/**
 		 * 
-		 * @param {{self: Element | {},key,transform?: (value)=>*}} param0 
+		 * @param {{self: T,key,transform?: (value)=>*}} param0 
 		 * @param {{get?: ()=>*,set?: (value)=>Boolean,react?: ()=>void,id?,info?,value?,initValue?}} [config] 
 		 * @param {Boolean} [tryRealNode] 
 		 * @param {...RealNode} [relativeRNs] 
@@ -997,8 +1056,13 @@ var {
 			this.addClassName(this.constructor.name);
 		}
 	};
-	var RealElement = class RealElement extends RealTarget{
-		/**@type {Element} */
+	var RealElement =
+	/**
+	 * 
+	 * @template {Element | {}} T
+	 */
+	class RealElement extends RealTarget{
+		/**@type {T} */
 		get self(){return this.proto.self;}
 		set self(self){
 			Object(self) === self ? this.proto.isElement = (this.proto.self = self) instanceof Element :
@@ -1059,40 +1123,71 @@ var {
 			enter:'ArrowRight',
 			back: 'ArrowLeft'
 		});
-		/**@method */
-		static makeElementByString = (()=>{
-			/**@type {HTMLTemplateElement} */
-			const template = browserMode ? document.createElement('template') : {content: {}};
-			function makeElementByString(innerHTML){template.innerHTML = String(innerHTML); return template.content.firstElementChild;}
-			return makeElementByString._clear = ()=>(template.innerHTML = '',template.content),makeElementByString;
-		})();
-		static createImg(){return new RealElement({self: document.createElement('img'),key: 'src'});}
-		static createVideo(){return new RealElement({self: document.createElement('video'),key: 'src'});}
-		static createAudio(){return new RealElement({self: document.createElement('audio'),key: 'src'});}
+		/**
+		 * 
+		 * @returns {RealElement<HTMLDivElement>}
+		 */
 		static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
+		/**
+		 * 
+		 * @returns {RealElement<HTMLTextAreaElement>}
+		 */
 		static createTextarea(placeholder){
 			const temp = document.createElement('textarea');
 			return new RealElement({self: (temp.placeholder = String(placeholder),temp),key: 'value'});
 		}
-		static newXHTML =
 		/**
 		 * 
 		 * @template {keyof HTMLElementTagNameMap} T
 		 * @param {T} tagName 
-		 * @param {HTMLElement} [config] 
+		 * @param {HTMLElementTagNameMap[T]} [config] 
 		 * @param {CSSStyleDeclaration} [cssConfig] 
 		 * @returns {HTMLElementTagNameMap[T]}
 		 */
-		(tagName,config,cssConfig)=>(Object.assign(Object.assign(tagName = document.createElement(tagName),config).style,cssConfig),tagName)
-		static newSVG =
+		static newXHTML(tagName,config,cssConfig){
+			return Object.assign(Object.assign(tagName = document.createElement(tagName),config).style,cssConfig),tagName;
+		}
 		/**
 		 * 
 		 * @template {keyof SVGElementTagNameMap} T
 		 * @param {T} tagName 
-		 * @param {SVGElement} [config] 
+		 * @param {SVGElementTagNameMap[T]} [config] 
 		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 * @returns {SVGElementTagNameMap[T]}
 		 */
-		(tagName,config,cssConfig)=>RealElement.makeElement(document.createElementNS('http://www.w3.org/2000/svg',tagName),config,cssConfig);
+		static newSVG(tagName,config,cssConfig){
+			return RealElement.makeElement(document.createElementNS('http://www.w3.org/2000/svg',tagName),config,cssConfig);
+		}
+		/**
+		 * 
+		 * @param {Boolean} [forceRefresh] 
+		 * @returns {RealElement<HTMLImageElement>}
+		 */
+		static createImg(forceRefresh){return new RealElement(
+			{self: document.createElement('img'),key: 'src'},
+			forceRefresh ? {react: RealTarget.prototype.forceRefresh} : emptyObj
+		);}
+		/**
+		 * 
+		 * @param {HTMLAudioElement} [config] 
+		 * @param {Boolean} [forceRefresh] 
+		 * @returns {RealElement<HTMLAudioElement>}
+		 */
+		static createAudio(config,forceRefresh){return new RealElement(
+			{self: RealElement.newXHTML('audio',config),key: 'src'},
+			forceRefresh ? {react: RealTarget.prototype.forceRefresh} : emptyObj
+		);}
+		/**
+		 * 
+		 * @param {HTMLVideoElement} [config] 
+		 * @param {CSSStyleDeclaration} [cssConfig] 
+		 * @param {Boolean} [forceRefresh] 
+		 * @returns {RealElement<HTMLVideoElement>}
+		 */
+		static createVideo(config,cssConfig,forceRefresh){return new RealElement(
+			{self: RealElement.newXHTML('video',config,cssConfig),key: 'src'},
+			forceRefresh ? {react: RealTarget.prototype.forceRefresh} : emptyObj
+		);}
 		/**
 		 * 
 		 * @param {Element[] | IterableIterator<Element>} Elements 
@@ -1118,6 +1213,13 @@ var {
 			for(const ele of elementList) ele instanceof Element ? ele.classList.remove('keyboardController') :
 			ele?.self instanceof Element && ele.self.classList.remove('keyboardController');
 		}
+		/**@method */
+		static makeElementByString = (()=>{
+			/**@type {HTMLTemplateElement} */
+			const template = browserMode ? document.createElement('template') : {content: {}};
+			const makeElementByString = innerHTML=>(template.innerHTML = String(innerHTML),template.content.firstElementChild);
+			return makeElementByString._clear = ()=>(template.innerHTML = '',template.content),makeElementByString;
+		})();
 		/**
 		 * 
 		 * @template {Element | keyof HTMLElementTagNameMap} T 
@@ -1133,7 +1235,7 @@ var {
 			if(config) for(const attr of Object.keys(config)) try{if(attr in element) try{
 				typeof (temp = element[attr]) === 'object' && null !== temp ?
 				'baseVal' in temp && element.setAttribute(attr,config[attr]) : element[attr] = config[attr];
-			}catch(e){error(e);}else if(attr in style) style[attr] = String(config[attr]);}catch(e){error(e);}
+			}catch(e){error(e);}else attr in style ? style[attr] = String(config[attr]) : element.setAttribute(attr,config[attr]);}catch(e){error(e);}
 			return Object.assign(style,cssConfig),element;
 		}
 		/**
@@ -1158,35 +1260,36 @@ var {
 		}
 		/**@method */
 		static addEventListenerBySelectors = (()=>{
+			const temp =
 			/**
 			 * 
 			 * @param {Event} e 
 			 * @param {((event: Event)=>void)[]} listenerArray 
 			 * @param {keyof HTMLElementTagNameMap} selectors 
 			 */
-			function temp(e,listenerArray,selectors){try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
+			(e,listenerArray,selectors)=>{try{if(Array.from(document.querySelectorAll(selectors)).includes(e.target)){
 				for(var i = 0,l = listenerArray.length;i < l;) try{listenerArray[i++](e);}catch(e){error(e?.stack ?? e);}
-			}}catch(e){error(e);}}
+			}}catch(e){error(e);}},
+			addEventListenerBySelectors =
 			/**
 			 * 
 			 * @param {keyof HTMLElementTagNameMap} selectors 
 			 * @param {keyof HTMLElementEventMap} type 
 			 * @param {(event: Event)=>void} listener 
 			 */
-			return(selectors,type,listener)=>{
+			(selectors,type,listener)=>{
 				const tempStr = type.replace(type[0],type[0].toUpperCase());
-				!selectors || '*' === selectors ? addEventListener(type,listener) : (
-					!RealElement.selectorEventListeners[type] && (RealElement.selectorEventListeners[type] = new Map,addEventListener(
-						type,e=>{
-							const t0 = performance.now();
-							RealElement.selectorEventListeners[type].forEach(/**### bind */(listenerArray,selectors)=>temp(e,listenerArray,selectors));
-							log(tempStr+'-listeners completed\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
-						}
-					)),
+				return !selectors || '*' === selectors ? addEventListener(type,listener) : (
+					!RealElement.selectorEventListeners[type] && (RealElement.selectorEventListeners[type] = new Map,addEventListener(type,e=>{
+						const t0 = performance.now();
+						RealElement.selectorEventListeners[type].forEach(/**### bind */(listenerArray,selectors)=>temp(e,listenerArray,selectors));
+						log(tempStr+'-listeners completed\nin '+RealNode.makeNumStr0oTail(performance.now() - t0)+' ms.');
+					})),
 					RealElement.selectorEventListeners[type].has(selectors) ? RealElement.selectorEventListeners[type].get(selectors).push(listener) :
 					RealElement.selectorEventListeners[type].set(selectors,[listener])
-				);
-			}
+				),addEventListenerBySelectors;
+			};
+			return addEventListenerBySelectors;
 		})();
 		/**@method */
 		static addCSSRules = (()=>{
@@ -1208,7 +1311,7 @@ var {
 			 * @param {String} prefix 
 			 * @param {{[selector: String]: {[styleName: String]: String}}} ruleObjObj 
 			 */
-			function addCSSRules(prefix,ruleObjObj){try{
+			const addCSSRules = (prefix,ruleObjObj)=>{try{
 				if(Array.isArray(prefix)){
 					let i = prefix.length
 					while(i --> 0) typeof prefix[i] === 'string' && addCSSRules(prefix[i],ruleObjObj);
@@ -1226,6 +1329,7 @@ var {
 		})();
 		static defaultInit = (()=>{
 			var onload = false;
+			/**@returns {PromiseLike<{error?: Error; time: number; value?;}>} */
 			return ()=>{
 				return onload ? RealWorld.onload : RealWorld.onload = (onload = true,RealWorld.onload.
 				then(()=>RealNode.time(()=>void RealElement.addCSSRules('',{
@@ -1455,19 +1559,7 @@ var {
 		finally(onfinally){return this.self = Promise.resolve(this.self).finally(onfinally),this;}
 		/**
 		 * 
-		 * @template U
-		 * @param {U} v 
-		 */
-		_push(v){return this.list.push(v),v;}
-		/**
-		 * @throws 
-		 * @returns {never}
-		 */
-		_throw(e){throw this.list.push(e),e;}
-		/**
-		 * 
-		 * @template U
-		 * @template V
+		 * @template U,V
 		 * @param {(value: T)=>U} [onfulfilled] 
 		 * @param {(reason)=>V} [onrejected] 
 		 * @returns {RealPromise<U>}
@@ -1509,8 +1601,19 @@ var {
 		 * @param {Promise<T> | T} promise 
 		 */
 		constructor(promise){
+			/**
+			 * 
+			 * @template U
+			 * @param {U} v 
+			 */
+			this._push = v=>(this.list.push(v),v);
+			/**
+			 * 
+			 * @throws
+			 */
+			this._throw = e=>{throw this.list.push(e),e;};
 			/**@type {Promise<T>} */
-			this.self = Promise.resolve(promise).then(this._push = v=>(this.list.push(v),v),this._throw = e=>{throw this.list.push(e),e;});
+			this.self = Promise.resolve(promise).then(this._push,this._throw);
 			Reflect.defineProperty(this,'list',tempConfig);
 			Reflect.defineProperty(this,'_push',tempConfig);
 			Reflect.defineProperty(this,'_throw',tempConfig);
@@ -1551,8 +1654,15 @@ if(browserMode){
 		 * @param {Number} length 
 		 */
 		static strN(n,length){return String(n).padStart(length,'0');}
+		/**
+		 * 
+		 * @param {...String} srcArray 
+		 * @returns {Promise<PromiseSettledResult<HTMLImageElement>[]>}
+		 */
 		static preloadSrc(...srcArray){
-			for(var temp = emptyArray.concat(...srcArray),i = temp.length;i --> 0;) temp[i] = RealCanvas.getImageBySrc(temp[i]);
+			const fn = RealCanvas.getImageBySrc,temp = emptyArray.concat(...srcArray);
+			var i = temp.length;
+			while(i --> 0) temp[i] = fn(temp[i]);
 			return Promise.allSettled(temp);
 		}
 		// /**@method @type {(src)=>Promise<HTMLImageElement>} */
@@ -1571,14 +1681,14 @@ if(browserMode){
 			 * @param {(value)=>void} resolve 
 			 * @param {(reason?)=>void} reject 
 			 */
-			function dealWithSrc(src,resolve,reject){
+			const tempFn = (src,resolve,reject)=>{
 				const temp = RealCanvas.srcImageMap.get(src) ?? new Image;
 				temp.src ? resolve(temp) : src && typeof src === 'string' && !(RealCanvas.useCache && RealCanvas.srcImageMap.has(src)) ?
 				(temp.onload = ()=>(
 				 	RealCanvas.srcImageMap.set(src,temp),temp.onload = temp.onerror = resolve(temp)
 				),temp.onerror = reject,temp.src = src,temp) : reject();
-			}
-			return src=>new Promise((resolve,reject)=>dealWithSrc(src,resolve,reject));
+			};
+			return src=>new Promise((resolve,reject)=>tempFn(src,resolve,reject));
 		})();
 		static getRealGroupToClear = (()=>{
 			class ConfigToClearShape{x = 0;y = 0;radiusX;radiusY;shape;relative;}
@@ -1593,10 +1703,10 @@ if(browserMode){
 				if(typeof fnAfterClear === 'function') fnAfterClear = ()=>fnAfterClear.call(realCanvas);
 				if(typeof fnBeforeClear === 'function') fnBeforeClear = ()=>fnBeforeClear.call(realCanvas);
 				const config = new ConfigToClearShape,temp = new RealGroup({self: config});
-				return temp.addSetterListener(null,async()=>{
+				return realCanvas.loaded.finally(initFn),temp.addSetterListener(null,async()=>{
 					await Promise.resolve(realCanvas.loaded).then(fnBeforeClear);
 					await realCanvas.clearShape(config,config.shape).then(fnAfterClear);
-				}),realCanvas.loaded.finally(initFn),temp;
+				});
 			};
 		})();
 		protoTransform(){}
@@ -1842,6 +1952,17 @@ if(browserMode){
 			/**@type {null | (this: RealLoader)=>void} */
 			onloadend;
 		};
+		/**
+		 * 
+		 * @param {...String} srcArray 
+		 * @returns {Promise<PromiseSettledResult<[?Error,Stats | Response]>[]>}
+		 */
+		static preloadSrc(...srcArray){
+			const fn = RealLoader.fs.stat,temp = emptyArray.concat(...srcArray);
+			var i = temp.length;
+			while(i --> 0) temp[i] = fn(temp[i]);
+			return Promise.allSettled(temp);
+		}
 		static fs = (()=>{
 			const initHEAD = {method: 'HEAD'},onfulfilled = r=>[,r],onrejected = e=>[e];
 			class DocumentFs{get stat(){return DocumentFs.stat;}get readdir(){return DocumentFs.readdir;}}
@@ -2271,11 +2392,11 @@ if(browserMode){
 		 * @param {*[]} value 
 		 */
 		protoTransform(value){
-			var list = [],temp,ele;
-			try{var iter = value[Symbol.iterator]();}catch{throw new Error('=> "value" must be Array !');}
-			while(!(temp = iter.next()).done) list.push(ele = document.createElement('div')),
-			temp.value instanceof Element ? ele.appendChild(temp.value) :
-			this.tryHTML ? ele.innerHTML = String(temp.value) : ele.textContent = String(temp.value);
+			var list = [],ele;
+			try{
+				for(const temp of value) list.push(ele = document.createElement('div')),temp.value instanceof Node ?
+				ele.appendChild(temp) : this.tryHTML ? ele.innerHTML = String(temp) : ele.textContent = String(temp);
+			}catch{throw new Error('=> "value" must be Array !');}
 			return list;
 		}
 		/**
@@ -2563,15 +2684,13 @@ if(browserMode){
 		addEventListener('click',e=>RealNode.afterNow(()=>tempReact(e.target)));
 		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(1)>textarea','click',async e=>(
 			await 0,e.target.dispatchEvent(new Event('input',changeConfig))
-		));
-		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(1)>textarea','input',e=>{
+		))('.RealDivList.realDivSearch>:nth-child(1)>textarea','input',e=>{
 			var REList = RealTarget.searchByObj(e.target.parentElement.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 			if(!temp) return;
 			const testReg = new RegExp(temp.info.inputer.value,'i');
 			temp.info.matcher.value = RealNode.arrayToObject(temp.info.wordList.filter(str=>testReg.test(String(str))));
-		});
-		RealElement.addEventListenerBySelectors('.RealDivList.realDivSearch>:nth-child(2)>div>div','click',e=>{
+		})('.RealDivList.realDivSearch>:nth-child(2)>div>div','click',e=>{
 			var REList = RealTarget.searchByObj(e.target.parentElement.parentElement.parentElement),temp;
 			while(temp = REList.pop()) if(temp instanceof RealDivList) break;
 			if(!temp) return;
@@ -2647,3 +2766,30 @@ RealComtag,RealSVG,
 RealDivList,RealImgList,RealDivQueue,
 createRealDivSelect,createRealDivSearch,createRealDivSeries,
 RealWorld;
+// ```javascript
+// makeAsyncFunctionWithErrorHandler = (()=>{
+// 	/**
+// 	 * 中间函数
+// 	 * @param {AsyncIterator} iter 迭代器
+// 	 * @param {(error)=>*} [onhandle] 错误处理函数
+// 	 */
+// 	const tempFn = async(iter,onhandle)=>{
+// 		var resume;
+// 		if(typeof iter?.next !== 'function') return log(String(iter)+' is not an iterator !');
+// 		if(typeof onhandle === 'function') while(true) try{
+// 			if((resume = await iter.next(resume))?.done ?? true) break; throw resume.value;
+// 		}catch(e){resume = onhandle(e);} else while(true) try{if((await iter.next())?.done ?? true) break;}catch(e){throw e;}
+// 	};
+// 	return (/**@type {Iterator | (()=>Iterator)} */ anyWithIterator)=>{
+// 		if(typeof anyWithIterator === 'function') return /**@param {?(error)=>*} onhandle 错误处理函数 */ (
+// 			onhandle,...argArray
+// 		)=>tempFn(anyWithIterator(...argArray),onhandle);
+// 		/**@type {()=>Iterator} 迭代器函数 */
+// 		const iteratorFn = anyWithIterator?.[Symbol.asyncIterator] || anyWithIterator?.[Symbol.iterator];
+// 		if(typeof iteratorFn !== 'function') throw new Error('Illegal "anyWithIterator" without legal iteratorFunction !');
+// 		return /**@param {?(error)=>*} onhandle 错误处理函数 */ (
+// 			onhandle,...argArray
+// 		)=>tempFn(Function.prototype.call.call(iteratorFn,anyWithIterator,...argArray),onhandle);
+// 	};
+// })();
+// ```
