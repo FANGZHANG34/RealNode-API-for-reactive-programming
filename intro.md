@@ -1,4 +1,4 @@
-### RealWorld 是什么？
+## RealWorld 是什么？
 `RealWorld` 是一个**事件循环调度器**，用于管理异步任务队列和执行时序。它的核心功能是创建一个可控的时间驱动循环，按固定时间间隔执行注册的函数队列，同时支持条件触发、Promise 管理等高级异步控制功能。
 
 ### 核心特性
@@ -115,7 +115,7 @@ world.destroy()
 > RealNode.eventLoop.then(myTask)
 > ```
 
-### RealNode 是什么？
+## RealNode 是什么？
 `RealNode` 是实现的核心响应式数据节点类，用于创建和管理具有响应式特性的数据单元。它的主要特点：
 
 1. **响应式数据单元**
@@ -259,7 +259,7 @@ D -->|更新视图| E[界面]
 
 `RealGroup` 是响应式编程框架中的核心数据结构，用于管理一组关联的响应式节点(`RealNode`)，提供类似对象的键值对管理能力。以下是详细解析：
 
-### 一、RealGroup 是什么？
+## RealGroup 是什么？
 1. **核心定位**：
    - 响应式对象容器，管理多个 `RealNode` 的集合
    - 继承自 `RealNode`，具备响应式通知能力
@@ -279,7 +279,7 @@ D -->|更新视图| E[界面]
    }
    ```
 
-### 二、核心功能解析
+### 核心功能解析
 1. **数据管理**：
    ```javascript
    // 创建对象容器
@@ -316,7 +316,7 @@ D -->|更新视图| E[界面]
    })
    ```
 
-### 三、使用场景示例
+### 使用场景示例
 1. **用户状态管理**：
    ```javascript
    // 创建用户状态组
@@ -365,7 +365,7 @@ D -->|更新视图| E[界面]
    })
    ```
 
-### 四、特殊能力
+### 特殊能力
 1. **自动节点转换**：
    ```javascript
    // 启用自动 RealNode 转换
@@ -389,7 +389,7 @@ D -->|更新视图| E[界面]
    })
    ```
 
-### 五、最佳实践建议
+### 最佳实践建议
 1. **性能优化**：
    ```javascript
    // 批量更新减少通知次数
@@ -410,6 +410,8 @@ D -->|更新视图| E[界面]
    ```
 
 > **核心价值**：`RealGroup` 解决了复杂状态管理中的响应式同步问题，通过对象化接口降低使用门槛，配合监听机制实现高效数据流控制。特别适合表单管理、状态容器、配置中心等需要结构化响应的场景。
+
+## RealTarget 是什么？
 
 `RealTarget` 是 `real-node` 框架中用于**绑定 DOM 元素与响应式数据**的核心类，继承自 `RealNode`。它充当 DOM 元素和响应式系统之间的桥梁，实现数据变化时自动更新 DOM。
 
@@ -524,6 +526,8 @@ const dateDisplay = new RealTarget(
 
 > **提示**：实际使用时常配合 `RealElement.createDiv()` 等工厂方法创建预配置元素，简化开发流程。框架内置了针对常见 DOM 元素的扩展类如 `RealCanvas`/`RealSelect` 等，满足更复杂场景需求。
 
+## RealStory 是什么？
+
 `RealStory` 是一个**异步任务流控制器**，用于管理复杂异步操作的执行顺序和状态流转。它的核心作用是提供一种结构化方式组织异步任务，类似于工作流引擎。
 
 ### 核心功能解析：
@@ -615,6 +619,8 @@ mainStory.launch();
 
 > 该设计通过层级化任务管理解决了 "回调地狱" 问题，特别适合需要严格顺序执行且包含异步操作的场景。任务流启动后会自动嵌入到脚本的全局事件循环中执行。
 
+## RealPromise 是什么？
+
 `RealPromise` 是框架中增强版的 Promise 实现，它在原生 Promise 基础上扩展了链式操作追踪和跨平台模块加载能力。核心功能和使用方式如下：
 
 ### 核心特性
@@ -704,7 +710,7 @@ fileRp.require('fs').then(fs => {
 
 > 提示：在浏览器环境中使用时，需确保加载的脚本支持 CORS；在 Node.js 中与传统 `require` 行为一致。该实现特别适合需要详细追踪复杂异步操作链的场景。
 
-### RealElement 是什么？
+## RealElement 是什么？
 
 **RealElement** 是 `real-node` 框架中的核心 DOM 操作类，它继承自 `RealTarget`（最终继承自 `RealNode`）。这是一个专门用于**管理 DOM 元素**的响应式类，主要功能包括：
 
@@ -820,6 +826,8 @@ myMenuItem.addClassName('keyboardController');
 5. **事件监听**：使用选择器级联监听提高性能
 
 > **注意**：在非浏览器环境（如 Node.js）下，DOM 相关功能会自动降级，核心响应式逻辑仍可运行。完整功能需要浏览器支持。
+
+## RealCanvas 是什么？
 
 `RealCanvas` 是 `real-node` 框架中专门处理 Canvas 操作的类，它继承自 `RealElement`，提供了强大的画布控制和图像处理能力。以下是详细解析和使用指南：
 
@@ -945,6 +953,8 @@ canvas.clearShape({
 
 > **注意**：在 Node.js 环境下 Canvas 功能不可用，仅限浏览器环境使用。所有图像操作均为异步，建议使用 `await canvas.loaded` 确保资源就绪。
 
+## RealLoader 是什么？
+
 `RealLoader` 是 `real-node` 框架中用于**文件上传/下载管理**的核心类，根据运行环境自动适配浏览器或 Node.js 的文件操作。以下是详细解析和使用方法：
 
 ---
@@ -1055,9 +1065,7 @@ nodeWriter.load().then(([error]) => {
 
 > 通过统一封装不同环境的文件操作，`RealLoader` 大幅简化了前端/Node.js 的文件管理逻辑，特别适合需要跨平台兼容的场景。
 
-### RealSelect 详解
-
-#### 什么是 RealSelect？
+## 什么是 RealSelect？
 `RealSelect` 是 `real-node` 框架中专门处理下拉选择框的响应式组件，它继承自 `RealElement` 类。主要特点：
 
 1. **增强型下拉框**：
@@ -1072,9 +1080,9 @@ nodeWriter.load().then(([error]) => {
    - 支持动态选项更新
    - 与框架的响应式系统深度集成
 
-#### 使用方法
+### 使用方法
 
-##### 1. 基础创建
+#### 1. 基础创建
 ```javascript
 // 创建单选下拉框
 const languageSelect = new RealSelect(
@@ -1092,7 +1100,7 @@ const languageSelect = new RealSelect(
 );
 ```
 
-##### 2. 动态更新选项
+#### 2. 动态更新选项
 ```javascript
 // 更新选项（保留当前选中值）
 languageSelect.optionConfig = {
@@ -1105,7 +1113,7 @@ languageSelect.optionConfig = {
 languageSelect.value = languageSelect.value;
 ```
 
-##### 3. 获取/设置值
+#### 3. 获取/设置值
 ```javascript
 // 获取当前值（单选返回字符串，多选返回数组）
 const selectedLang = languageSelect.value;
@@ -1118,7 +1126,7 @@ const multiSelect = new RealSelect("multi", true, {...});
 multiSelect.value = ["opt1", "opt3"]; // 选中多个值
 ```
 
-##### 4. 响应式绑定
+#### 4. 响应式绑定
 ```javascript
 // 创建响应式数据节点
 const currentLang = new RealNode({ initValue: "zh-CN" });
@@ -1130,7 +1138,7 @@ currentLang.watch(() => {           // 节点变化时更新下拉框
 });
 ```
 
-#### 高级功能
+### 高级功能
 
 1. **自定义渲染**：
 ```javascript
@@ -1157,7 +1165,7 @@ multiSelect.protoSet({
 });
 ```
 
-#### 注意事项
+### 注意事项
 1. **元素创建**：
    - 如果传入的 ID 已存在，会复用现有 `<select>` 元素
    - 否则创建新元素（需手动添加到 DOM）
@@ -1180,7 +1188,7 @@ multiSelect.protoSet({
 
 > 提示：`RealSelect` 与框架的 `RealNode`、`RealGroup` 深度集成，可构建复杂的响应式表单系统。在用户选择变化时，会自动触发相关节点的更新通知。
 
-### RealComtag 是什么？
+## RealComtag 是什么？
 
 `RealComtag` 是 `real-node` 框架中用于创建 **自定义组件标签** 的类，它继承自 `RealElement`。核心功能是通过类名（className）定义可复用的 UI 组件模板，实现类似 Web Components 的自定义标签功能，但无需浏览器原生支持。
 
@@ -1288,7 +1296,7 @@ contentDiv.innerHTML = '<input type="text" placeholder="用户名">';
 
 > 优势：统一管理 UI 组件，保持样式/行为一致性，支持响应式数据绑定，减少重复 DOM 操作代码。
 
-### `RealSVG` 是什么？
+## `RealSVG` 是什么？
 `RealSVG` 是 `real-node` 框架中专门用于创建和操作 **SVG 元素**的类，继承自 `RealComtag`（通用组件类）。它提供了对 SVG 元素的响应式封装，允许开发者通过代码动态生成、管理和控制 SVG 内容。
 
 ---
@@ -1391,7 +1399,7 @@ document.body.appendChild(svg.self);
 
 通过 `RealSVG`，开发者可以像操作普通 DOM 一样管理 SVG，同时享受 `real-node` 的响应式特性，显著简化复杂 SVG 应用的开发流程。
 
-### RealDivList 是什么？
+## RealDivList 是什么？
 
 `RealDivList` 是 `real-node` 框架中一个核心的 **动态列表组件类**，用于创建和管理基于 `<div>` 元素的响应式列表系统。主要特点：
 
@@ -1519,6 +1527,8 @@ document.body.appendChild(cardList.self);
 
 > **提示**：结合 `RealNode` 的响应式系统，当绑定的数据源变化时，列表会自动更新，无需手动操作 DOM。这是 `real-node` 框架的核心优势所在。
 
+## RealImgList 是什么？
+
 `RealImgList` 是一个专门用于管理**动态图片列表**的响应式组件，继承自 `RealDivList`。它针对图片展示场景进行了优化，提供便捷的图片列表管理和响应式更新功能。
 
 ### 核心功能
@@ -1620,6 +1630,8 @@ new RealImgList(
 
 > 提示：在需要复杂图片操作的场景中，可结合 `RealCanvas` 组件实现更高级的图片处理功能。组件内置响应式系统确保数据-视图自动同步，无需手动操作DOM。
 
+## RealDivQueue 是什么？
+
 `RealDivQueue` 是一个**可交互的动态队列组件**，继承自 `RealDivList`，专为创建支持拖拽排序的 DIV 元素队列而设计。以下是核心解析和使用指南：
 
 ---
@@ -1701,6 +1713,8 @@ const currentOrder = queue.queueArray; // 如 [2,0,1]
 
 > **注意**：需确保加载配套CSS规则（代码中已内置基础样式），可通过 `RealElement.addCSSRules()` 扩展自定义样式。交互依赖于浏览器事件，在Node.js环境需模拟DOM实现。
 
+## createRealDivSelect 是什么？
+
 `createRealDivSelect` 是 `real-node` 框架中用于创建**自定义样式下拉选择框**的函数。它通过 DOM 元素模拟传统 `<select>` 的交互，提供更灵活的样式控制和响应式数据绑定。
 
 ### 功能特点
@@ -1771,6 +1785,8 @@ mySelect.value = ["banana"]; // 设置选中项
 4. 替代原生 select 的移动端适配方案
 
 > 提示：在 `real-node` 框架中，所有通过此创建的组件会自动接入全局事件系统和响应式数据流，可与 `RealNode` 其他组件无缝交互。
+
+## createRealDivSearch 是什么？
 
 `createRealDivSearch` 是一个创建**实时搜索组件**的工厂函数，它基于 `RealDivList` 类构建。这个组件包含一个搜索输入框和一个动态匹配结果的下拉选择框，实现类似自动补全的搜索功能。
 
@@ -1859,6 +1875,8 @@ graph TD
 - 响应式布局设计
 
 > 提示：该组件需要配合预设词库使用（通过 `set()` 方法设置）。在用户交互时，它会自动过滤并展示匹配项，优化搜索体验。
+
+## createRealDivSeries 是什么？
 
 `createRealDivSeries` 是定义的一个 **可折叠内容区组件创建函数**，用于生成具有标题栏和可折叠内容区域的 UI 组件。下面详细说明其功能和使用方法：
 

@@ -123,8 +123,6 @@ var{
 	/**# RealWorld 事件循环类 */
 	var RealWorld = (()=>{
 		var undefined;
-		/**@this {{resolve(...value)=>void}} */
-		function thisResolve(...value){this.resolve(value);};
 		/**
 		 * 
 		 * @param {Number} timeSep 
@@ -151,6 +149,23 @@ var{
 			Reflect.defineProperty(this,'timeSep',tempConfig);
 			return this;
 		};
+		/**
+		 * 
+		 * @type {Promise<void>}
+		 */
+		RealWorld.onceUserActive = browserMode ? new Promise(r=>{
+			const tempFn = ()=>{
+				r(),
+				removeEventListener('click',tempFn),
+				removeEventListener('keydown',tempFn),
+				removeEventListener('mousedown',tempFn),
+				removeEventListener('touchstart',tempFn);
+			};
+			addEventListener('click',tempFn);
+			addEventListener('keydown',tempFn);
+			addEventListener('mousedown',tempFn);
+			addEventListener('touchstart',tempFn);
+		}) : Promise.resolve();
 		/**
 		 * ## onload 环境准备好时兑现的承诺
 		 * @type {Promise<void>}
@@ -180,11 +195,9 @@ var{
 		 * @returns {RealWorld}
 		 */
 		RealWorld.createInterval = (timeSep,intervalFn)=>((timeSep = new RealWorld(timeSep)).intervalFn = intervalFn,timeSep);
-		{
-			const syncSymbol = Symbol(),tryFn = v=>+(syncSymbol !== v),catchFn = ()=>-1;
-			/**## getPromiseState 异步获取承诺状态 */
-		RealWorld.getPromiseState = (promise)=>Promise.race([promise,syncSymbol]).then(tryFn,catchFn);
-		}
+			const syncSymbol = Symbol();
+		/**## getPromiseState 异步获取承诺状态 */
+		RealWorld.getPromiseState = async(promise)=>{try{return +(syncSymbol !== await Promise.race([promise,syncSymbol]));}catch{return -1;}};
 		/**
 		 * ## onceIf 生成条件检测承诺 
 		 * @param {()=>Boolean} ifFn
@@ -196,6 +209,8 @@ var{
 			await new Promise(soFn=>(temp.ifFn = ifFn,temp.soFn = soFn));
 			clearInterval(temp._id);
 		};
+			/**@this {{resolve(...value)=>void}} */
+			const thisResolve = function(...value){this.resolve(value);};
 		/**
 		 * ## cb2promise 回调转承诺
 		 * @template T
@@ -210,20 +225,19 @@ var{
 				const temp = {callback,resolve};
 				try{useFn.call(thisArg,...parameters,(...value)=>temp.callback(...value));}catch(error0){
 					try{useFn.call(thisArg,(...value)=>temp.callback(...value),...parameters);}catch(error1){
-						temp.resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+(
+						resolve([new Error('=> Neither head or tail of parameters is Callback !\n'+(
 							String(error0?.stack ?? error0)+'\n'+String(error1?.stack ?? error1)
 						))]);
 					}
 				}
 			}).catch(e=>error(e.stack));
 		};
-		{
 			/**
 			 * 
 			 * @param {AsyncIterator} iter 迭代器
 			 * @param {(error)=>*} [onhandle] 错误处理函数
 			 */
-			const asyncFunctionWithErrorHandler = async(iter,onhandle)=>{
+			const tempErrorHandler = async(iter,onhandle)=>{
 				var resume;
 				if(typeof iter?.next !== 'function') return void log(String(iter)+' is not an iterator !');
 				if(typeof onhandle === 'function') while(true) try{
@@ -231,23 +245,30 @@ var{
 				}catch(e){resume = onhandle(e);} else while(true) try{if((await iter.next())?.done ?? true) break;}catch(e){throw e;}
 				return resume.value;
 			};
-			/**
-			 * 
-			 * @template T,U,V
-			 * @param {ArrayLike<T> | Iterator<T,U,V> | (()=>Iterator<T,U,V>)} anyWithIterator
-			 */
+		/**
+		 * 
+		 * @template T,U,V
+		 * @param {ArrayLike<T> | Iterator<T,U,V> | (()=>Iterator<T,U,V>)} anyWithIterator
+		 */
 		RealWorld.makeAsyncFunctionWithErrorHandler = (anyWithIterator)=>{
-			if(typeof anyWithIterator === 'function') return /**@returns {Promise<U>} @param {(error: T)=>V} [onhandle] 错误处理函数 */ (
-				onhandle,...argArray
-			)=>asyncFunctionWithErrorHandler(anyWithIterator(...argArray),onhandle);
+			if(typeof anyWithIterator === 'function') return (
+				/**
+				 * 
+				 * @param {(error: T)=>V} [onhandle] 错误处理函数
+				 * @returns {Promise<U>} 
+				 */
+				(onhandle,...argArray)=>tempErrorHandler(anyWithIterator(...argArray),onhandle)
+			);
 			/**@type {()=>Iterator} 迭代器函数 */
 			const iteratorFn = anyWithIterator?.[Symbol.asyncIterator] || anyWithIterator?.[Symbol.iterator];
 			if(typeof iteratorFn !== 'function') throw new Error('Illegal "anyWithIterator" without legal iteratorFunction !');
-			return /**@returns {Promise<U>} @param {(error: T)=>V} [onhandle] 错误处理函数 */ (
-				onhandle,...argArray
-			)=>asyncFunctionWithErrorHandler(Function.prototype.call.call(iteratorFn,anyWithIterator,...argArray),onhandle);
+			/**
+			 * 
+			 * @param {(error: T)=>V} [onhandle] 错误处理函数
+			 * @returns {Promise<U>} 
+			 */
+			return (onhandle,...argArray)=>tempErrorHandler(Function.prototype.call.call(iteratorFn,anyWithIterator,...argArray),onhandle);
 		};
-		}
 		/**## destroy 销毁本对象 */
 		RealWorld.prototype.destroy = function(){clearInterval(this._id),this._mainFn();};
 		/**## then 添加函数入执行队列 */
@@ -325,7 +346,7 @@ var{
 		 * @param {()=>*} fn 
 		 * @returns {Promise}
 		 */
-		static justNow(fn,thisArg,...argArray){return RealNode.now.then(()=>fn.apply(thisArg,argArray));}
+		static async justNow(fn,thisArg,...argArray){return await RealNode.now,fn.apply(thisArg,argArray);}
 		static arrayToObject(...argArray){
 			const temp = Object.create(null),array = emptyArray.concat(...argArray),length = array.length;
 			for(var i = 0;i < length;i++) temp[String(array[i])] = array[i];
@@ -1126,7 +1147,7 @@ var{
 		 * 
 		 * @returns {RealElement<HTMLDivElement>}
 		 */
-		static createDiv(id,initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
+		static createDiv(id = '',initValue = ''){return new RealElement({self: document.createElement('div'),key: 'textContent'},{id,initValue});}
 		/**
 		 * 
 		 * @returns {RealElement<HTMLTextAreaElement>}
@@ -1293,7 +1314,7 @@ var{
 		/**@method */
 		static addCSSRules = (()=>{
 			if(!browserMode){const addCSSRules = ()=>addCSSRules; return addCSSRules._css = RealWorld.onload,addCSSRules;}
-			var myCSS = RealWorld.onload.then(function(){
+			var myCSS = RealWorld.onload.then(()=>{
 				const style = document.getElementsByTagName("head")[0].appendChild(document.createElement("style"));
 				window.createPopup || style.appendChild(document.createTextNode("")),myCSS = style.sheet;
 			});
@@ -1699,17 +1720,16 @@ if(browserMode){
 			 */
 			return function getRealGroupToClear(realCanvas,{initFn,fnBeforeClear,fnAfterClear} = emptyObj){
 				if(!(realCanvas instanceof RealCanvas)) throw new Error('=> "realCanvas" must be instanceof RealCanvas !');
-				if(typeof fnAfterClear === 'function') fnAfterClear = ()=>fnAfterClear.call(realCanvas);
-				if(typeof fnBeforeClear === 'function') fnBeforeClear = ()=>fnBeforeClear.call(realCanvas);
-				const config = new ConfigToClearShape,temp = new RealGroup({self: config});
-				return realCanvas.loaded.finally(initFn),temp.addSetterListener(null,async()=>{
-					await Promise.resolve(realCanvas.loaded).then(fnBeforeClear);
-					await realCanvas.clearShape(config,config.shape).then(fnAfterClear);
-				});
+				const config = new ConfigToClearShape;
+				return fnAfterClear = typeof fnAfterClear === 'function' ? ()=>fnAfterClear.call(realCanvas) : prevent,
+				fnBeforeClear = typeof fnBeforeClear === 'function' ? ()=>fnBeforeClear.call(realCanvas) : prevent,
+				realCanvas.loaded.finally(initFn),new RealGroup({self: config}).addSetterListener(null,async()=>(
+					await realCanvas.loaded,fnBeforeClear(),realCanvas.clearShape(config,config.shape).finally(fnAfterClear)
+				));
 			};
 		})();
 		protoTransform(){}
-		protoGet(){return this.loaded.then(()=>this.proto.value);}
+		async protoGet(){return await this.loaded,this.proto.value;}
 		clearAsync(){return this.loaded = Promise.resolve(this.loaded).then(()=>this.clear());}
 		fix(imgOrCanvas = this.proto.temp.canvas){(this.proto.clearBeforeDraw ? this.clear() : this.proto.ctx).drawImage(imgOrCanvas,0,0);}
 		/**### bind @returns {Promise<PromiseSettledResult<HTMLImageElement>[]>} */
@@ -1845,7 +1865,6 @@ if(browserMode){
 			while(i --> startN) srcArr.push(prefix+RealCanvas.strN(i,midLength)+suffix);
 			return this.preloadSrc(srcArr),i = 0,{loaded: this.loaded,finished: this.loaded.then(()=>{
 				var resize;
-				/**@type {RealWorld} */
 				const temp = new RealWorld(timeSep);
 				switch(sizeMode){
 					case 'auto': resize = true;break;
@@ -1899,12 +1918,12 @@ if(browserMode){
 		set height(height){if(null != height) this.proto.self.height = this.proto.temp.canvas.height = height;}
 		get self(){return this.proto.self;}
 		set self(self){if(self instanceof HTMLCanvasElement) this.proto.ctx = (this.proto.self = self).getContext('2d');}
-		get clearBeforeDraw(){return this.loaded.then(()=>this.proto.clearBeforeDraw);}
+		get clearBeforeDraw(){return Promise.resolve(this.loaded).then(()=>this.proto.clearBeforeDraw);}
 		set clearBeforeDraw(clearBeforeDraw){this.loaded = Promise.resolve(this.loaded).then(()=>this.proto.clearBeforeDraw = clearBeforeDraw);}
 		get temp(){return this.proto.temp.canvas;}
 		/**### bind */
 		set temp(src){return this.proto.set.call(this,src).then(()=>(this.proto.temp.drawImage(this.img,0,0),true),e=>this.rejectSrc(src,e));}
-		get opacity(){return this.loaded.then(()=>this.proto.ctx.globalAlpha);}
+		get opacity(){return Promise.resolve(this.loaded).then(()=>this.proto.ctx.globalAlpha);}
 		/**@param {[(Promise<Number>|Number),Number]} opacityConfig */
 		set opacity(opacityConfig){
 			Array.isArray(opacityConfig) || (opacityConfig = [opacityConfig]);
@@ -1956,15 +1975,26 @@ if(browserMode){
 		 * @param {...String} srcArray 
 		 * @returns {Promise<PromiseSettledResult<[?Error,Stats | Response]>[]>}
 		 */
-		static preloadSrc(...srcArray){
+		static checkSrc(...srcArray){
 			const fn = RealLoader.fs.stat,temp = emptyArray.concat(...srcArray);
 			var i = temp.length;
 			while(i --> 0) temp[i] = fn(temp[i]);
 			return Promise.allSettled(temp);
 		}
+		/**
+		 * 
+		 * @param {...String} srcArray 
+		 * @returns {Promise<PromiseSettledResult<Response>[]>}
+		 */
+		static preloadSrc(...srcArray){
+			const fn = RealLoader.fs.fetch,temp = emptyArray.concat(...srcArray);
+			var i = temp.length;
+			while(i --> 0) temp[i] = fn(temp[i]);
+			return Promise.allSettled(temp);
+		}
 		static fs = (()=>{
-			const initHEAD = {method: 'HEAD'},onfulfilled = r=>[,r],onrejected = e=>[e];
-			class DocumentFs{get stat(){return DocumentFs.stat;}get readdir(){return DocumentFs.readdir;}}
+			const initHEAD = {method: 'HEAD'};
+			class DocumentFs{get stat(){return DocumentFs.stat;}get fetch(){return DocumentFs.fetch;}get readdir(){return DocumentFs.readdir;}}
 				/**@type {(path: string | URL | Request,init?: RequestInit)=>[?Error,?Response]} */
 			DocumentFs.fetch = (()=>{
 				/**
@@ -1972,18 +2002,18 @@ if(browserMode){
 				 * @template {Response} T
 				 * @param {T} response 
 				 */
-				const temp = response=>response.status < 300 ? response : RealLoader.error('Failed request !');
+				const tempFn = response=>response.status < 300 ? response : RealLoader.error('Failed request !');
 				return browserMode && document.location.protocol === 'file:' ?
-				(path,init)=>fetch(path,(init = Object.assign({},init),init.mode = 'no-cors',init)).then(temp) :
-				(path,init)=>fetch(path,Object(init)).then(temp);
+				(path,init)=>fetch(path,(init = Object.assign({},init),init.mode = 'no-cors',init)).then(tempFn) :
+				(path,init)=>fetch(path,Object(init)).then(tempFn);
 			})();
 			/**@type {(path: String)=>Promise<[Error | null,Stats | Response]>} */
-			DocumentFs.stat = nodeMode ? (async (path)=>RealWorld.cb2promise({thisArg: await nodeFS,useFn: 'stat'},path)) :
-			(path=>DocumentFs.fetch(path,initHEAD).then(onfulfilled,onrejected));
+			DocumentFs.stat = nodeMode ? (async(path)=>RealWorld.cb2promise({thisArg: await nodeFS,useFn: 'stat'},path)) :
+			(async path=>{try{return [null,await DocumentFs.fetch(path,initHEAD)];}catch(e){return [e,null];}});
 			/**@type {(path: String,...strArgs: (String | String[])[])=>Promise<[Error | null,String[]]>} */
 			DocumentFs.readdir = nodeMode ?
-			(async (path)=>RealWorld.cb2promise({thisArg: await nodeFS,useFn: 'readdir'},path)) :
-			(async (path,...strArgs)=>{try{
+			(async(path)=>RealWorld.cb2promise({thisArg: await nodeFS,useFn: 'readdir'},path)) :
+			(async(path,...strArgs)=>{try{
 				const length = strArgs.length;
 				var i = length,fileName;
 				/\/$/.test(path) || (path += '/');
@@ -2027,12 +2057,12 @@ if(browserMode){
 			data instanceof ArrayBuffer ? data : ArrayBuffer.isView(data) ? data.buffer :
 			data instanceof Blob ? data.arrayBuffer() : new Blob(Array.isArray(data) ? data.join('') : String(data)).arrayBuffer()
 		);}
-		/**@type {(realLoader: RealLoader)=>Promise<[Error | null,Number | undefined]>} @method */
+		/**@type {(realLoader: RealLoader)=>Promise<[?Error]>} @method */
 		static load = (
-			nodeMode ? (async (realLoader)=>{try{
+			nodeMode ? (async(realLoader)=>{try{
 				if('upload' === realLoader.type){
 					const temp = realLoader.temp.files;
-					return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[];
+					return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[null];
 				}
 				const fs = await nodeFS;
 				const data = await realLoader.dataGetter();
@@ -2040,27 +2070,23 @@ if(browserMode){
 				const result = await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},'./'+realLoader.temp.download);
 				if(!result) this.error('Unknown Error !');
 				if(result[0]) return RealLoader.getArrayBufferFrom(data).
-				then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},'./'+realLoader.temp.download,Buffer.from(ab)));
+				then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},'./'+realLoader.temp.download,new Uint8Array(ab)));
 				for(var i = 1;true;i++){
 					const path = './'+prefix+' - '+i+suffix;
 					if((await RealWorld.cb2promise({thisArg: fs,useFn: 'stat'},path))[0]) return RealLoader.getArrayBufferFrom(data).
-					then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},path,Buffer.from(ab)));
+					then(ab=>RealWorld.cb2promise({thisArg: fs,useFn: 'writeFile'},path,new Uint8Array(ab)));
 				}
 			}catch(e){return [e];}}) :
-			(()=>{
-				const toBlob = data=>new Blob(data);
-				return async (realLoader)=>{try{
-					if('upload' === realLoader.type){
-						const temp = realLoader.temp.files;
-						return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[];
-					}
-					const data = await realLoader.dataGetter();
-					const href = URL.createObjectURL(await(
-						typeof data === 'string' ? new Blob([data]) : data instanceof Blob ? data : RealLoader.getArrayBufferFrom(data).then(toBlob)
-					));
-					return realLoader.temp.href = href,realLoader.temp.click(),URL.revokeObjectURL(href),[];
-				}catch(e){return [e];}}
-			})()
+			(async(realLoader)=>{try{
+				if('upload' === realLoader.type){
+					const temp = realLoader.temp.files;
+					return realLoader.temp.click(),await RealWorld.onceIf(()=>temp !== realLoader.temp.files,10),[null];
+				}
+				const data = await realLoader.dataGetter(),href = URL.createObjectURL(
+					typeof data === 'string' ? new Blob([data]) : data instanceof Blob ? data : new Blob([await RealLoader.getArrayBufferFrom(data)])
+				);
+				return realLoader.temp.href = href,realLoader.temp.click(),URL.revokeObjectURL(href),[null];
+			}catch(e){return [e];}})
 		);
 		load(){return RealLoader.load(this);}
 		protoSet(value){return this.self[this.key] = String(value),false;}
@@ -2081,7 +2107,7 @@ if(browserMode){
 		}
 		/**@type {()=>*} */
 		dataGetter;
-		// /**@type {Promise<Buffer | String>} */
+		// /**@type {Promise<ArrayBufferView | String>} */
 		// data;
 		/**
 		 * 
